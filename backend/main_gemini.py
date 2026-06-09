@@ -32,10 +32,14 @@ def normalize(value):
 
     value = value.replace("sulphites", "sulfites")
 
+    value = value.replace("fluid ounces", "fl oz")
+    value = value.replace("fluid ounce", "fl oz")
+
     value = value.replace("\n", "")
     value = value.replace(",", "")
     value = value.replace(".", "")
     value = value.replace(" ", "")
+    value = value.replace(":", "")
 
     value = value.replace("alc/vol", "")
     value = value.replace("abv", "")
@@ -246,7 +250,7 @@ async def verify(
     Imported By
     Sole Agent
     Sole U.S. Agent
-    
+
     For imported malt beverages, do not use importer_name_address as brand_name unless the importer is clearly also the brand name.
     If the label has a beer style or product name shown prominently, and a separate "Imported by" company appears elsewhere, the "Imported by" company should go in importer_name_address, not brand_name.
     Example:
