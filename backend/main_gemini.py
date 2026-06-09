@@ -1,12 +1,22 @@
 from fastapi import FastAPI, UploadFile, Form, File
 from google import genai
 from google.genai import types
+from enum import Enum
 from dotenv import load_dotenv
 import os
 import json
 import time
 
 load_dotenv()
+
+class ProductCategory(str, Enum):
+    malt_beverage = "malt_beverage"
+    distilled_spirits = "distilled_spirits"
+    wine = "wine"
+
+class OriginType(str, Enum):
+    domestic = "domestic"
+    imported = "imported"
 
 app = FastAPI()
 client = genai.Client(api_key=os.getenv("GEMINI_API_KEY"))
@@ -35,19 +45,24 @@ def normalize(value):
     value = value.replace("fluid ounces", "fl oz")
     value = value.replace("fluid ounce", "fl oz")
 
+    value = value.replace("alc/vol", "")
+    value = value.replace("abv", "")
+    value = value.replace("alcohol by volume", "")
+    value = value.replace("alcoholbyvolume", "")
+
+    value = value.replace("produced in", "")
+    value = value.replace("product of", "")
+    value = value.replace("made in", "")
+    value = value.replace("imported from", "")
+    value = value.replace("country of origin", "")
+
     value = value.replace("\n", "")
     value = value.replace(",", "")
     value = value.replace(".", "")
-    value = value.replace(" ", "")
     value = value.replace(":", "")
-
-    value = value.replace("alc/vol", "")
-    value = value.replace("abv", "")
-    value = value.replace("alcoholbyvolume", "")
-
-    value = value.replace("productof", "")
-    value = value.replace("importedfrom", "")
-    value = value.replace("countryoforigin", "")
+    value = value.replace("(", "")
+    value = value.replace(")", "")
+    value = value.replace(" ", "")
 
     return value.strip()
 
@@ -73,6 +88,8 @@ def check_government_warning(actual):
 
 @app.post("/verify-front")
 async def verify_front(
+    product_category: ProductCategory = Form(...),
+    origin_type: OriginType = Form(...),
     front_image: UploadFile = File(...),
     expected_brand_name: str = Form(...),
     expected_alcohol_content: str = Form(""),
@@ -82,9 +99,12 @@ async def verify_front(
     expected_importer_name_address: str = Form(""),
     expected_country_of_origin: str = Form(""),
     expected_sulfite_declaration: str = Form(""),
-    expected_appellation_of_origin: str = Form("")
+    expected_appellation_of_origin: str = Form(""),
+    expected_fanciful_name: str = Form("")
 ):
     return await verify(
+        product_category=product_category,
+        origin_type=origin_type,
         front_image=front_image,
         back_image=None,
         expected_brand_name=expected_brand_name,
@@ -95,11 +115,14 @@ async def verify_front(
         expected_importer_name_address=expected_importer_name_address,
         expected_country_of_origin=expected_country_of_origin,
         expected_sulfite_declaration=expected_sulfite_declaration,
-        expected_appellation_of_origin=expected_appellation_of_origin
+        expected_appellation_of_origin=expected_appellation_of_origin,
+        expected_fanciful_name=expected_fanciful_name
     )
 
 @app.post("/verify")
 async def verify(
+    product_category: ProductCategory = Form(...),
+    origin_type: OriginType = Form(...),
     front_image: UploadFile = File(...),
     back_image: UploadFile | None = File(default=None),
     expected_brand_name: str = Form(...),
@@ -110,8 +133,11 @@ async def verify(
     expected_importer_name_address: str = Form(""),
     expected_country_of_origin: str = Form(""),
     expected_sulfite_declaration: str = Form(""),
-    expected_appellation_of_origin: str = Form("")
+    expected_appellation_of_origin: str = Form(""),
+    expected_fanciful_name: str = Form("")
 ):
+    
+    
 
     prompt = """
 
@@ -130,6 +156,7 @@ async def verify(
     - country_of_origin
     - sulfite_declaration
     - appellation_of_origin
+    - fanciful_name
 
     For brand_name, extract ONLY the brand name.
     Example:
@@ -164,6 +191,10 @@ async def verify(
     Brand Name: Captain John's
     Distinctive/Fanciful Name: Spiced Rum
     Class/Type/Other Designation: Rum with Natural Flavors Added
+
+    For class_type, extract only text that visibly appears on the label.
+    Do not infer or create a class/type from nearby words.
+    Do not turn a fanciful name like "Stormchaser White" into "White Wine."
 
     For alcohol_content, extract ONLY the alcohol by volume percentage.
     Examples:
@@ -283,6 +314,19 @@ async def verify(
     Do not use the bottler/importer city and state as appellation_of_origin.
     If no wine appellation of origin appears, return null.
 
+    If the brand name appears across multiple stacked lines, combine the stacked lines.
+    Example:
+    12345
+    IMPORTS
+    brand_name:
+    12345 IMPORTS
+    Do not omit a smaller word if it is visually part of the same brand block.
+    If the front label shows a shortened or stacked brand name, and the back label identifies the same entity more completely, use the complete entity name as brand_name.
+    Example:
+    Front: 12345
+    Back: Imported by 12345 Imports
+    brand_name: 12345 IMPORTS
+
     For government_warning, include the heading "GOVERNMENT WARNING:" if it appears on the label.
     Do not omit the heading.
     Extract the full warning statement, including the heading and both numbered sentences.
@@ -355,6 +399,9 @@ async def verify(
             "error": "Gemini did not return valid JSON",
             "raw_output": raw_output
         }
+    
+    category = product_category.value
+    origin = origin_type.value
 
     validation = {
         "brand_name": check_match(expected_brand_name, extracted.get("brand_name")),
@@ -376,12 +423,17 @@ async def verify(
             else "NOT REQUIRED"
         ),
         "country_of_origin": (
-            check_match(expected_country_of_origin, extracted.get("country_of_origin"))
+            check_match(
+                expected_country_of_origin,
+                extracted.get("country_of_origin"))
             if expected_country_of_origin.strip()
             else "NOT REQUIRED"
         ),
         "importer_name_address": (
-            check_match(expected_importer_name_address, extracted.get("importer_name_address"))
+            check_match(
+                expected_importer_name_address,
+                extracted.get("importer_name_address")
+            )
             if expected_importer_name_address.strip()
             else "NOT REQUIRED"
         ),
@@ -389,9 +441,9 @@ async def verify(
             check_match(
                 expected_sulfite_declaration,
                 extracted.get("sulfite_declaration")
-        )
-        if expected_sulfite_declaration.strip()
-        else "NOT REQUIRED"
+            )
+            if expected_sulfite_declaration.strip()
+            else "NOT REQUIRED"
         ),
         "appellation_of_origin": (
             check_match(
@@ -401,9 +453,27 @@ async def verify(
             if expected_appellation_of_origin.strip()
             else "NOT REQUIRED"
         ),
+        "fanciful_name": (
+            check_match(
+                expected_fanciful_name,
+                extracted.get("fanciful_name")
+            )
+            if expected_fanciful_name.strip()
+            else "NOT REQUIRED"
+        ),
     }
     
     return {
+    "product_category": category,
+    "origin_type": origin,
     "extracted": extracted,
-    "validation": validation
+    "validation": validation,
+    }
+
+
+
+@app.post("/extract")
+async def extract():
+    return {
+        "message": "extract endpoint placeholder"
     }
