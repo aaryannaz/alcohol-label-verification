@@ -30,6 +30,8 @@ def normalize(value):
     value = value.replace("illinois", "il")
     value = value.replace("virginia", "va")
 
+    value = value.replace("sulphites", "sulfites")
+
     value = value.replace("\n", "")
     value = value.replace(",", "")
     value = value.replace(".", "")
@@ -74,7 +76,8 @@ async def verify_front(
     expected_class_type: str = Form(...),
     expected_domestic_name_address: str = Form(""),
     expected_importer_name_address: str = Form(""),
-    expected_country_of_origin: str = Form("")
+    expected_country_of_origin: str = Form(""),
+    expected_sulfite_declaration: str = Form("")
 ):
     return await verify(
         front_image=front_image,
@@ -85,7 +88,8 @@ async def verify_front(
         expected_class_type=expected_class_type,
         expected_domestic_name_address=expected_domestic_name_address,
         expected_importer_name_address=expected_importer_name_address,
-        expected_country_of_origin=expected_country_of_origin
+        expected_country_of_origin=expected_country_of_origin,
+        expected_sulfite_declaration=expected_sulfite_declaration
     )
 
 @app.post("/verify")
@@ -98,7 +102,8 @@ async def verify(
     expected_class_type: str = Form(...),
     expected_domestic_name_address: str = Form(""),
     expected_importer_name_address: str = Form(""),
-    expected_country_of_origin: str = Form("")
+    expected_country_of_origin: str = Form(""),
+    expected_sulfite_declaration: str = Form("")
 ):
 
     prompt = """
@@ -116,6 +121,7 @@ async def verify(
     - domestic_name_address
     - importer_name_address
     - country_of_origin
+    - sulfite_declaration
 
     For brand_name, extract ONLY the brand name.
     Example:
@@ -184,6 +190,16 @@ async def verify(
     "Bottled by Captain John's Distilling Co., Louisville, Kentucky"
     "Imported by Example Imports LLC, Miami, Florida"
     Return the complete statement exactly as it appears.
+    
+    For domestic_name_address, extract only:
+    Company Name, City, State
+    Do not include explanatory phrases such as:
+    Brewed By
+    Bottled By
+    Brewed and Bottled By
+    Produced By
+    Produced and Bottled By
+    Packed By
 
     For domestic_name_address, extract the bottler's name and address (city and state) that satisfy the TTB Name and Address requirement.
     The bottler's name may be:
@@ -223,6 +239,14 @@ async def verify(
     Importer: ABC Beverage Imports, Chicago, Illinois
     If the label is domestic or does not show importer information, return null.
 
+
+    For importer_name_address, extract only:
+    Importer Company Name, City, State
+    Do not include:
+    Imported By
+    Sole Agent
+    Sole U.S. Agent
+    
     For imported malt beverages, do not use importer_name_address as brand_name unless the importer is clearly also the brand name.
     If the label has a beer style or product name shown prominently, and a separate "Imported by" company appears elsewhere, the "Imported by" company should go in importer_name_address, not brand_name.
     Example:
@@ -231,6 +255,13 @@ async def verify(
     brand_name: Hefeweizen
     class_type: Imported Beer
     importer_name_address: Malt & Hop Brewery, Hyattsville, Maryland
+
+    For sulfite_declaration, extract the sulfite statement only if it appears on the label.
+    Examples:
+    Contains Sulfites
+    Contains Sulphites
+    Contains sulfur dioxide
+    If no sulfite statement appears, return null.
 
     For government_warning, include the heading "GOVERNMENT WARNING:" if it appears on the label.
     Do not omit the heading.
@@ -334,6 +365,14 @@ async def verify(
             if expected_importer_name_address.strip()
             else "NOT REQUIRED"
         ),
+        "sulfite_declaration": (
+            check_match(
+                expected_sulfite_declaration,
+                extracted.get("sulfite_declaration")
+        )
+    if expected_sulfite_declaration.strip()
+    else "NOT REQUIRED"
+),
     }
     
     return {
