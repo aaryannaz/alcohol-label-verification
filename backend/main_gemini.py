@@ -81,7 +81,8 @@ async def verify_front(
     expected_domestic_name_address: str = Form(""),
     expected_importer_name_address: str = Form(""),
     expected_country_of_origin: str = Form(""),
-    expected_sulfite_declaration: str = Form("")
+    expected_sulfite_declaration: str = Form(""),
+    expected_appellation_of_origin: str = Form("")
 ):
     return await verify(
         front_image=front_image,
@@ -93,7 +94,8 @@ async def verify_front(
         expected_domestic_name_address=expected_domestic_name_address,
         expected_importer_name_address=expected_importer_name_address,
         expected_country_of_origin=expected_country_of_origin,
-        expected_sulfite_declaration=expected_sulfite_declaration
+        expected_sulfite_declaration=expected_sulfite_declaration,
+        expected_appellation_of_origin=expected_appellation_of_origin
     )
 
 @app.post("/verify")
@@ -101,13 +103,14 @@ async def verify(
     front_image: UploadFile = File(...),
     back_image: UploadFile | None = File(default=None),
     expected_brand_name: str = Form(...),
-    expected_alcohol_content: str = Form(...),
+    expected_alcohol_content: str = Form(""),
     expected_net_contents: str = Form(...),
     expected_class_type: str = Form(...),
     expected_domestic_name_address: str = Form(""),
     expected_importer_name_address: str = Form(""),
     expected_country_of_origin: str = Form(""),
-    expected_sulfite_declaration: str = Form("")
+    expected_sulfite_declaration: str = Form(""),
+    expected_appellation_of_origin: str = Form("")
 ):
 
     prompt = """
@@ -126,6 +129,7 @@ async def verify(
     - importer_name_address
     - country_of_origin
     - sulfite_declaration
+    - appellation_of_origin
 
     For brand_name, extract ONLY the brand name.
     Example:
@@ -266,6 +270,18 @@ async def verify(
     Contains Sulphites
     Contains sulfur dioxide
     If no sulfite statement appears, return null.
+    For appellation_of_origin, extract the geographic origin statement for wine if it appears on the label.
+    Examples:
+    American
+    California
+    Napa Valley
+    Hudson River Region
+    Sonoma County
+    Victoria
+    France
+    Bordeaux
+    Do not use the bottler/importer city and state as appellation_of_origin.
+    If no wine appellation of origin appears, return null.
 
     For government_warning, include the heading "GOVERNMENT WARNING:" if it appears on the label.
     Do not omit the heading.
@@ -374,9 +390,17 @@ async def verify(
                 expected_sulfite_declaration,
                 extracted.get("sulfite_declaration")
         )
-    if expected_sulfite_declaration.strip()
-    else "NOT REQUIRED"
-),
+        if expected_sulfite_declaration.strip()
+        else "NOT REQUIRED"
+        ),
+        "appellation_of_origin": (
+            check_match(
+                expected_appellation_of_origin,
+                extracted.get("appellation_of_origin")
+            )
+            if expected_appellation_of_origin.strip()
+            else "NOT REQUIRED"
+        ),
     }
     
     return {
