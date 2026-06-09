@@ -1,0 +1,342 @@
+from fastapi import FastAPI, UploadFile, Form, File
+from google import genai
+from google.genai import types
+from dotenv import load_dotenv
+import os
+import json
+import time
+
+load_dotenv()
+
+app = FastAPI()
+client = genai.Client(api_key=os.getenv("GEMINI_API_KEY"))
+
+EXPECTED_WARNING = """
+GOVERNMENT WARNING: (1) According to the Surgeon General, women should not drink alcoholic beverages during pregnancy because of the risk of birth defects.
+
+(2) Consumption of alcoholic beverages impairs your ability to drive a car or operate machinery, and may cause health problems.
+"""
+
+
+
+def normalize(value):
+    if value is None:
+        return ""
+
+    value = value.lower()
+
+    value = value.replace("company", "co")
+
+    value = value.replace("illinois", "il")
+    value = value.replace("virginia", "va")
+
+    value = value.replace("\n", "")
+    value = value.replace(",", "")
+    value = value.replace(".", "")
+    value = value.replace(" ", "")
+
+    value = value.replace("alc/vol", "")
+    value = value.replace("abv", "")
+    value = value.replace("alcoholbyvolume", "")
+
+    value = value.replace("productof", "")
+    value = value.replace("importedfrom", "")
+    value = value.replace("countryoforigin", "")
+
+    return value.strip()
+
+def check_match(expected, actual): 
+    if normalize(expected) == normalize(actual): 
+        return "PASS" 
+    return "FAIL"
+
+def check_government_warning(actual):
+    if not actual:
+        return "MISSING"
+
+    normalized_actual = normalize(actual)
+    normalized_expected = normalize(EXPECTED_WARNING)
+
+    if normalized_actual == normalized_expected:
+        return "PASS"
+
+    if "governmentwarning" not in normalized_actual:
+        return "FAIL_MISSING_HEADING"
+
+    return "FAIL_TEXT_MISMATCH"
+
+@app.post("/verify-front")
+async def verify_front(
+    front_image: UploadFile = File(...),
+    expected_brand_name: str = Form(...),
+    expected_alcohol_content: str = Form(""),
+    expected_net_contents: str = Form(...),
+    expected_class_type: str = Form(...),
+    expected_domestic_name_address: str = Form(""),
+    expected_importer_name_address: str = Form(""),
+    expected_country_of_origin: str = Form("")
+):
+    return await verify(
+        front_image=front_image,
+        back_image=None,
+        expected_brand_name=expected_brand_name,
+        expected_alcohol_content=expected_alcohol_content,
+        expected_net_contents=expected_net_contents,
+        expected_class_type=expected_class_type,
+        expected_domestic_name_address=expected_domestic_name_address,
+        expected_importer_name_address=expected_importer_name_address,
+        expected_country_of_origin=expected_country_of_origin
+    )
+
+@app.post("/verify")
+async def verify(
+    front_image: UploadFile = File(...),
+    back_image: UploadFile | None = File(default=None),
+    expected_brand_name: str = Form(...),
+    expected_alcohol_content: str = Form(...),
+    expected_net_contents: str = Form(...),
+    expected_class_type: str = Form(...),
+    expected_domestic_name_address: str = Form(""),
+    expected_importer_name_address: str = Form(""),
+    expected_country_of_origin: str = Form("")
+):
+
+    prompt = """
+
+    Analyze the uploaded alcohol image or images.
+    If two images are provided, the first is the front label and the second is the back label.
+    If only one image is provided, extract as much as possible from that image.
+
+    Extract:
+    - brand_name
+    - class_type
+    - alcohol_content
+    - net_contents
+    - government_warning
+    - domestic_name_address
+    - importer_name_address
+    - country_of_origin
+
+    For brand_name, extract ONLY the brand name.
+    Example:
+    Brand Name = Captain John's
+    NOT Captain John's Spiced Rum
+    Do not combine brand names with product names,
+    fanciful names, class/type designations,
+    or flavor descriptions.
+
+    For beer labels, distinguish these fields:
+    Brand Name = the company, brand, series, or product-line name under which the beverage is sold.
+    Distinctive/Fanciful Name = a creative product name, pun, seasonal name, or flavor name.
+    Class/Type/Other Designation  = the official product type or composition statement.
+    Do not use the distinctive/fanciful name as brand_name.
+    Example:
+    Brand Name: Example Brewing Company
+    Distinctive/Fanciful Name: Happy Elder After
+    Class/Type/Other Designation: Ale with Elderberries
+    NOT Brand Name: Happily Elder After
+
+    For beer labels, do not assume the brewery name is the brand name.
+    The brand name may be a series name or a product-line name.
+    Example:
+    Brewery/producer name: Malt & Hop Brewery
+    Brand Name: Farm To Table Series #1
+    Distinctive/Fanciful Name: Honey Huckleberry Pie
+    Class/Type/Other Designation: Ale with Honey and Huckleberry Flavor
+    For this example, brand_name must be Farm To Table Series #1, not Malt & Hop
+
+    For class_type, extract the official Class, Type, or Other Designation exactly as it appears on the label.
+    Example:
+    Brand Name: Captain John's
+    Distinctive/Fanciful Name: Spiced Rum
+    Class/Type/Other Designation: Rum with Natural Flavors Added
+
+    For alcohol_content, extract ONLY the alcohol by volume percentage.
+    Examples:
+    20%
+    13.5%
+    5%
+    Do not include:
+    Alcohol By Volume
+    Proof
+    ABV
+
+    Do not use IPA, Ale, Beer, Lager, Wine, Rum, Vodka, Whiskey, or other class/type words as brand_name.
+    If a large text item is a class/type, product style, or abbreviation like IPA, do not treat it as the brand name. 
+    Example:
+    Brand Name: Example Brewing Co.
+    Class/Type: India Pale Ale
+    NOT Brand Name: IPA
+
+    For domestic_name_address, extract the company name together with the city and state that satisfy the Name and Address requirement.
+    It is possible for the company (Name) to be the same as the brand name in some cases.
+    Examples:
+    EXAMPLE BREWING CO.
+    ARLINGTON VIRGINIA
+    domestic_name_address:
+    EXAMPLE BREWING CO., ARLINGTON VIRGINIA
+    Brewed and Bottled by Example Brewing Co.
+    Arlington, Virginia
+    domestic_name_address:
+    Example Brewing Co., Arlington Virginia
+    Examples:
+    "Brewed and Bottled by Example Brewing Company, Chicago, Illinois"
+    "Bottled by Captain John's Distilling Co., Louisville, Kentucky"
+    "Imported by Example Imports LLC, Miami, Florida"
+    Return the complete statement exactly as it appears.
+
+    For domestic_name_address, extract the bottler's name and address (city and state) that satisfy the TTB Name and Address requirement.
+    The bottler's name may be:
+    - the same as the brand name
+    - different from the brand name
+    - a brewer, bottler, packer, or producer depending on the label
+    If the label shows only one company name `together` with a city and state, and no other responsible party is identified, treat that company as the bottler for purposes of domestic_name_address extraction.
+    The domestic_name_address field must contain BOTH:
+    1. the bottler name
+    2. the city and state
+    Incorrect:
+    ARLINGTON VIRGINIA
+    Correct:
+    EXAMPLE BREWING CO., ARLINGTON VIRGINIA
+    Example:
+    Brand Name:
+    EXAMPLE BREWING CO.
+    Location:
+    ARLINGTON VIRGINIA
+    Output:
+    domestic_name_address:
+    EXAMPLE BREWING CO., ARLINGTON VIRGINIA
+    Do not return only the city and state.
+
+    For country_of_origin, extract the country of origin statement only if the malt beverage is imported.
+    Examples:
+    Product of Germany
+    Imported from Mexico
+    Brewed in Belgium
+    Country of Origin: Ireland
+    If the label does not show an imported country-of-origin statement, return null.
+    Do not treat a U.S. city/state as country_of_origin.
+
+    For importer_name_address, extract the importer’s company name and city/state only if the malt beverage is imported.
+    Examples:
+    Imported by Example Imports LLC, Miami, Florida
+    Importer: ABC Beverage Imports, Chicago, Illinois
+    If the label is domestic or does not show importer information, return null.
+
+    For imported malt beverages, do not use importer_name_address as brand_name unless the importer is clearly also the brand name.
+    If the label has a beer style or product name shown prominently, and a separate "Imported by" company appears elsewhere, the "Imported by" company should go in importer_name_address, not brand_name.
+    Example:
+    Front label: HEFEWEIZEN
+    Imported by: Malt & Hop Brewery, Hyattsville, Maryland
+    brand_name: Hefeweizen
+    class_type: Imported Beer
+    importer_name_address: Malt & Hop Brewery, Hyattsville, Maryland
+
+    For government_warning, include the heading "GOVERNMENT WARNING:" if it appears on the label.
+    Do not omit the heading.
+    Extract the full warning statement, including the heading and both numbered sentences.
+
+    Return valid JSON only.
+    Do not use markdown.
+    Do not wrap the response in triple backticks.
+    """
+
+
+    front_bytes = await front_image.read()
+
+    contents = [
+        prompt,
+        types.Part.from_bytes(
+            data=front_bytes,
+            mime_type=front_image.content_type
+        ) 
+    ]
+
+    if back_image is not None:
+        back_bytes = await back_image.read()
+        contents.append(
+            types.Part.from_bytes(
+                data=back_bytes,
+                mime_type=back_image.content_type
+            )
+        )
+
+    last_error = None
+    model_name = "gemini-2.5-flash-lite"
+
+    print("USING MODEL:", model_name)
+
+    for attempt in range(3):
+        try:
+            response = client.models.generate_content(
+                model=model_name,
+                contents=contents
+            )
+            break
+        except Exception as e:
+            last_error = e
+            time.sleep(5)
+    else:
+        return {
+            "error": "Gemini API failed after 3 attempts",
+            "details": str(last_error)
+        }
+
+    raw_output = response.text.strip()
+
+    if raw_output.startswith("```json"):
+        raw_output = raw_output.replace("```json", "").replace("```", "").strip()
+    elif raw_output.startswith("```"):
+        raw_output = raw_output.replace("```", "").strip()
+
+
+    print("RAW GEMINI OUTPUT:", repr(raw_output))
+
+    if not raw_output:
+        return {
+            "error": "Gemini returned empty output",
+            "raw_output": raw_output
+        }
+    try:
+        extracted = json.loads(raw_output)
+    except json.JSONDecodeError:
+        return {
+            "error": "Gemini did not return valid JSON",
+            "raw_output": raw_output
+        }
+
+    validation = {
+        "brand_name": check_match(expected_brand_name, extracted.get("brand_name")),
+        "class_type": check_match(expected_class_type, extracted.get("class_type")),
+        "alcohol_content": (
+            check_match(expected_alcohol_content, extracted.get("alcohol_content"))
+            if expected_alcohol_content.strip()
+            else "NOT REQUIRED"
+        ),
+        "net_contents": check_match(expected_net_contents, extracted.get("net_contents")),
+        "government_warning": check_government_warning(
+            extracted.get("government_warning")),
+        "domestic_name_address": (
+            check_match(
+                expected_domestic_name_address,
+                extracted.get("domestic_name_address")
+            )
+            if expected_domestic_name_address.strip()
+            else "NOT REQUIRED"
+        ),
+        "country_of_origin": (
+            check_match(expected_country_of_origin, extracted.get("country_of_origin"))
+            if expected_country_of_origin.strip()
+            else "NOT REQUIRED"
+        ),
+        "importer_name_address": (
+            check_match(expected_importer_name_address, extracted.get("importer_name_address"))
+            if expected_importer_name_address.strip()
+            else "NOT REQUIRED"
+        ),
+    }
+    
+    return {
+    "extracted": extracted,
+    "validation": validation
+    }
