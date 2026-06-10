@@ -59,6 +59,11 @@ Imported Ale -> Ale
 For class_type, extract only text that visibly appears on the label.
 Do not infer or create a class/type from nearby words.
 Do not turn a fanciful name like "Stormchaser White" into "White Wine."
+Do not split a fanciful name — if the fanciful name contains a color word like White, Red, or Rosé, keep the full name together.
+Example:
+Fanciful name on label: STORMCHASER WHITE
+fanciful_name: Stormchaser White
+NOT fanciful_name: Stormchaser
 
 For alcohol_content, extract ONLY the alcohol by volume percentage.
 Examples:
