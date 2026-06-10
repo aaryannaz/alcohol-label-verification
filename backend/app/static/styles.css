@@ -479,3 +479,44 @@ th {
     width: 100%;
   }
 }
+
+.upload-mode-toggle {
+  display: grid;
+  gap: 7px;
+}
+
+.upload-mode-label {
+  color: var(--muted);
+  font-size: 13px;
+  font-weight: 650;
+}
+
+.upload-mode-buttons {
+  display: flex;
+  gap: 0;
+  border: 1px solid var(--line);
+  border-radius: 6px;
+  overflow: hidden;
+}
+
+.mode-btn {
+  flex: 1;
+  min-height: 34px;
+  border: none;
+  border-radius: 0;
+  background: var(--subtle-bg);
+  color: var(--muted);
+  font-size: 13px;
+  font-weight: 650;
+  cursor: pointer;
+  transition: background 140ms ease, color 140ms ease;
+}
+
+.mode-btn:first-child {
+  border-right: 1px solid var(--line);
+}
+
+.mode-btn.active {
+  background: var(--green);
+  color: #ffffff;
+}

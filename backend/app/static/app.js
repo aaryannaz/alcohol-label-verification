@@ -242,11 +242,15 @@ async function extractFields() {
     return;
   }
 
+  const isDropMode = dropZoneInputs.style.display !== "none";
+  const activeFront = isDropMode ? document.getElementById("frontImageDrop") : frontImage;
+  const activeBack = isDropMode ? document.getElementById("backImageDrop") : backImage;
+
   const formData = new FormData();
   formData.append("product_category", productCategory.value);
   formData.append("origin_type", originType.value);
-  formData.append("front_image", frontImage.files[0]);
-  if (backImage.files.length) formData.append("back_image", backImage.files[0]);
+  formData.append("front_image", activeFront.files[0]);
+  if (activeBack.files.length) formData.append("back_image", activeBack.files[0]);
 
   extractButton.disabled = true;
   setStatus("Extracting fields");
