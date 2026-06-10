@@ -521,16 +521,86 @@ th {
   color: #ffffff;
 }
 
+.upload-pane {
+  display: grid;
+  gap: 14px;
+}
+
+.upload-pane[hidden] {
+  display: none;
+}
+
+.file-control {
+  display: grid;
+  gap: 7px;
+}
+
+.file-summary {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 10px;
+  min-height: 32px;
+  border: 1px solid var(--line);
+  border-radius: 6px;
+  padding: 6px 8px;
+  background: var(--subtle-bg);
+}
+
+.file-empty,
+.file-name {
+  min-width: 0;
+  color: var(--muted);
+  font-size: 12px;
+  font-weight: 650;
+}
+
+.file-name {
+  color: var(--text);
+  overflow: hidden;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+}
+
+.file-summary.has-file .file-empty {
+  display: none;
+}
+
+.file-summary:not(.has-file) .file-name {
+  display: none;
+}
+
+.remove-file-button {
+  flex: 0 0 auto;
+  min-height: 28px;
+  border-color: var(--line);
+  padding: 0 9px;
+  background: var(--surface);
+  color: var(--muted);
+  font-size: 12px;
+  font-weight: 750;
+}
+
+.remove-file-button:hover,
+.remove-file-button:focus-visible {
+  color: var(--red);
+}
+
 .drop-zone {
   display: grid;
-  gap: 4px;
-  min-height: 72px;
+  gap: 8px;
+  min-height: 116px;
   border: 2px dashed var(--line);
   border-radius: 6px;
   padding: 12px;
   background: var(--subtle-bg);
   cursor: pointer;
   transition: border-color 140ms ease, background 140ms ease;
+}
+
+.drop-zone:focus-visible {
+  outline: 2px solid var(--blue);
+  outline-offset: 2px;
 }
 
 .drop-zone.drag-over {
@@ -554,19 +624,26 @@ th {
   font-size: 12px;
 }
 
-.drop-browse {
-  color: var(--blue);
-  cursor: pointer;
-  text-decoration: underline;
+.drop-actions {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  flex-wrap: wrap;
 }
 
-.drop-file-name {
-  color: var(--text);
+.drop-browse {
+  min-height: 32px;
+  border-color: var(--line);
+  padding: 0 10px;
+  background: var(--surface);
+  color: var(--blue);
+  cursor: pointer;
   font-size: 12px;
-  font-weight: 650;
-  overflow: hidden;
-  text-overflow: ellipsis;
-  white-space: nowrap;
+  font-weight: 750;
+}
+
+.drop-zone .file-summary {
+  background: var(--control-bg);
 }
 
 .drop-zone input[type="file"] {

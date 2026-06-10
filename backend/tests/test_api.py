@@ -42,6 +42,8 @@ class ApiTests(unittest.TestCase):
         self.assertIn("text/html", response.headers["content-type"])
         self.assertIn("Alcohol Label Verification", response.text)
         self.assertIn("themeToggle", response.text)
+        self.assertIn("data-file-slot=\"front\"", response.text)
+        self.assertIn("data-drop-slot=\"front\"", response.text)
 
     def test_static_app_script_serves(self):
         response = self.client.get("/static/app.js")
@@ -49,6 +51,7 @@ class ApiTests(unittest.TestCase):
         self.assertEqual(response.status_code, 200)
         self.assertIn("javascript", response.headers["content-type"])
         self.assertIn("field-requirements", response.text)
+        self.assertIn("Drop one file per label slot", response.text)
 
     def test_verify_reviewed_includes_field_requirements(self):
         response = self.client.post(

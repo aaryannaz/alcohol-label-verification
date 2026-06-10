@@ -66,27 +66,54 @@
               </div>
             </div>
 
-            <div id="chooseFileInputs">
-              <label>
-                Front label
-                <input id="frontImage" type="file" accept=".pdf,.png,.jpg,.jpeg,.webp,application/pdf,image/png,image/jpeg,image/webp" />
-              </label>
-              <label style="margin-top:14px;display:grid;gap:7px;">
-                Back label
-                <input id="backImage" type="file" accept=".pdf,.png,.jpg,.jpeg,.webp,application/pdf,image/png,image/jpeg,image/webp" />
-              </label>
+            <div id="chooseFileInputs" class="upload-pane">
+              <div class="file-control">
+                <label for="frontImage">Front label</label>
+                <input id="frontImage" data-file-slot="front" type="file" accept=".pdf,.png,.jpg,.jpeg,.webp,application/pdf,image/png,image/jpeg,image/webp" />
+                <div class="file-summary" data-file-summary="front" aria-live="polite">
+                  <span class="file-empty">No file selected</span>
+                  <span class="file-name" data-file-name="front"></span>
+                  <button class="remove-file-button" data-remove-file="front" type="button" hidden>Remove</button>
+                </div>
+              </div>
+
+              <div class="file-control">
+                <label for="backImage">Back label</label>
+                <input id="backImage" data-file-slot="back" type="file" accept=".pdf,.png,.jpg,.jpeg,.webp,application/pdf,image/png,image/jpeg,image/webp" />
+                <div class="file-summary" data-file-summary="back" aria-live="polite">
+                  <span class="file-empty">No file selected</span>
+                  <span class="file-name" data-file-name="back"></span>
+                  <button class="remove-file-button" data-remove-file="back" type="button" hidden>Remove</button>
+                </div>
+              </div>
             </div>
 
-            <div id="dropZoneInputs" style="display:none;">
-              <div class="drop-zone" id="frontDropZone">
+            <div id="dropZoneInputs" class="upload-pane" hidden>
+              <div class="drop-zone" id="frontDropZone" data-drop-slot="front" tabindex="0" aria-describedby="frontDropHint frontDropSummary">
                 <span class="drop-label">Front label</span>
-                <span class="drop-hint" id="frontDropHint">Drag and drop or <label class="drop-browse" for="frontImageDrop">browse</label></span>
-                <input id="frontImageDrop" type="file" accept=".pdf,.png,.jpg,.jpeg,.webp,application/pdf,image/png,image/jpeg,image/webp" />
+                <span class="drop-hint" id="frontDropHint">Drop one file here, or browse to select one.</span>
+                <div class="drop-actions">
+                  <button class="drop-browse" data-browse-file="front" type="button">Browse</button>
+                  <button class="remove-file-button" data-remove-file="front" type="button" hidden>Remove</button>
+                </div>
+                <div class="file-summary" id="frontDropSummary" data-file-summary="front" aria-live="polite">
+                  <span class="file-empty">No file selected</span>
+                  <span class="file-name" data-file-name="front"></span>
+                </div>
+                <input id="frontImageDrop" data-file-slot="front" type="file" accept=".pdf,.png,.jpg,.jpeg,.webp,application/pdf,image/png,image/jpeg,image/webp" />
               </div>
-              <div class="drop-zone" id="backDropZone" style="margin-top:14px;">
+              <div class="drop-zone" id="backDropZone" data-drop-slot="back" tabindex="0" aria-describedby="backDropHint backDropSummary">
                 <span class="drop-label">Back label</span>
-                <span class="drop-hint" id="backDropHint">Drag and drop or <label class="drop-browse" for="backImageDrop">browse</label></span>
-                <input id="backImageDrop" type="file" accept=".pdf,.png,.jpg,.jpeg,.webp,application/pdf,image/png,image/jpeg,image/webp" />
+                <span class="drop-hint" id="backDropHint">Drop one file here, or browse to select one.</span>
+                <div class="drop-actions">
+                  <button class="drop-browse" data-browse-file="back" type="button">Browse</button>
+                  <button class="remove-file-button" data-remove-file="back" type="button" hidden>Remove</button>
+                </div>
+                <div class="file-summary" id="backDropSummary" data-file-summary="back" aria-live="polite">
+                  <span class="file-empty">No file selected</span>
+                  <span class="file-name" data-file-name="back"></span>
+                </div>
+                <input id="backImageDrop" data-file-slot="back" type="file" accept=".pdf,.png,.jpg,.jpeg,.webp,application/pdf,image/png,image/jpeg,image/webp" />
               </div>
             </div>
           </div>

@@ -13,11 +13,22 @@ const FIELD_CONFIG = [
 ];
 
 const FIELD_LOOKUP = Object.fromEntries(FIELD_CONFIG.map((field) => [field.key, field]));
+const MAX_UPLOAD_BYTES = 10 * 1024 * 1024;
+const ACCEPTED_EXTENSIONS = new Set(["pdf", "png", "jpg", "jpeg", "webp"]);
+const ACCEPTED_MIME_TYPES = new Set(["application/pdf", "image/png", "image/jpeg", "image/webp"]);
+const FILE_LABELS = {
+  front: "Front label",
+  back: "Back label",
+};
 
 const state = {
   requirements: { required: [], conditional: [], optional: [] },
   extracted: {},
   validation: {},
+  files: {
+    front: null,
+    back: null,
+  },
 };
 
 const THEME_STORAGE_KEY = "alcohol-label-theme";
@@ -38,6 +49,8 @@ const modeChooseFile = document.getElementById("modeChooseFile");
 const modeDragDrop = document.getElementById("modeDragDrop");
 const chooseFileInputs = document.getElementById("chooseFileInputs");
 const dropZoneInputs = document.getElementById("dropZoneInputs");
+const uploadInputs = Array.from(document.querySelectorAll("[data-file-slot]"));
+const dropZones = Array.from(document.querySelectorAll("[data-drop-slot]"));
 
 function currentTheme() {
   return document.documentElement.dataset.theme === "dark" ? "dark" : "light";
@@ -52,6 +65,106 @@ function setTheme(theme) {
   } catch {
     return;
   }
+}
+
+function formatBytes(bytes) {
+  if (bytes >= 1024 * 1024) return (bytes / (1024 * 1024)).toFixed(1) + " MB";
+  if (bytes >= 1024) return Math.round(bytes / 1024) + " KB";
+  return bytes + " B";
+}
+
+function fileExtension(file) {
+  const parts = file.name.toLowerCase().split(".");
+  return parts.length > 1 ? parts.pop() : "";
+}
+
+function validateClientFile(file) {
+  if (!file) return "Select a file first.";
+  if (!ACCEPTED_EXTENSIONS.has(fileExtension(file))) {
+    return "Unsupported file extension. Use PDF, PNG, JPEG, or WebP.";
+  }
+  if (file.type && !ACCEPTED_MIME_TYPES.has(file.type)) {
+    return "Unsupported file type. Use PDF, PNG, JPEG, or WebP.";
+  }
+  if (file.size === 0) {
+    return "This file is empty. Choose a different file.";
+  }
+  if (file.size > MAX_UPLOAD_BYTES) {
+    return "File is larger than 10 MB. Choose a smaller file.";
+  }
+  return "";
+}
+
+function inputsForSlot(slot) {
+  return uploadInputs.filter((input) => input.dataset.fileSlot === slot);
+}
+
+function syncInputFiles(slot, file) {
+  for (const input of inputsForSlot(slot)) {
+    if (!file) {
+      input.value = "";
+      continue;
+    }
+
+    try {
+      const transfer = new DataTransfer();
+      transfer.items.add(file);
+      input.files = transfer.files;
+    } catch {
+      if (input.files.length && input.files[0] !== file) input.value = "";
+    }
+  }
+}
+
+function renderFileState(slot) {
+  const file = state.files[slot];
+  const fileText = file ? file.name + " · " + formatBytes(file.size) : "";
+
+  for (const summary of document.querySelectorAll("[data-file-summary=" + JSON.stringify(slot) + "]")) {
+    summary.classList.toggle("has-file", Boolean(file));
+  }
+
+  for (const name of document.querySelectorAll("[data-file-name=" + JSON.stringify(slot) + "]")) {
+    name.textContent = fileText;
+  }
+
+  for (const button of document.querySelectorAll("[data-remove-file=" + JSON.stringify(slot) + "]")) {
+    button.hidden = !file;
+  }
+
+  for (const zone of document.querySelectorAll("[data-drop-slot=" + JSON.stringify(slot) + "]")) {
+    zone.classList.toggle("has-file", Boolean(file));
+  }
+}
+
+function setSelectedFile(slot, file) {
+  const error = validateClientFile(file);
+  if (error) {
+    showError(error);
+    setStatus("File selection needs attention");
+    syncInputFiles(slot, state.files[slot]);
+    renderFileState(slot);
+    return false;
+  }
+
+  clearError();
+  state.files[slot] = file;
+  syncInputFiles(slot, file);
+  renderFileState(slot);
+  setStatus(FILE_LABELS[slot] + " selected");
+  return true;
+}
+
+function clearSelectedFile(slot) {
+  state.files[slot] = null;
+  syncInputFiles(slot, null);
+  renderFileState(slot);
+  clearError();
+  setStatus("Ready");
+}
+
+function draggedFiles(event) {
+  return Array.from(event.dataTransfer?.types || []).includes("Files");
 }
 
 function orderedVisibleFields() {
@@ -241,20 +354,18 @@ async function refreshRequirements() {
 
 async function extractFields() {
   clearError();
-  const isDropMode = dropZoneInputs && dropZoneInputs.style.display !== "none";
-  const activeFront = isDropMode ? document.getElementById("frontImageDrop") : frontImage;
-  const activeBack = isDropMode ? document.getElementById("backImageDrop") : backImage;
 
-  if (!activeFront.files.length) {
+  if (!state.files.front) {
     showError("Front label is required.");
+    setStatus("File selection needs attention");
     return;
   }
 
   const formData = new FormData();
   formData.append("product_category", productCategory.value);
   formData.append("origin_type", originType.value);
-  formData.append("front_image", activeFront.files[0]);
-  if (activeBack.files.length) formData.append("back_image", activeBack.files[0]);
+  formData.append("front_image", state.files.front);
+  if (state.files.back) formData.append("back_image", state.files.back);
 
   extractButton.disabled = true;
   setStatus("Extracting fields");
@@ -301,58 +412,119 @@ async function verifyReviewedFields() {
 
 function setUploadMode(mode) {
   if (mode === "choose") {
-    chooseFileInputs.style.display = "";
-    dropZoneInputs.style.display = "none";
+    chooseFileInputs.hidden = false;
+    dropZoneInputs.hidden = true;
     modeChooseFile.classList.add("active");
     modeDragDrop.classList.remove("active");
+    modeChooseFile.setAttribute("aria-pressed", "true");
+    modeDragDrop.setAttribute("aria-pressed", "false");
   } else {
-    chooseFileInputs.style.display = "none";
-    dropZoneInputs.style.display = "grid";
+    chooseFileInputs.hidden = true;
+    dropZoneInputs.hidden = false;
     modeDragDrop.classList.add("active");
     modeChooseFile.classList.remove("active");
+    modeDragDrop.setAttribute("aria-pressed", "true");
+    modeChooseFile.setAttribute("aria-pressed", "false");
   }
 }
 
-function initDropZone(dropZoneId, inputId, hintId) {
-  const zone = document.getElementById(dropZoneId);
-  const input = document.getElementById(inputId);
-  const hint = document.getElementById(hintId);
+function inputForDropSlot(slot) {
+  return document.querySelector("#" + slot + "ImageDrop");
+}
 
-  function setFile(file) {
-    const dt = new DataTransfer();
-    dt.items.add(file);
-    input.files = dt.files;
-    hint.innerHTML = "<span class=\"drop-file-name\">" + file.name + "</span>";
-    zone.classList.add("has-file");
-  }
+function initDropZone(zone) {
+  const slot = zone.dataset.dropSlot;
+  const input = inputForDropSlot(slot);
 
-  zone.addEventListener("click", function(e) {
-    if (!e.target.closest("label")) input.click();
+  zone.addEventListener("click", function(event) {
+    if (!event.target.closest("button")) input.click();
   });
 
-  input.addEventListener("change", function() {
-    if (input.files.length) setFile(input.files[0]);
+  zone.addEventListener("keydown", function(event) {
+    if (event.key === "Enter" || event.key === " ") {
+      event.preventDefault();
+      input.click();
+    }
   });
 
-  zone.addEventListener("dragover", function(e) {
-    e.preventDefault();
+  zone.addEventListener("dragenter", function(event) {
+    if (!draggedFiles(event)) return;
+    event.preventDefault();
     zone.classList.add("drag-over");
   });
 
-  zone.addEventListener("dragleave", function() {
+  zone.addEventListener("dragover", function(event) {
+    if (!draggedFiles(event)) return;
+    event.preventDefault();
+    zone.classList.add("drag-over");
+  });
+
+  zone.addEventListener("dragleave", function(event) {
+    if (zone.contains(event.relatedTarget)) return;
     zone.classList.remove("drag-over");
   });
 
-  zone.addEventListener("drop", function(e) {
-    e.preventDefault();
+  zone.addEventListener("drop", function(event) {
+    if (!draggedFiles(event)) return;
+    event.preventDefault();
+    event.stopPropagation();
     zone.classList.remove("drag-over");
-    const file = e.dataTransfer.files[0];
-    if (file) setFile(file);
+    const files = Array.from(event.dataTransfer.files || []);
+
+    if (files.length > 1) {
+      showError("Drop one file per label slot. Batch uploads are coming next.");
+      setStatus("File selection needs attention");
+      return;
+    }
+
+    if (files[0]) setSelectedFile(slot, files[0]);
   });
 }
 
-initDropZone("frontDropZone", "frontImageDrop", "frontDropHint");
-initDropZone("backDropZone", "backImageDrop", "backDropHint");
+for (const input of uploadInputs) {
+  input.addEventListener("change", function() {
+    const slot = input.dataset.fileSlot;
+    if (input.files.length) {
+      setSelectedFile(slot, input.files[0]);
+    } else {
+      clearSelectedFile(slot);
+    }
+  });
+}
+
+for (const zone of dropZones) {
+  initDropZone(zone);
+}
+
+for (const button of document.querySelectorAll("[data-browse-file]")) {
+  button.addEventListener("click", function() {
+    const input = inputForDropSlot(button.dataset.browseFile);
+    input.click();
+  });
+}
+
+for (const button of document.querySelectorAll("[data-remove-file]")) {
+  button.addEventListener("click", function() {
+    clearSelectedFile(button.dataset.removeFile);
+  });
+}
+
+setUploadMode("choose");
+renderFileState("front");
+renderFileState("back");
+
+document.addEventListener("dragover", function(event) {
+  if (draggedFiles(event)) event.preventDefault();
+});
+
+document.addEventListener("drop", function(event) {
+  if (!draggedFiles(event)) return;
+  event.preventDefault();
+  if (!event.target.closest("[data-drop-slot]")) {
+    showError("Drop files into the Front label or Back label upload area.");
+    setStatus("File selection needs attention");
+  }
+});
 
 themeToggle.checked = currentTheme() === "dark";
 themeToggle.addEventListener("change", function() {
