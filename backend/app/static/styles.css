@@ -520,3 +520,55 @@ th {
   background: var(--green);
   color: #ffffff;
 }
+
+.drop-zone {
+  display: grid;
+  gap: 4px;
+  min-height: 72px;
+  border: 2px dashed var(--line);
+  border-radius: 6px;
+  padding: 12px;
+  background: var(--subtle-bg);
+  cursor: pointer;
+  transition: border-color 140ms ease, background 140ms ease;
+}
+
+.drop-zone.drag-over {
+  border-color: var(--green);
+  background: var(--green-soft);
+}
+
+.drop-zone.has-file {
+  border-style: solid;
+  border-color: var(--green);
+}
+
+.drop-label {
+  color: var(--muted);
+  font-size: 13px;
+  font-weight: 650;
+}
+
+.drop-hint {
+  color: var(--muted);
+  font-size: 12px;
+}
+
+.drop-browse {
+  color: var(--blue);
+  cursor: pointer;
+  text-decoration: underline;
+}
+
+.drop-file-name {
+  color: var(--text);
+  font-size: 12px;
+  font-weight: 650;
+  overflow: hidden;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+}
+
+.drop-zone input[type="file"] {
+  display: none;
+}
