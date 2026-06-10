@@ -98,4 +98,8 @@ async def extract_label_fields(front_image: UploadFile, back_image: UploadFile |
             details={"raw_output": raw_output},
         )
 
+    if isinstance(extracted.get("class_type"), str):
+        import re
+        extracted["class_type"] = re.sub(r"(?i)^(imported|domestic)\s+", "", extracted["class_type"]).strip()
+
     return extracted
