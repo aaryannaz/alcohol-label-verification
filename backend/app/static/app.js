@@ -311,3 +311,66 @@ refreshRequirements().catch((error) => {
   showError(error.message);
   setStatus("Unable to load requirements");
 });
+
+const modeChooseFile = document.getElementById("modeChooseFile");
+const modeDragDrop = document.getElementById("modeDragDrop");
+const chooseFileInputs = document.getElementById("chooseFileInputs");
+const dropZoneInputs = document.getElementById("dropZoneInputs");
+
+function setUploadMode(mode) {
+  if (mode === "choose") {
+    chooseFileInputs.style.display = "";
+    dropZoneInputs.style.display = "none";
+    modeChooseFile.classList.add("active");
+    modeDragDrop.classList.remove("active");
+  } else {
+    chooseFileInputs.style.display = "none";
+    dropZoneInputs.style.display = "grid";
+    modeDragDrop.classList.add("active");
+    modeChooseFile.classList.remove("active");
+  }
+}
+
+function initDropZone(dropZoneId, inputId, hintId) {
+  const zone = document.getElementById(dropZoneId);
+  const input = document.getElementById(inputId);
+  const hint = document.getElementById(hintId);
+
+  function setFile(file) {
+    const dt = new DataTransfer();
+    dt.items.add(file);
+    input.files = dt.files;
+    hint.innerHTML = '<span class="drop-file-name">' + file.name + '</span>';
+    zone.classList.add("has-file");
+  }
+
+  zone.addEventListener("click", (e) => {
+    if (!e.target.closest("label")) input.click();
+  });
+
+  input.addEventListener("change", () => {
+    if (input.files.length) setFile(input.files[0]);
+  });
+
+  zone.addEventListener("dragover", (e) => {
+    e.preventDefault();
+    zone.classList.add("drag-over");
+  });
+
+  zone.addEventListener("dragleave", () => {
+    zone.classList.remove("drag-over");
+  });
+
+  zone.addEventListener("drop", (e) => {
+    e.preventDefault();
+    zone.classList.remove("drag-over");
+    const file = e.dataTransfer.files[0];
+    if (file) setFile(file);
+  });
+}
+
+initDropZone("frontDropZone", "frontImageDrop", "frontDropHint");
+initDropZone("backDropZone", "backImageDrop", "backDropHint");
+
+modeChooseFile.addEventListener("click", () => setUploadMode("choose"));
+modeDragDrop.addEventListener("click", () => setUploadMode("drop"));
