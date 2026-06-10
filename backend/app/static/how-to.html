@@ -1,0 +1,64 @@
+<!doctype html>
+<html lang="en" data-theme="light">
+  <head>
+    <meta charset="utf-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1" />
+    <title>How To | Alcohol Label Verification</title>
+    <script>
+      (() => {
+        try {
+          const storedTheme = localStorage.getItem("alcohol-label-theme");
+          const prefersDark = window.matchMedia("(prefers-color-scheme: dark)").matches;
+          document.documentElement.dataset.theme = storedTheme || (prefersDark ? "dark" : "light");
+        } catch {
+          document.documentElement.dataset.theme = "light";
+        }
+      })();
+    </script>
+    <link rel="stylesheet" href="/static/styles.css" />
+  </head>
+  <body>
+    <div class="app-shell">
+      <header class="topbar">
+        <div>
+          <h1>How To</h1>
+        </div>
+        <div class="topbar-actions">
+          <a class="docs-link" href="/">App</a>
+          <a class="docs-link" href="/docs">Swagger</a>
+        </div>
+      </header>
+
+      <main class="info-page">
+        <section class="panel info-panel" aria-labelledby="workflow-title">
+          <h2 id="workflow-title">Workflow</h2>
+          <ol class="how-to-list">
+            <li>Select the product category and origin.</li>
+            <li>Upload the front label and optional back label.</li>
+            <li>Click Extract Fields to populate the Expected COLA and Reviewed Label fields.</li>
+            <li>Correct the Expected COLA fields to match the approved application.</li>
+            <li>Click Verify Reviewed Fields and review the results.</li>
+          </ol>
+        </section>
+
+        <section class="panel info-panel" aria-labelledby="upload-title">
+          <h2 id="upload-title">Uploads</h2>
+          <ul class="how-to-list">
+            <li>Accepted files: PDF, PNG, JPEG, and WebP.</li>
+            <li>Maximum file size: 10 MB per file.</li>
+            <li>Drag & Drop mode includes Select file for keyboard, mobile, and fallback use.</li>
+          </ul>
+        </section>
+
+        <section class="panel info-panel" aria-labelledby="limits-title">
+          <h2 id="limits-title">Notes</h2>
+          <ul class="how-to-list">
+            <li>Government warning text is checked for exact wording, punctuation, and capitalization.</li>
+            <li>Bold type cannot be verified because extraction returns text, not typography metadata.</li>
+            <li>Batch upload support is planned next.</li>
+          </ul>
+        </section>
+      </main>
+    </div>
+  </body>
+</html>

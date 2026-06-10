@@ -22,6 +22,11 @@ async def index():
     return FileResponse(STATIC_DIR / "index.html")
 
 
+@app.get("/how-to", include_in_schema=False)
+async def how_to():
+    return FileResponse(STATIC_DIR / "how-to.html")
+
+
 def build_expected_fields(
     expected_brand_name: str,
     expected_alcohol_content: str,

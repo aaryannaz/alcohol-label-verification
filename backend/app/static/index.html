@@ -21,7 +21,6 @@
     <div class="app-shell">
       <header class="topbar">
         <div>
-          <p class="eyebrow">Treasury DOGE</p>
           <h1>Alcohol Label Verification</h1>
         </div>
         <div class="topbar-actions">
@@ -30,6 +29,7 @@
             <input id="themeToggle" type="checkbox" aria-label="Use dark mode" />
             <span class="theme-switch" aria-hidden="true"></span>
           </label>
+          <a class="docs-link" href="/how-to">How To</a>
           <a class="docs-link" href="/docs">Swagger</a>
         </div>
       </header>
@@ -91,9 +91,9 @@
             <div id="dropZoneInputs" class="upload-pane" hidden>
               <div class="drop-zone" id="frontDropZone" data-drop-slot="front" tabindex="0" aria-describedby="frontDropHint frontDropSummary">
                 <span class="drop-label">Front label</span>
-                <span class="drop-hint" id="frontDropHint">Drop one file here, or browse to select one.</span>
+                <span class="drop-hint" id="frontDropHint">Drop one file here, or use Select file.</span>
                 <div class="drop-actions">
-                  <button class="drop-browse" data-browse-file="front" type="button">Browse</button>
+                  <button class="drop-browse" data-browse-file="front" type="button">Select file</button>
                   <button class="remove-file-button" data-remove-file="front" type="button" hidden>Remove</button>
                 </div>
                 <div class="file-summary" id="frontDropSummary" data-file-summary="front" aria-live="polite">
@@ -104,9 +104,9 @@
               </div>
               <div class="drop-zone" id="backDropZone" data-drop-slot="back" tabindex="0" aria-describedby="backDropHint backDropSummary">
                 <span class="drop-label">Back label</span>
-                <span class="drop-hint" id="backDropHint">Drop one file here, or browse to select one.</span>
+                <span class="drop-hint" id="backDropHint">Drop one file here, or use Select file.</span>
                 <div class="drop-actions">
-                  <button class="drop-browse" data-browse-file="back" type="button">Browse</button>
+                  <button class="drop-browse" data-browse-file="back" type="button">Select file</button>
                   <button class="remove-file-button" data-remove-file="back" type="button" hidden>Remove</button>
                 </div>
                 <div class="file-summary" id="backDropSummary" data-file-summary="back" aria-live="polite">

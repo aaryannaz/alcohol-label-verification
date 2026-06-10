@@ -195,6 +195,13 @@ h3 {
   padding: 16px;
 }
 
+.info-page {
+  display: grid;
+  gap: 16px;
+  max-width: 920px;
+  padding: 16px;
+}
+
 .panel {
   min-width: 0;
   border: 1px solid var(--line);
@@ -216,6 +223,22 @@ h3 {
 
 .results-panel {
   box-shadow: none;
+}
+
+.info-panel {
+  padding: 18px;
+}
+
+.how-to-list {
+  display: grid;
+  gap: 10px;
+  margin: 16px 0 0;
+  padding-left: 22px;
+  color: var(--text);
+}
+
+.how-to-list li {
+  line-height: 1.45;
 }
 
 .section-heading {

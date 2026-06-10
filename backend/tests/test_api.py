@@ -44,6 +44,16 @@ class ApiTests(unittest.TestCase):
         self.assertIn("themeToggle", response.text)
         self.assertIn("data-file-slot=\"front\"", response.text)
         self.assertIn("data-drop-slot=\"front\"", response.text)
+        self.assertIn("/how-to", response.text)
+        self.assertNotIn("Treasury DOGE</p>", response.text)
+
+    def test_how_to_page_serves(self):
+        response = self.client.get("/how-to")
+
+        self.assertEqual(response.status_code, 200)
+        self.assertIn("text/html", response.headers["content-type"])
+        self.assertIn("How To", response.text)
+        self.assertIn("Batch upload support is planned next.", response.text)
 
     def test_static_app_script_serves(self):
         response = self.client.get("/static/app.js")
