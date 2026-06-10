@@ -289,6 +289,14 @@ input[type="file"] {
   padding: 9px;
 }
 
+.native-file-input {
+  position: absolute;
+  width: 1px;
+  height: 1px;
+  opacity: 0;
+  pointer-events: none;
+}
+
 .chips {
   display: flex;
   flex-wrap: wrap;
@@ -558,6 +566,27 @@ th {
   gap: 7px;
 }
 
+.file-select-button {
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  width: fit-content;
+  min-height: 36px;
+  border: 1px solid var(--line);
+  border-radius: 6px;
+  padding: 0 12px;
+  background: var(--subtle-bg);
+  color: var(--text);
+  cursor: pointer;
+  font-size: 13px;
+  font-weight: 750;
+}
+
+.file-select-button:hover,
+.file-select-button:focus-visible {
+  border-color: var(--green);
+}
+
 .file-summary {
   display: flex;
   align-items: center;
@@ -612,12 +641,11 @@ th {
 .drop-zone {
   display: grid;
   gap: 8px;
-  min-height: 116px;
+  min-height: 104px;
   border: 2px dashed var(--line);
   border-radius: 6px;
   padding: 12px;
   background: var(--subtle-bg);
-  cursor: pointer;
   transition: border-color 140ms ease, background 140ms ease;
 }
 
@@ -654,21 +682,6 @@ th {
   flex-wrap: wrap;
 }
 
-.drop-browse {
-  min-height: 32px;
-  border-color: var(--line);
-  padding: 0 10px;
-  background: var(--surface);
-  color: var(--blue);
-  cursor: pointer;
-  font-size: 12px;
-  font-weight: 750;
-}
-
 .drop-zone .file-summary {
   background: var(--control-bg);
-}
-
-.drop-zone input[type="file"] {
-  display: none;
 }

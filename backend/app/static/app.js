@@ -428,24 +428,8 @@ function setUploadMode(mode) {
   }
 }
 
-function inputForDropSlot(slot) {
-  return document.querySelector("#" + slot + "ImageDrop");
-}
-
 function initDropZone(zone) {
   const slot = zone.dataset.dropSlot;
-  const input = inputForDropSlot(slot);
-
-  zone.addEventListener("click", function(event) {
-    if (!event.target.closest("button")) input.click();
-  });
-
-  zone.addEventListener("keydown", function(event) {
-    if (event.key === "Enter" || event.key === " ") {
-      event.preventDefault();
-      input.click();
-    }
-  });
 
   zone.addEventListener("dragenter", function(event) {
     if (!draggedFiles(event)) return;
@@ -494,13 +478,6 @@ for (const input of uploadInputs) {
 
 for (const zone of dropZones) {
   initDropZone(zone);
-}
-
-for (const button of document.querySelectorAll("[data-browse-file]")) {
-  button.addEventListener("click", function() {
-    const input = inputForDropSlot(button.dataset.browseFile);
-    input.click();
-  });
 }
 
 for (const button of document.querySelectorAll("[data-remove-file]")) {
