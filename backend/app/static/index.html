@@ -1,0 +1,127 @@
+<!doctype html>
+<html lang="en" data-theme="light">
+  <head>
+    <meta charset="utf-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1" />
+    <title>Treasury DOGE Alcohol Label Verification</title>
+    <script>
+      (() => {
+        try {
+          const storedTheme = localStorage.getItem("alcohol-label-theme");
+          const prefersDark = window.matchMedia("(prefers-color-scheme: dark)").matches;
+          document.documentElement.dataset.theme = storedTheme || (prefersDark ? "dark" : "light");
+        } catch {
+          document.documentElement.dataset.theme = "light";
+        }
+      })();
+    </script>
+    <link rel="stylesheet" href="/static/styles.css" />
+  </head>
+  <body>
+    <div class="app-shell">
+      <header class="topbar">
+        <div>
+          <p class="eyebrow">Treasury DOGE</p>
+          <h1>Alcohol Label Verification</h1>
+        </div>
+        <div class="topbar-actions">
+          <label class="theme-toggle" for="themeToggle">
+            <span>Dark mode</span>
+            <input id="themeToggle" type="checkbox" aria-label="Use dark mode" />
+            <span class="theme-switch" aria-hidden="true"></span>
+          </label>
+          <a class="docs-link" href="/docs">Swagger</a>
+        </div>
+      </header>
+
+      <main class="workspace">
+        <section class="panel setup-panel" aria-labelledby="setup-title">
+          <div class="section-heading">
+            <h2 id="setup-title">Application</h2>
+          </div>
+
+          <div class="control-grid">
+            <label>
+              Product category
+              <select id="productCategory">
+                <option value="malt_beverage">Malt beverage</option>
+                <option value="distilled_spirits">Distilled spirits</option>
+                <option value="wine">Wine</option>
+              </select>
+            </label>
+
+            <label>
+              Origin
+              <select id="originType">
+                <option value="domestic">Domestic</option>
+                <option value="imported">Imported</option>
+              </select>
+            </label>
+
+            <label>
+              Front label
+              <input id="frontImage" type="file" accept=".pdf,.png,.jpg,.jpeg,.webp,application/pdf,image/png,image/jpeg,image/webp" />
+            </label>
+
+            <label>
+              Back label
+              <input id="backImage" type="file" accept=".pdf,.png,.jpg,.jpeg,.webp,application/pdf,image/png,image/jpeg,image/webp" />
+            </label>
+          </div>
+
+          <div id="requirementChips" class="chips" aria-live="polite"></div>
+        </section>
+
+        <section class="panel fields-panel" aria-labelledby="fields-title">
+          <div class="section-heading">
+            <h2 id="fields-title">Fields</h2>
+            <button id="extractButton" class="secondary-button" type="button">Extract Fields</button>
+          </div>
+
+          <div class="field-columns">
+            <form id="expectedFields" class="field-stack" aria-label="Expected COLA fields">
+              <h3>Expected COLA</h3>
+            </form>
+
+            <form id="reviewedFields" class="field-stack" aria-label="Reviewed label fields">
+              <h3>Reviewed Label</h3>
+            </form>
+          </div>
+
+          <div class="action-row">
+            <button id="verifyButton" class="primary-button" type="button">Verify Reviewed Fields</button>
+          </div>
+        </section>
+
+        <section class="panel results-panel" aria-labelledby="results-title">
+          <div class="section-heading">
+            <h2 id="results-title">Results</h2>
+            <p id="statusText" class="status-text">Ready</p>
+          </div>
+
+          <div id="errorBox" class="error-box" hidden></div>
+
+          <div class="table-wrap">
+            <table>
+              <thead>
+                <tr>
+                  <th>Field</th>
+                  <th>Status</th>
+                  <th>Expected</th>
+                  <th>Reviewed</th>
+                </tr>
+              </thead>
+              <tbody id="resultsBody">
+                <tr>
+                  <td colspan="4" class="empty-row">No verification results yet.</td>
+                </tr>
+              </tbody>
+            </table>
+          </div>
+        </section>
+      </main>
+    </div>
+
+    <script src="/static/app.js"></script>
+  </body>
+</html>
