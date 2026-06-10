@@ -128,6 +128,7 @@ The minimal UI is served by FastAPI from `backend/app/static/`. It supports:
 - Dynamic required, conditional, and optional field lists.
 - Reviewed-field verification without re-running extraction.
 - Light/dark mode with local browser preference storage.
+- Feedback link that opens a GitHub issue for tester notes.
 
 ## API
 

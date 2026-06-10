@@ -222,7 +222,8 @@ h3 {
 }
 
 .batch-panel {
-  grid-column: 1 / -1;
+  align-self: start;
+  grid-column: 2;
   padding: 18px;
 }
 
