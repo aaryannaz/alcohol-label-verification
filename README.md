@@ -1,4 +1,4 @@
-# Treasury DOGE Alcohol Label Verification
+# Alcohol Label Verification
 
 **Deployed:** https://alcohol-label-verification-fawn.vercel.app
 
@@ -6,7 +6,7 @@
 
 TTB reviewers currently compare physical label artwork against approved COLA applications by eye. This prototype automates that comparison:
 
-1. The reviewer uploads front and back label artwork images.
+1. The reviewer uploads label artwork as one combined file or as separate front/back files.
 2. Gemini Vision extracts all regulated fields from the artwork into structured JSON.
 3. Extracted fields populate both the Expected COLA and Reviewed Label columns simultaneously.
 4. The reviewer corrects the Expected COLA side to match their COLA application if needed.
@@ -24,6 +24,7 @@ This eliminates manual data entry for the common case where the label artwork cl
 ## Assumptions
 
 - Label artwork is provided as an image (PNG, JPEG, WebP) or PDF up to 10 MB.
+- A single uploaded file may contain all label panels needed for one review item.
 - The reviewer has access to the approved COLA application to verify the expected fields.
 - Government warning text must match the exact statutory wording, in all caps, with the heading "GOVERNMENT WARNING:".
 - Vintage years, beer styles, and origin descriptors (e.g. "Imported") are not treated as fanciful names or class/type designations.
@@ -34,8 +35,7 @@ This eliminates manual data entry for the common case where the label artwork cl
 - **Handwritten or low-quality labels:** Extraction accuracy depends on image quality.
 - **COLA document upload:** Currently the Expected COLA side is pre-filled from the label artwork and corrected manually. A future improvement would extract fields directly from an uploaded COLA PDF.
 - **Single Gemini call:** Both sides are populated from one extraction. A two-document flow (separate COLA upload + label upload) would be more accurate for divergent cases.
-
-AI-powered alcohol label verification prototype for comparing alcohol label artwork against expected COLA/application fields.
+- **Batch import:** Batch mode supports multiple label files in one browser session. CSV/Excel mapping to expected COLA fields is a future enhancement.
 
 ## Project Layout
 
@@ -49,10 +49,12 @@ backend/
     main.py          FastAPI routes
     prompts.py       Label extraction prompt
     schemas.py       Request models and enums
+    static/          Browser UI served by FastAPI
     validation.py    Compliance comparison helpers
   scripts/
     gemini_smoke_test.py
   tests/
+    test_api.py
     test_validation.py
   main_gemini.py     Compatibility entrypoint for older run commands
   requirements.txt
@@ -121,6 +123,7 @@ The minimal UI is served by FastAPI from `backend/app/static/`. It supports:
 
 - Product category and origin toggles.
 - Front/back label uploads.
+- Batch upload queue for multiple one-file review items.
 - Dynamic required, conditional, and optional field lists.
 - Reviewed-field verification without re-running extraction.
 - Light/dark mode with local browser preference storage.

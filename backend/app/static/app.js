@@ -20,6 +20,15 @@ const FILE_LABELS = {
   front: "Front label",
   back: "Back label",
 };
+const PRODUCT_CATEGORY_OPTIONS = [
+  { value: "malt_beverage", label: "Malt beverage" },
+  { value: "distilled_spirits", label: "Distilled spirits" },
+  { value: "wine", label: "Wine" },
+];
+const ORIGIN_OPTIONS = [
+  { value: "domestic", label: "Domestic" },
+  { value: "imported", label: "Imported" },
+];
 
 const state = {
   requirements: { required: [], conditional: [], optional: [] },
@@ -28,6 +37,11 @@ const state = {
   files: {
     front: null,
     back: null,
+  },
+  batch: {
+    items: [],
+    nextId: 1,
+    processing: false,
   },
 };
 
@@ -49,6 +63,11 @@ const modeChooseFile = document.getElementById("modeChooseFile");
 const modeDragDrop = document.getElementById("modeDragDrop");
 const chooseFileInputs = document.getElementById("chooseFileInputs");
 const dropZoneInputs = document.getElementById("dropZoneInputs");
+const batchFiles = document.getElementById("batchFiles");
+const batchDropZone = document.getElementById("batchDropZone");
+const batchBody = document.getElementById("batchBody");
+const processBatchButton = document.getElementById("processBatchButton");
+const clearBatchButton = document.getElementById("clearBatchButton");
 const uploadInputs = Array.from(document.querySelectorAll("[data-file-slot]"));
 const dropZones = Array.from(document.querySelectorAll("[data-drop-slot]"));
 
@@ -265,6 +284,17 @@ function setStatus(message) {
   statusText.textContent = message;
 }
 
+function renderEmptyResults(message) {
+  const row = document.createElement("tr");
+  const cell = document.createElement("td");
+  resultsBody.innerHTML = "";
+  cell.colSpan = 4;
+  cell.className = "empty-row";
+  cell.textContent = message || "No verification results yet.";
+  row.appendChild(cell);
+  resultsBody.appendChild(row);
+}
+
 function formValues(container) {
   const values = {};
   for (const field of FIELD_CONFIG) {
@@ -410,6 +440,315 @@ async function verifyReviewedFields() {
   }
 }
 
+function batchStatusClass(status) {
+  if (status === "Needs review") return "status-neutral";
+  if (status === "Processing") return "status-processing";
+  if (status === "Error") return "status-fail";
+  return "status-ready";
+}
+
+function batchStatusText(item) {
+  if (item.status === "Needs review") return "Needs review";
+  return item.status;
+}
+
+function canProcessBatchItem(item) {
+  return Boolean(item.file) && !item.clientError && item.status !== "Needs review" && item.status !== "Processing";
+}
+
+function createBatchSelect(item, key, options) {
+  const select = document.createElement("select");
+  select.dataset[key === "productCategory" ? "batchCategory" : "batchOrigin"] = String(item.id);
+  select.disabled = state.batch.processing || item.status === "Processing";
+
+  for (const option of options) {
+    const optionElement = document.createElement("option");
+    optionElement.value = option.value;
+    optionElement.textContent = option.label;
+    optionElement.selected = item[key] === option.value;
+    select.appendChild(optionElement);
+  }
+
+  return select;
+}
+
+function renderBatchQueue() {
+  batchBody.innerHTML = "";
+
+  if (!state.batch.items.length) {
+    const row = document.createElement("tr");
+    const cell = document.createElement("td");
+    cell.colSpan = 6;
+    cell.className = "empty-row";
+    cell.textContent = "No batch files added.";
+    row.appendChild(cell);
+    batchBody.appendChild(row);
+    updateBatchControls();
+    return;
+  }
+
+  for (const item of state.batch.items) {
+    const row = document.createElement("tr");
+
+    const caseCell = document.createElement("td");
+    caseCell.textContent = "#" + item.id;
+
+    const fileCell = document.createElement("td");
+    const fileName = document.createElement("span");
+    const fileMeta = document.createElement("span");
+    fileName.className = "batch-file-name";
+    fileName.textContent = item.file.name;
+    fileMeta.className = "batch-file-meta";
+    fileMeta.textContent = formatBytes(item.file.size);
+    fileCell.appendChild(fileName);
+    fileCell.appendChild(fileMeta);
+    if (item.message) {
+      const message = document.createElement("span");
+      message.className = "batch-row-message" + (item.status === "Error" ? " error" : "");
+      message.textContent = item.message;
+      fileCell.appendChild(message);
+    }
+
+    const categoryCell = document.createElement("td");
+    categoryCell.appendChild(createBatchSelect(item, "productCategory", PRODUCT_CATEGORY_OPTIONS));
+
+    const originCell = document.createElement("td");
+    originCell.appendChild(createBatchSelect(item, "originType", ORIGIN_OPTIONS));
+
+    const statusCell = document.createElement("td");
+    const badge = document.createElement("span");
+    badge.className = "status-badge " + batchStatusClass(item.status);
+    badge.textContent = batchStatusText(item);
+    statusCell.appendChild(badge);
+
+    const actionCell = document.createElement("td");
+    const actions = document.createElement("div");
+    actions.className = "batch-row-actions";
+
+    if (item.status === "Needs review") {
+      const reviewButton = document.createElement("button");
+      reviewButton.className = "small-button";
+      reviewButton.dataset.reviewBatch = String(item.id);
+      reviewButton.disabled = state.batch.processing;
+      reviewButton.type = "button";
+      reviewButton.textContent = "Review";
+      actions.appendChild(reviewButton);
+    }
+
+    if (item.status === "Error" && !item.clientError) {
+      const retryButton = document.createElement("button");
+      retryButton.className = "small-button";
+      retryButton.dataset.retryBatch = String(item.id);
+      retryButton.disabled = state.batch.processing;
+      retryButton.type = "button";
+      retryButton.textContent = "Retry";
+      actions.appendChild(retryButton);
+    }
+
+    const removeButton = document.createElement("button");
+    removeButton.className = "small-button danger";
+    removeButton.dataset.removeBatch = String(item.id);
+    removeButton.disabled = state.batch.processing;
+    removeButton.type = "button";
+    removeButton.textContent = "Remove";
+    actions.appendChild(removeButton);
+
+    actionCell.appendChild(actions);
+
+    row.appendChild(caseCell);
+    row.appendChild(fileCell);
+    row.appendChild(categoryCell);
+    row.appendChild(originCell);
+    row.appendChild(statusCell);
+    row.appendChild(actionCell);
+    batchBody.appendChild(row);
+  }
+
+  updateBatchControls();
+}
+
+function updateBatchControls() {
+  const hasProcessableItems = state.batch.items.some(canProcessBatchItem);
+  processBatchButton.disabled = state.batch.processing || !hasProcessableItems;
+  clearBatchButton.disabled = state.batch.processing || !state.batch.items.length;
+}
+
+function addBatchFiles(files) {
+  const incomingFiles = Array.from(files || []);
+  if (!incomingFiles.length) return;
+
+  clearError();
+  let invalidCount = 0;
+
+  for (const file of incomingFiles) {
+    const clientError = validateClientFile(file);
+    if (clientError) invalidCount += 1;
+
+    state.batch.items.push({
+      id: state.batch.nextId,
+      file,
+      productCategory: productCategory.value,
+      originType: originType.value,
+      status: clientError ? "Error" : "Ready",
+      message: clientError || "Ready to process",
+      clientError,
+      extracted: null,
+    });
+    state.batch.nextId += 1;
+  }
+
+  renderBatchQueue();
+  setStatus(incomingFiles.length === 1 ? "Batch file added" : incomingFiles.length + " batch files added");
+
+  if (invalidCount) {
+    showError(invalidCount + " batch file" + (invalidCount === 1 ? " needs" : "s need") + " attention before processing.");
+  }
+}
+
+async function processBatchItem(item) {
+  const clientError = validateClientFile(item.file);
+  if (clientError) {
+    item.clientError = clientError;
+    item.status = "Error";
+    item.message = clientError;
+    item.extracted = null;
+    renderBatchQueue();
+    return;
+  }
+
+  item.clientError = "";
+  item.status = "Processing";
+  item.message = "Extracting fields";
+  item.extracted = null;
+  renderBatchQueue();
+
+  const formData = new FormData();
+  formData.append("product_category", item.productCategory);
+  formData.append("origin_type", item.originType);
+  formData.append("front_image", item.file);
+
+  try {
+    const response = await fetch("/extract", { method: "POST", body: formData });
+    const body = await parseApiResponse(response);
+    item.extracted = body.extracted || {};
+    item.status = "Needs review";
+    item.message = "Open in editor to verify";
+  } catch (error) {
+    item.status = "Error";
+    item.message = error.message;
+  }
+
+  renderBatchQueue();
+}
+
+async function processBatchQueue() {
+  clearError();
+  const queue = state.batch.items.filter(canProcessBatchItem);
+
+  if (!queue.length) {
+    showError("Add valid batch files before processing.");
+    setStatus("Batch needs files");
+    return;
+  }
+
+  state.batch.processing = true;
+  renderBatchQueue();
+  setStatus("Processing batch");
+
+  for (const item of queue) {
+    await processBatchItem(item);
+  }
+
+  state.batch.processing = false;
+  renderBatchQueue();
+
+  const readyCount = state.batch.items.filter((item) => item.status === "Needs review").length;
+  const errorCount = state.batch.items.filter((item) => item.status === "Error").length;
+  setStatus("Batch complete: " + readyCount + " ready to review" + (errorCount ? ", " + errorCount + " need attention" : ""));
+}
+
+async function retryBatchItem(id) {
+  const item = state.batch.items.find((candidate) => candidate.id === id);
+  if (!item || state.batch.processing) return;
+
+  state.batch.processing = true;
+  clearError();
+  setStatus("Retrying batch item");
+  await processBatchItem(item);
+  state.batch.processing = false;
+  renderBatchQueue();
+  setStatus(item.status === "Needs review" ? "Batch item ready to review" : "Batch item needs attention");
+}
+
+async function reviewBatchItem(id) {
+  const item = state.batch.items.find((candidate) => candidate.id === id);
+  if (!item || item.status !== "Needs review" || !item.extracted) {
+    showError("Process this batch item before reviewing it.");
+    setStatus("Batch item needs extraction");
+    return;
+  }
+
+  clearError();
+  productCategory.value = item.productCategory;
+  originType.value = item.originType;
+  state.extracted = item.extracted;
+  state.files.front = item.file;
+  state.files.back = null;
+  syncInputFiles("front", item.file);
+  syncInputFiles("back", null);
+  renderFileState("front");
+  renderFileState("back");
+  setUploadMode("choose");
+  renderEmptyResults("No verification results for this batch item yet.");
+  await refreshRequirements();
+  setReviewedValues(item.extracted);
+  setExpectedValues(item.extracted);
+  setStatus("Loaded batch item #" + item.id + " — review Expected COLA fields and verify");
+  document.querySelector("#fields-title").scrollIntoView({ block: "start" });
+}
+
+function removeBatchItem(id) {
+  if (state.batch.processing) return;
+  state.batch.items = state.batch.items.filter((item) => item.id !== id);
+  renderBatchQueue();
+  setStatus(state.batch.items.length ? "Batch item removed" : "Batch cleared");
+}
+
+function clearBatchQueue() {
+  if (state.batch.processing) return;
+  state.batch.items = [];
+  renderBatchQueue();
+  clearError();
+  setStatus("Batch cleared");
+}
+
+function initBatchDropZone(zone) {
+  zone.addEventListener("dragenter", function(event) {
+    if (!draggedFiles(event)) return;
+    event.preventDefault();
+    zone.classList.add("drag-over");
+  });
+
+  zone.addEventListener("dragover", function(event) {
+    if (!draggedFiles(event)) return;
+    event.preventDefault();
+    zone.classList.add("drag-over");
+  });
+
+  zone.addEventListener("dragleave", function(event) {
+    if (zone.contains(event.relatedTarget)) return;
+    zone.classList.remove("drag-over");
+  });
+
+  zone.addEventListener("drop", function(event) {
+    if (!draggedFiles(event)) return;
+    event.preventDefault();
+    event.stopPropagation();
+    zone.classList.remove("drag-over");
+    addBatchFiles(event.dataTransfer.files);
+  });
+}
+
 function setUploadMode(mode) {
   if (mode === "choose") {
     chooseFileInputs.hidden = false;
@@ -456,7 +795,7 @@ function initDropZone(zone) {
     const files = Array.from(event.dataTransfer.files || []);
 
     if (files.length > 1) {
-      showError("Drop one file per label slot. Batch uploads are coming next.");
+      showError("Drop one file per label slot. Use Batch for multiple files.");
       setStatus("File selection needs attention");
       return;
     }
@@ -480,6 +819,8 @@ for (const zone of dropZones) {
   initDropZone(zone);
 }
 
+initBatchDropZone(batchDropZone);
+
 for (const button of document.querySelectorAll("[data-remove-file]")) {
   button.addEventListener("click", function() {
     clearSelectedFile(button.dataset.removeFile);
@@ -489,6 +830,7 @@ for (const button of document.querySelectorAll("[data-remove-file]")) {
 setUploadMode("choose");
 renderFileState("front");
 renderFileState("back");
+renderBatchQueue();
 
 document.addEventListener("dragover", function(event) {
   if (draggedFiles(event)) event.preventDefault();
@@ -497,8 +839,8 @@ document.addEventListener("dragover", function(event) {
 document.addEventListener("drop", function(event) {
   if (!draggedFiles(event)) return;
   event.preventDefault();
-  if (!event.target.closest("[data-drop-slot]")) {
-    showError("Drop files into the Front label or Back label upload area.");
+  if (!event.target.closest("[data-drop-slot]") && !event.target.closest("[data-batch-drop-zone]")) {
+    showError("Drop files into a label slot or the Batch area.");
     setStatus("File selection needs attention");
   }
 });
@@ -510,6 +852,39 @@ themeToggle.addEventListener("change", function() {
 
 modeChooseFile.addEventListener("click", function() { setUploadMode("choose"); });
 modeDragDrop.addEventListener("click", function() { setUploadMode("drop"); });
+
+batchFiles.addEventListener("change", function() {
+  addBatchFiles(batchFiles.files);
+  batchFiles.value = "";
+});
+
+processBatchButton.addEventListener("click", processBatchQueue);
+clearBatchButton.addEventListener("click", clearBatchQueue);
+
+batchBody.addEventListener("change", function(event) {
+  const categoryControl = event.target.closest("[data-batch-category]");
+  const originControl = event.target.closest("[data-batch-origin]");
+
+  if (categoryControl) {
+    const item = state.batch.items.find((candidate) => candidate.id === Number(categoryControl.dataset.batchCategory));
+    if (item) item.productCategory = categoryControl.value;
+  }
+
+  if (originControl) {
+    const item = state.batch.items.find((candidate) => candidate.id === Number(originControl.dataset.batchOrigin));
+    if (item) item.originType = originControl.value;
+  }
+});
+
+batchBody.addEventListener("click", function(event) {
+  const reviewButton = event.target.closest("[data-review-batch]");
+  const retryButton = event.target.closest("[data-retry-batch]");
+  const removeButton = event.target.closest("[data-remove-batch]");
+
+  if (reviewButton) reviewBatchItem(Number(reviewButton.dataset.reviewBatch));
+  if (retryButton) retryBatchItem(Number(retryButton.dataset.retryBatch));
+  if (removeButton) removeBatchItem(Number(removeButton.dataset.removeBatch));
+});
 
 productCategory.addEventListener("change", refreshRequirements);
 originType.addEventListener("change", refreshRequirements);

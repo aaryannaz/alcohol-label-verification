@@ -221,6 +221,11 @@ h3 {
   padding: 18px;
 }
 
+.batch-panel {
+  grid-column: 1 / -1;
+  padding: 18px;
+}
+
 .results-panel {
   box-shadow: none;
 }
@@ -469,13 +474,24 @@ th {
   background: var(--blue-soft);
 }
 
+.status-ready {
+  color: var(--muted);
+  background: var(--subtle-bg);
+}
+
+.status-processing {
+  color: var(--amber);
+  background: var(--amber-soft);
+}
+
 @media (max-width: 980px) {
   .workspace {
     grid-template-columns: 1fr;
   }
 
   .fields-panel,
-  .results-panel {
+  .results-panel,
+  .batch-panel {
     grid-column: 1;
   }
 }
@@ -684,4 +700,107 @@ th {
 
 .drop-zone .file-summary {
   background: var(--control-bg);
+}
+
+.batch-heading {
+  align-items: flex-start;
+}
+
+.batch-note {
+  margin: 7px 0 0;
+  color: var(--muted);
+  font-size: 13px;
+  font-weight: 650;
+}
+
+.batch-actions {
+  display: flex;
+  align-items: center;
+  justify-content: flex-end;
+  gap: 8px;
+  flex-wrap: wrap;
+}
+
+.batch-drop-zone {
+  display: grid;
+  gap: 8px;
+  min-height: 92px;
+  border: 2px dashed var(--line);
+  border-radius: 6px;
+  padding: 14px;
+  background: var(--subtle-bg);
+  transition: border-color 140ms ease, background 140ms ease;
+}
+
+.batch-drop-zone.drag-over {
+  border-color: var(--green);
+  background: var(--green-soft);
+}
+
+.batch-table-wrap {
+  margin-top: 14px;
+}
+
+.batch-table {
+  min-width: 880px;
+}
+
+.batch-file-name {
+  display: block;
+  max-width: 280px;
+  overflow: hidden;
+  color: var(--text);
+  font-weight: 700;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+}
+
+.batch-file-meta,
+.batch-row-message {
+  display: block;
+  margin-top: 4px;
+  color: var(--muted);
+  font-size: 12px;
+  font-weight: 650;
+}
+
+.batch-row-message.error {
+  color: var(--red);
+}
+
+.batch-table select {
+  min-width: 150px;
+}
+
+.batch-row-actions {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  flex-wrap: wrap;
+}
+
+.small-button {
+  min-height: 32px;
+  border-color: var(--line);
+  padding: 0 10px;
+  background: var(--surface);
+  color: var(--text);
+  font-size: 12px;
+  font-weight: 750;
+}
+
+.small-button.danger {
+  color: var(--red);
+}
+
+@media (max-width: 720px) {
+  .batch-actions {
+    justify-content: stretch;
+    width: 100%;
+  }
+
+  .batch-actions .file-select-button,
+  .batch-actions button {
+    width: 100%;
+  }
 }

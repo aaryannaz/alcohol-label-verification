@@ -33,7 +33,7 @@
           <h2 id="workflow-title">Workflow</h2>
           <ol class="how-to-list">
             <li>Select the product category and origin.</li>
-            <li>Upload the front label and optional back label.</li>
+            <li>Upload one label file, or upload separate front and back label files.</li>
             <li>Click Extract Fields to populate the Expected COLA and Reviewed Label fields.</li>
             <li>Correct the Expected COLA fields to match the approved application.</li>
             <li>Click Verify Reviewed Fields and review the results.</li>
@@ -45,7 +45,18 @@
           <ul class="how-to-list">
             <li>Accepted files: PDF, PNG, JPEG, and WebP.</li>
             <li>Maximum file size: 10 MB per file.</li>
+            <li>A single PDF or image can contain all label panels for one review item.</li>
             <li>Use Choose File for normal file selection, or Drag & Drop when dragging files from your desktop.</li>
+          </ul>
+        </section>
+
+        <section class="panel info-panel" aria-labelledby="batch-title">
+          <h2 id="batch-title">Batch</h2>
+          <ul class="how-to-list">
+            <li>Batch accepts multiple PDF or image files at once.</li>
+            <li>Each batch file is treated as one review item.</li>
+            <li>Open a completed batch item in the editor to review and verify it.</li>
+            <li>CSV or Excel import is a future enhancement.</li>
           </ul>
         </section>
 
@@ -54,7 +65,6 @@
           <ul class="how-to-list">
             <li>Government warning text is checked for exact wording, punctuation, and capitalization.</li>
             <li>Bold type cannot be verified because extraction returns text, not typography metadata.</li>
-            <li>Batch upload support is planned next.</li>
           </ul>
         </section>
       </main>
