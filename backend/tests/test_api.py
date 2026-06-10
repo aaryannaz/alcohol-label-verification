@@ -44,6 +44,8 @@ class ApiTests(unittest.TestCase):
         self.assertIn("themeToggle", response.text)
         self.assertIn("data-file-slot=\"front\"", response.text)
         self.assertIn("data-drop-slot=\"front\"", response.text)
+        self.assertIn("modeBatch", response.text)
+        self.assertIn("id=\"batchPanel\"", response.text)
         self.assertIn("batchDropZone", response.text)
         self.assertIn("processBatchButton", response.text)
         self.assertIn("/how-to", response.text)
@@ -57,6 +59,7 @@ class ApiTests(unittest.TestCase):
         self.assertIn("text/html", response.headers["content-type"])
         self.assertIn("How To", response.text)
         self.assertIn("Each batch file is treated as one review item.", response.text)
+        self.assertIn("Use Batch mode when uploading multiple review items at once.", response.text)
         self.assertIn("CSV or Excel import is a future enhancement.", response.text)
         self.assertNotIn(">Swagger<", response.text)
 
@@ -66,6 +69,7 @@ class ApiTests(unittest.TestCase):
         self.assertEqual(response.status_code, 200)
         self.assertIn("javascript", response.headers["content-type"])
         self.assertIn("field-requirements", response.text)
+        self.assertIn("setUploadMode(\"batch\")", response.text)
         self.assertIn("Use Batch for multiple files", response.text)
         self.assertIn("processBatchQueue", response.text)
 

@@ -548,9 +548,11 @@ th {
 
 .mode-btn {
   flex: 1;
+  min-width: 0;
   min-height: 34px;
   border: none;
   border-radius: 0;
+  padding: 0 8px;
   background: var(--subtle-bg);
   color: var(--muted);
   font-size: 13px;
@@ -559,7 +561,7 @@ th {
   transition: background 140ms ease, color 140ms ease;
 }
 
-.mode-btn:first-child {
+.mode-btn:not(:last-child) {
   border-right: 1px solid var(--line);
 }
 

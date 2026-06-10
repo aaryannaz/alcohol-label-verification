@@ -61,8 +61,10 @@ const errorBox = document.querySelector("#errorBox");
 const resultsBody = document.querySelector("#resultsBody");
 const modeChooseFile = document.getElementById("modeChooseFile");
 const modeDragDrop = document.getElementById("modeDragDrop");
+const modeBatch = document.getElementById("modeBatch");
 const chooseFileInputs = document.getElementById("chooseFileInputs");
 const dropZoneInputs = document.getElementById("dropZoneInputs");
+const batchPanel = document.getElementById("batchPanel");
 const batchFiles = document.getElementById("batchFiles");
 const batchDropZone = document.getElementById("batchDropZone");
 const batchBody = document.getElementById("batchBody");
@@ -753,17 +755,33 @@ function setUploadMode(mode) {
   if (mode === "choose") {
     chooseFileInputs.hidden = false;
     dropZoneInputs.hidden = true;
+    batchPanel.hidden = true;
     modeChooseFile.classList.add("active");
     modeDragDrop.classList.remove("active");
+    modeBatch.classList.remove("active");
     modeChooseFile.setAttribute("aria-pressed", "true");
+    modeDragDrop.setAttribute("aria-pressed", "false");
+    modeBatch.setAttribute("aria-pressed", "false");
+  } else if (mode === "batch") {
+    chooseFileInputs.hidden = true;
+    dropZoneInputs.hidden = true;
+    batchPanel.hidden = false;
+    modeBatch.classList.add("active");
+    modeChooseFile.classList.remove("active");
+    modeDragDrop.classList.remove("active");
+    modeBatch.setAttribute("aria-pressed", "true");
+    modeChooseFile.setAttribute("aria-pressed", "false");
     modeDragDrop.setAttribute("aria-pressed", "false");
   } else {
     chooseFileInputs.hidden = true;
     dropZoneInputs.hidden = false;
+    batchPanel.hidden = true;
     modeDragDrop.classList.add("active");
     modeChooseFile.classList.remove("active");
+    modeBatch.classList.remove("active");
     modeDragDrop.setAttribute("aria-pressed", "true");
     modeChooseFile.setAttribute("aria-pressed", "false");
+    modeBatch.setAttribute("aria-pressed", "false");
   }
 }
 
@@ -852,6 +870,7 @@ themeToggle.addEventListener("change", function() {
 
 modeChooseFile.addEventListener("click", function() { setUploadMode("choose"); });
 modeDragDrop.addEventListener("click", function() { setUploadMode("drop"); });
+modeBatch.addEventListener("click", function() { setUploadMode("batch"); });
 
 batchFiles.addEventListener("change", function() {
   addBatchFiles(batchFiles.files);

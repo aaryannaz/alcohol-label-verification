@@ -123,6 +123,7 @@ The minimal UI is served by FastAPI from `backend/app/static/`. It supports:
 
 - Product category and origin toggles.
 - Front/back label uploads.
+- Upload mode selector for Choose File, Drag & Drop, and Batch workflows.
 - Batch upload queue for multiple one-file review items.
 - Dynamic required, conditional, and optional field lists.
 - Reviewed-field verification without re-running extraction.

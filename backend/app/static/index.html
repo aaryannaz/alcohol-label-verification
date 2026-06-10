@@ -62,6 +62,7 @@
               <div class="upload-mode-buttons">
                 <button type="button" id="modeChooseFile" class="mode-btn active">Choose File</button>
                 <button type="button" id="modeDragDrop" class="mode-btn">Drag &amp; Drop</button>
+                <button type="button" id="modeBatch" class="mode-btn">Batch</button>
               </div>
             </div>
 
@@ -118,6 +119,46 @@
           <div id="requirementChips" class="chips" aria-live="polite"></div>
         </section>
 
+        <section id="batchPanel" class="panel batch-panel" aria-labelledby="batch-title" hidden>
+          <div class="section-heading batch-heading">
+            <div>
+              <h2 id="batch-title">Batch</h2>
+              <p class="batch-note">Each file is treated as one review item.</p>
+            </div>
+            <div class="batch-actions">
+              <label class="file-select-button" for="batchFiles">Select files</label>
+              <input id="batchFiles" class="native-file-input" type="file" multiple accept=".pdf,.png,.jpg,.jpeg,.webp,application/pdf,image/png,image/jpeg,image/webp" />
+              <button id="processBatchButton" class="secondary-button" type="button">Process Batch</button>
+              <button id="clearBatchButton" class="secondary-button" type="button">Clear</button>
+            </div>
+          </div>
+
+          <div id="batchDropZone" class="batch-drop-zone" data-batch-drop-zone aria-describedby="batchDropHint">
+            <span class="drop-label">Batch files</span>
+            <span class="drop-hint" id="batchDropHint">Drop multiple files here.</span>
+          </div>
+
+          <div class="table-wrap batch-table-wrap">
+            <table class="batch-table">
+              <thead>
+                <tr>
+                  <th>Case</th>
+                  <th>File</th>
+                  <th>Category</th>
+                  <th>Origin</th>
+                  <th>Status</th>
+                  <th>Action</th>
+                </tr>
+              </thead>
+              <tbody id="batchBody">
+                <tr>
+                  <td colspan="6" class="empty-row">No batch files added.</td>
+                </tr>
+              </tbody>
+            </table>
+          </div>
+        </section>
+
         <section class="panel fields-panel" aria-labelledby="fields-title">
           <div class="section-heading">
             <h2 id="fields-title">Fields</h2>
@@ -160,46 +201,6 @@
               <tbody id="resultsBody">
                 <tr>
                   <td colspan="4" class="empty-row">No verification results yet.</td>
-                </tr>
-              </tbody>
-            </table>
-          </div>
-        </section>
-
-        <section class="panel batch-panel" aria-labelledby="batch-title">
-          <div class="section-heading batch-heading">
-            <div>
-              <h2 id="batch-title">Batch</h2>
-              <p class="batch-note">Each file is treated as one review item.</p>
-            </div>
-            <div class="batch-actions">
-              <label class="file-select-button" for="batchFiles">Select files</label>
-              <input id="batchFiles" class="native-file-input" type="file" multiple accept=".pdf,.png,.jpg,.jpeg,.webp,application/pdf,image/png,image/jpeg,image/webp" />
-              <button id="processBatchButton" class="secondary-button" type="button">Process Batch</button>
-              <button id="clearBatchButton" class="secondary-button" type="button">Clear</button>
-            </div>
-          </div>
-
-          <div id="batchDropZone" class="batch-drop-zone" data-batch-drop-zone aria-describedby="batchDropHint">
-            <span class="drop-label">Batch files</span>
-            <span class="drop-hint" id="batchDropHint">Drop multiple files here.</span>
-          </div>
-
-          <div class="table-wrap batch-table-wrap">
-            <table class="batch-table">
-              <thead>
-                <tr>
-                  <th>Case</th>
-                  <th>File</th>
-                  <th>Category</th>
-                  <th>Origin</th>
-                  <th>Status</th>
-                  <th>Action</th>
-                </tr>
-              </thead>
-              <tbody id="batchBody">
-                <tr>
-                  <td colspan="6" class="empty-row">No batch files added.</td>
                 </tr>
               </tbody>
             </table>
