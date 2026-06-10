@@ -323,6 +323,43 @@ def check_government_warning(actual):
 
 
 
+def parse_abv(value):
+    if not value:
+        return None
+
+    value = value.replace("%", "").strip()
+
+    try:
+        return float(value)
+    except ValueError:
+        return None
+
+
+def get_wine_path(origin_type: str, alcohol_content: str):
+    abv = parse_abv(alcohol_content)
+
+    if abv is None:
+        return "wine_abv_unknown"
+
+    if origin_type == "domestic" and abv < 7:
+        return "domestic_wine_under_7"
+
+    if origin_type == "imported" and abv < 7:
+        return "imported_wine_under_7"
+
+    if origin_type == "domestic" and abv >= 7:
+        return "domestic_wine_7_or_more"
+
+    if origin_type == "imported" and abv >= 7:
+        return "imported_wine_7_or_more"
+
+    return "wine_path_unknown"
+
+
+
+
+
+
 def validate_fields(expected: dict, reviewed: dict) -> dict:
     return {
         "brand_name": check_match(expected.get("brand_name"), reviewed.get("brand_name")),
@@ -378,6 +415,60 @@ def validate_fields(expected: dict, reviewed: dict) -> dict:
 
 
 
+def check_required(expected, reviewed):
+    if not expected or not expected.strip():
+        return "EXPECTED VALUE MISSING"
+
+    if not reviewed or not reviewed.strip():
+        return "MISSING"
+
+    return check_match(expected, reviewed)
+
+
+def validate_wine(expected: dict, reviewed: dict, origin_type: str) -> dict:
+    validation = {
+        "brand_name": check_required(expected.get("brand_name"), reviewed.get("brand_name")),
+        "class_type": check_required(expected.get("class_type"), reviewed.get("class_type")),
+        "alcohol_content": check_required(expected.get("alcohol_content"), reviewed.get("alcohol_content")),
+        "net_contents": check_required(expected.get("net_contents"), reviewed.get("net_contents")),
+        "government_warning": check_government_warning(reviewed.get("government_warning")),
+        "sulfite_declaration": (
+            check_match(expected.get("sulfite_declaration"), reviewed.get("sulfite_declaration"))
+            if expected.get("sulfite_declaration", "").strip()
+            else "NOT REQUIRED"
+        ),
+        "appellation_of_origin": (
+            check_match(expected.get("appellation_of_origin"), reviewed.get("appellation_of_origin"))
+            if expected.get("appellation_of_origin", "").strip()
+            else "NOT REQUIRED"
+        ),
+        "fanciful_name": (
+            check_match(expected.get("fanciful_name"), reviewed.get("fanciful_name"))
+            if expected.get("fanciful_name", "").strip()
+            else "NOT REQUIRED"
+        ),
+    }
+
+    if origin_type == "domestic":
+        validation["domestic_name_address"] = check_required(
+            expected.get("domestic_name_address"),
+            reviewed.get("domestic_name_address")
+        )
+        validation["importer_name_address"] = "NOT REQUIRED"
+        validation["country_of_origin"] = "NOT REQUIRED"
+
+    if origin_type == "imported":
+        validation["importer_name_address"] = check_required(
+            expected.get("importer_name_address"),
+            reviewed.get("importer_name_address")
+        )
+        validation["country_of_origin"] = check_required(
+            expected.get("country_of_origin"),
+            reviewed.get("country_of_origin")
+        )
+        validation["domestic_name_address"] = "NOT REQUIRED"
+
+    return validation
 
 
 
@@ -563,11 +654,22 @@ async def verify(
     "fanciful_name": expected_fanciful_name,
     }
 
-    validation = validate_fields(expected, extracted)
+    if category == "wine":
+        validation = validate_wine(expected, extracted, origin)
+    else:
+        validation = validate_fields(expected, extracted)
+
+    wine_path = None
+    if category == "wine":
+        wine_path = get_wine_path(
+            origin,
+            extracted.get("alcohol_content")
+        )
 
     return {
     "product_category": category,
     "origin_type": origin,
+    "wine_path": wine_path,
     "extracted": extracted,
     "validation": validation,
 }
@@ -580,11 +682,22 @@ async def verify_reviewed(request: VerifyReviewedRequest):
     expected = request.expected.model_dump()
     reviewed = request.reviewed.model_dump()
 
-    validation = validate_fields(expected, reviewed)
+    if request.product_category.value == "wine":
+        validation = validate_wine(expected, reviewed, request.origin_type.value)
+    else:
+        validation = validate_fields(expected, reviewed)
+
+    wine_path = None
+    if request.product_category.value == "wine":
+        wine_path = get_wine_path(
+            request.origin_type.value,
+            reviewed.get("alcohol_content")
+        )
 
     return {
         "product_category": request.product_category.value,
         "origin_type": request.origin_type.value,
+        "wine_path": wine_path,
         "expected": expected,
         "reviewed": reviewed,
         "validation": validation,
