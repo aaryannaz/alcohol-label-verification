@@ -103,7 +103,7 @@ def check_government_warning(actual):
 
     expected_warning = normalize_warning_spacing(EXPECTED_WARNING)
 
-    if actual_warning.lower() == expected_warning.lower():
+    if actual_warning == expected_warning:
         return "PASS"
 
     if EXPECTED_WARNING_HEADING not in actual_warning:
