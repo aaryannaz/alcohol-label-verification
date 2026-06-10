@@ -1,5 +1,40 @@
 # Treasury DOGE Alcohol Label Verification
 
+**Deployed:** https://alcohol-label-verification-fawn.vercel.app
+
+## Approach
+
+TTB reviewers currently compare physical label artwork against approved COLA applications by eye. This prototype automates that comparison:
+
+1. The reviewer uploads front and back label artwork images.
+2. Gemini Vision extracts all regulated fields from the artwork into structured JSON.
+3. Extracted fields populate both the Expected COLA and Reviewed Label columns simultaneously.
+4. The reviewer corrects the Expected COLA side to match their COLA application if needed.
+5. Clicking Verify compares both sides field-by-field and flags mismatches.
+
+This eliminates manual data entry for the common case where the label artwork closely matches the COLA, reducing reviewer effort to correction and confirmation rather than transcription.
+
+## Tools
+
+- **FastAPI** — API and static file serving
+- **Gemini Vision (gemini-2.0-flash)** — label field extraction from images
+- **Vercel** — deployment
+- **Python 3.12**
+
+## Assumptions
+
+- Label artwork is provided as an image (PNG, JPEG, WebP) or PDF up to 10 MB.
+- The reviewer has access to the approved COLA application to verify the expected fields.
+- Government warning text must match the exact statutory wording, in all caps, with the heading "GOVERNMENT WARNING:".
+- Vintage years, beer styles, and origin descriptors (e.g. "Imported") are not treated as fanciful names or class/type designations.
+
+## Limitations
+
+- **Bold type detection:** The government warning heading must appear in all caps but bold formatting cannot be verified because Gemini returns plain text without typography metadata.
+- **Handwritten or low-quality labels:** Extraction accuracy depends on image quality.
+- **COLA document upload:** Currently the Expected COLA side is pre-filled from the label artwork and corrected manually. A future improvement would extract fields directly from an uploaded COLA PDF.
+- **Single Gemini call:** Both sides are populated from one extraction. A two-document flow (separate COLA upload + label upload) would be more accurate for divergent cases.
+
 AI-powered alcohol label verification prototype for comparing alcohol label artwork against expected COLA/application fields.
 
 ## Project Layout
