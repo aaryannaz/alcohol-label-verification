@@ -237,7 +237,9 @@ async function refreshRequirements() {
 
 async function extractFields() {
   clearError();
-  if (!frontImage.files.length) {
+  const isDropMode = dropZoneInputs && dropZoneInputs.style.display !== "none";
+  const activeFront = isDropMode ? document.getElementById("frontImageDrop") : frontImage;
+  if (!activeFront.files.length) {
     showError("Front label is required.");
     return;
   }

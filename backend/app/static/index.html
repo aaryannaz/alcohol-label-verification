@@ -58,15 +58,37 @@
               </select>
             </label>
 
-            <label>
-              Front label
-              <input id="frontImage" type="file" accept=".pdf,.png,.jpg,.jpeg,.webp,application/pdf,image/png,image/jpeg,image/webp" />
-            </label>
+            <div class="upload-mode-toggle">
+              <span class="upload-mode-label">Upload mode</span>
+              <div class="upload-mode-buttons">
+                <button type="button" id="modeChooseFile" class="mode-btn active">Choose File</button>
+                <button type="button" id="modeDragDrop" class="mode-btn">Drag &amp; Drop</button>
+              </div>
+            </div>
 
-            <label>
-              Back label
-              <input id="backImage" type="file" accept=".pdf,.png,.jpg,.jpeg,.webp,application/pdf,image/png,image/jpeg,image/webp" />
-            </label>
+            <div id="chooseFileInputs">
+              <label>
+                Front label
+                <input id="frontImage" type="file" accept=".pdf,.png,.jpg,.jpeg,.webp,application/pdf,image/png,image/jpeg,image/webp" />
+              </label>
+              <label style="margin-top:14px;display:grid;gap:7px;">
+                Back label
+                <input id="backImage" type="file" accept=".pdf,.png,.jpg,.jpeg,.webp,application/pdf,image/png,image/jpeg,image/webp" />
+              </label>
+            </div>
+
+            <div id="dropZoneInputs" style="display:none;">
+              <div class="drop-zone" id="frontDropZone">
+                <span class="drop-label">Front label</span>
+                <span class="drop-hint" id="frontDropHint">Drag and drop or <label class="drop-browse" for="frontImageDrop">browse</label></span>
+                <input id="frontImageDrop" type="file" accept=".pdf,.png,.jpg,.jpeg,.webp,application/pdf,image/png,image/jpeg,image/webp" />
+              </div>
+              <div class="drop-zone" id="backDropZone" style="margin-top:14px;">
+                <span class="drop-label">Back label</span>
+                <span class="drop-hint" id="backDropHint">Drag and drop or <label class="drop-browse" for="backImageDrop">browse</label></span>
+                <input id="backImageDrop" type="file" accept=".pdf,.png,.jpg,.jpeg,.webp,application/pdf,image/png,image/jpeg,image/webp" />
+              </div>
+            </div>
           </div>
 
           <div id="requirementChips" class="chips" aria-live="polite"></div>
