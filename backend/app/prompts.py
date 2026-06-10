@@ -51,6 +51,11 @@ Brand Name: Captain John's
 Distinctive/Fanciful Name: Spiced Rum
 Class/Type/Other Designation: Rum with Natural Flavors Added
 
+For class_type, do not include the word "Imported" or "Domestic" as part of the class/type designation. These describe origin, not class/type.
+Examples:
+Imported Beer -> Beer
+Imported Ale -> Ale
+
 For class_type, extract only text that visibly appears on the label.
 Do not infer or create a class/type from nearby words.
 Do not turn a fanciful name like "Stormchaser White" into "White Wine."
