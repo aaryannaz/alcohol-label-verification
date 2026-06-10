@@ -34,6 +34,10 @@ const verifyButton = document.querySelector("#verifyButton");
 const statusText = document.querySelector("#statusText");
 const errorBox = document.querySelector("#errorBox");
 const resultsBody = document.querySelector("#resultsBody");
+const modeChooseFile = document.getElementById("modeChooseFile");
+const modeDragDrop = document.getElementById("modeDragDrop");
+const chooseFileInputs = document.getElementById("chooseFileInputs");
+const dropZoneInputs = document.getElementById("dropZoneInputs");
 
 function currentTheme() {
   return document.documentElement.dataset.theme === "dark" ? "dark" : "light";
@@ -73,7 +77,7 @@ function fieldNote(key) {
 }
 
 function inputName(prefix, key) {
-  return `${prefix}_${key}`;
+  return prefix + "_" + key;
 }
 
 function createField(prefix, key) {
@@ -87,7 +91,7 @@ function createField(prefix, key) {
   label.setAttribute("for", inputName(prefix, key));
 
   const note = document.createElement("span");
-  note.className = `field-note ${fieldRequirement(key)}`;
+  note.className = "field-note " + fieldRequirement(key);
   note.textContent = fieldNote(key);
   label.appendChild(note);
 
@@ -123,13 +127,13 @@ function renderRequirementChips() {
   for (const key of state.requirements.required) {
     const chip = document.createElement("span");
     chip.className = "chip required";
-    chip.textContent = `${FIELD_LOOKUP[key].label}: required`;
+    chip.textContent = FIELD_LOOKUP[key].label + ": required";
     requirementChips.appendChild(chip);
   }
   for (const key of state.requirements.conditional) {
     const chip = document.createElement("span");
     chip.className = "chip conditional";
-    chip.textContent = `${FIELD_LOOKUP[key].label}: conditional`;
+    chip.textContent = FIELD_LOOKUP[key].label + ": conditional";
     requirementChips.appendChild(chip);
   }
 }
@@ -151,7 +155,7 @@ function setStatus(message) {
 function formValues(container) {
   const values = {};
   for (const field of FIELD_CONFIG) {
-    const control = container.querySelector(`[name="${field.key}"]`);
+    const control = container.querySelector("[name=" + JSON.stringify(field.key) + "]");
     values[field.key] = control ? control.value.trim() : "";
   }
   return values;
@@ -159,15 +163,15 @@ function formValues(container) {
 
 function setReviewedValues(values) {
   for (const [key, value] of Object.entries(values || {})) {
-    const control = reviewedFields.querySelector(`[name="${key}"]`);
-    if (control) control.value = value ?? "";
+    const control = reviewedFields.querySelector("[name=" + JSON.stringify(key) + "]");
+    if (control) control.value = value || "";
   }
 }
 
 function setExpectedValues(values) {
   for (const [key, value] of Object.entries(values || {})) {
-    const control = expectedFields.querySelector(`[name="${key}"]`);
-    if (control) control.value = value ?? "";
+    const control = expectedFields.querySelector("[name=" + JSON.stringify(key) + "]");
+    if (control) control.value = value || "";
   }
 }
 
@@ -194,7 +198,7 @@ function renderResults(response) {
     const status = validation[key] || "NOT REVIEWED";
 
     fieldCell.textContent = FIELD_LOOKUP[key].label;
-    badge.className = `status-badge ${statusClass(status)}`;
+    badge.className = "status-badge " + statusClass(status);
     badge.textContent = status;
     statusCell.appendChild(badge);
     expectedCell.textContent = expected[key] || "";
@@ -224,7 +228,7 @@ async function refreshRequirements() {
     product_category: productCategory.value,
     origin_type: originType.value,
   });
-  const response = await fetch(`/field-requirements?${params.toString()}`);
+  const response = await fetch("/field-requirements?" + params.toString());
   const body = await parseApiResponse(response);
   state.requirements = body.field_requirements;
   renderRequirementChips();
@@ -239,14 +243,12 @@ async function extractFields() {
   clearError();
   const isDropMode = dropZoneInputs && dropZoneInputs.style.display !== "none";
   const activeFront = isDropMode ? document.getElementById("frontImageDrop") : frontImage;
+  const activeBack = isDropMode ? document.getElementById("backImageDrop") : backImage;
+
   if (!activeFront.files.length) {
     showError("Front label is required.");
     return;
   }
-
-  const isDropMode = dropZoneInputs.style.display !== "none";
-  const activeFront = isDropMode ? document.getElementById("frontImageDrop") : frontImage;
-  const activeBack = isDropMode ? document.getElementById("backImageDrop") : backImage;
 
   const formData = new FormData();
   formData.append("product_category", productCategory.value);
@@ -297,26 +299,6 @@ async function verifyReviewedFields() {
   }
 }
 
-themeToggle.checked = currentTheme() === "dark";
-themeToggle.addEventListener("change", () => {
-  setTheme(themeToggle.checked ? "dark" : "light");
-});
-
-productCategory.addEventListener("change", refreshRequirements);
-originType.addEventListener("change", refreshRequirements);
-extractButton.addEventListener("click", extractFields);
-verifyButton.addEventListener("click", verifyReviewedFields);
-
-refreshRequirements().catch((error) => {
-  showError(error.message);
-  setStatus("Unable to load requirements");
-});
-
-const modeChooseFile = document.getElementById("modeChooseFile");
-const modeDragDrop = document.getElementById("modeDragDrop");
-const chooseFileInputs = document.getElementById("chooseFileInputs");
-const dropZoneInputs = document.getElementById("dropZoneInputs");
-
 function setUploadMode(mode) {
   if (mode === "choose") {
     chooseFileInputs.style.display = "";
@@ -340,28 +322,28 @@ function initDropZone(dropZoneId, inputId, hintId) {
     const dt = new DataTransfer();
     dt.items.add(file);
     input.files = dt.files;
-    hint.innerHTML = '<span class="drop-file-name">' + file.name + '</span>';
+    hint.innerHTML = "<span class=\"drop-file-name\">" + file.name + "</span>";
     zone.classList.add("has-file");
   }
 
-  zone.addEventListener("click", (e) => {
+  zone.addEventListener("click", function(e) {
     if (!e.target.closest("label")) input.click();
   });
 
-  input.addEventListener("change", () => {
+  input.addEventListener("change", function() {
     if (input.files.length) setFile(input.files[0]);
   });
 
-  zone.addEventListener("dragover", (e) => {
+  zone.addEventListener("dragover", function(e) {
     e.preventDefault();
     zone.classList.add("drag-over");
   });
 
-  zone.addEventListener("dragleave", () => {
+  zone.addEventListener("dragleave", function() {
     zone.classList.remove("drag-over");
   });
 
-  zone.addEventListener("drop", (e) => {
+  zone.addEventListener("drop", function(e) {
     e.preventDefault();
     zone.classList.remove("drag-over");
     const file = e.dataTransfer.files[0];
@@ -372,5 +354,20 @@ function initDropZone(dropZoneId, inputId, hintId) {
 initDropZone("frontDropZone", "frontImageDrop", "frontDropHint");
 initDropZone("backDropZone", "backImageDrop", "backDropHint");
 
-modeChooseFile.addEventListener("click", () => setUploadMode("choose"));
-modeDragDrop.addEventListener("click", () => setUploadMode("drop"));
+themeToggle.checked = currentTheme() === "dark";
+themeToggle.addEventListener("change", function() {
+  setTheme(themeToggle.checked ? "dark" : "light");
+});
+
+modeChooseFile.addEventListener("click", function() { setUploadMode("choose"); });
+modeDragDrop.addEventListener("click", function() { setUploadMode("drop"); });
+
+productCategory.addEventListener("change", refreshRequirements);
+originType.addEventListener("change", refreshRequirements);
+extractButton.addEventListener("click", extractFields);
+verifyButton.addEventListener("click", verifyReviewedFields);
+
+refreshRequirements().catch(function(error) {
+  showError(error.message);
+  setStatus("Unable to load requirements");
+});
