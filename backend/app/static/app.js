@@ -43,7 +43,6 @@ function setTheme(theme) {
   const normalizedTheme = theme === "dark" ? "dark" : "light";
   document.documentElement.dataset.theme = normalizedTheme;
   themeToggle.checked = normalizedTheme === "dark";
-
   try {
     localStorage.setItem(THEME_STORAGE_KEY, normalizedTheme);
   } catch {
@@ -165,6 +164,13 @@ function setReviewedValues(values) {
   }
 }
 
+function setExpectedValues(values) {
+  for (const [key, value] of Object.entries(values || {})) {
+    const control = expectedFields.querySelector(`[name="${key}"]`);
+    if (control) control.value = value ?? "";
+  }
+}
+
 function statusClass(status) {
   if (status === "PASS") return "status-pass";
   if (status === "NOT REQUIRED") return "status-neutral";
@@ -225,6 +231,7 @@ async function refreshRequirements() {
   renderFieldStack(expectedFields, "expected");
   renderFieldStack(reviewedFields, "reviewed");
   setReviewedValues(state.extracted);
+  setExpectedValues(state.extracted);
   setStatus("Ready");
 }
 
@@ -248,7 +255,8 @@ async function extractFields() {
     const body = await parseApiResponse(response);
     state.extracted = body.extracted || {};
     setReviewedValues(state.extracted);
-    setStatus("Fields extracted");
+    setExpectedValues(state.extracted);
+    setStatus("Fields extracted — review Expected COLA fields and adjust if needed, then click Verify");
   } catch (error) {
     showError(error.message);
     setStatus("Extraction failed");
