@@ -178,6 +178,8 @@ If no wine appellation of origin appears, return null.
 For fanciful_name, extract only a true distinctive or fanciful product name.
 Do not extract beer styles, class/type designations, beverage categories, or abbreviations as fanciful_name.
 Do not extract these as fanciful_name:
+Vintage years (e.g. 2007, 2019, any 4-digit year)
+Years or numbers that appear as part of a series or vintage
 IPA
 ALE
 LAGER
