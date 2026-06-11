@@ -36,6 +36,7 @@ CONTENT_SECURITY_POLICY = (
     "default-src 'self'; "
     "img-src 'self' data: blob:; "  # blob: for the in-page label image preview
     "style-src 'self' 'unsafe-inline'; "
+    "font-src 'self'; "  # self-hosted USWDS fonts (Public Sans, Merriweather)
     "object-src 'none'; "
     "frame-ancestors 'none'; "
     "base-uri 'self'; "

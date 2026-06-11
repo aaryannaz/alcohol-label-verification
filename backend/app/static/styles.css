@@ -1,3 +1,22 @@
+/* Self-hosted USWDS fonts (variable; one file covers all weights). Served from
+   /static so the strict CSP (font-src 'self') allows them. Used by the
+   government theme to match the TTB.gov / USWDS typography. OFL-1.1 licensed. */
+@font-face {
+  font-family: "Public Sans";
+  font-style: normal;
+  font-weight: 100 900;
+  font-display: swap;
+  src: url("/static/fonts/public-sans.woff2") format("woff2");
+}
+
+@font-face {
+  font-family: "Merriweather";
+  font-style: normal;
+  font-weight: 100 900;
+  font-display: swap;
+  src: url("/static/fonts/merriweather.woff2") format("woff2");
+}
+
 :root,
 :root[data-theme="light"] {
   color-scheme: light;
@@ -103,8 +122,8 @@
   --blue: #005ea2;
   --blue-soft: #e1f3f8;
   --shadow: none;
-  --font: "Source Sans 3", "Source Sans Pro", system-ui, -apple-system, "Segoe UI", Roboto, Helvetica, Arial, sans-serif;
-  --font-heading: Georgia, "Times New Roman", "Times", serif;
+  --font: "Public Sans", "Source Sans 3", system-ui, -apple-system, "Segoe UI", Roboto, Helvetica, Arial, sans-serif;
+  --font-heading: "Merriweather", Georgia, "Times New Roman", "Times", serif;
   --radius: 2px;
   --radius-lg: 2px;
 }

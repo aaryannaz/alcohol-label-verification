@@ -1,0 +1,8 @@
+Fonts in this directory are used under the SIL Open Font License 1.1 (OFL-1.1),
+which permits self-hosting and redistribution.
+
+- public-sans.woff2  — Public Sans (variable). https://github.com/uswds/public-sans
+- merriweather.woff2  — Merriweather (variable). https://github.com/SorkinType/Merriweather
+
+Both fonts are part of / used by the U.S. Web Design System (USWDS).
+Full license text: https://openfontlicense.org/
