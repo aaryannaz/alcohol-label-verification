@@ -487,8 +487,11 @@ textarea {
 /* Native "old-school" file input: strip our box styling so the browser shows
    its default "Choose File | filename" control. */
 .file-native {
-  width: auto;
+  /* Fill the column and never exceed it, so a narrow column clips the trailing
+     "No file chosen" text on the right rather than the "Choose File" button. */
+  width: 100%;
   max-width: 100%;
+  min-width: 0;
   min-height: 0;
   padding: 0;
   border: none;
@@ -496,10 +499,14 @@ textarea {
   color: var(--text);
   cursor: pointer;
   font-size: 13px;
-  /* Inputs default to overflow:clip, which (with grid min-width:auto) lets the
-     control shrink and clip the "Choose File" button in a narrow column. Keep
-     it visible so the button is never cut off. */
-  overflow: visible;
+}
+
+.file-native::-webkit-file-upload-button {
+  margin-right: 8px;
+}
+
+.file-native::file-selector-button {
+  margin-right: 8px;
 }
 
 .readonly-field {
@@ -849,10 +856,14 @@ tr.is-flagged td:first-child {
   border-bottom: 1px solid var(--line);
 }
 
-.upload-mode-label {
+/* Section labels (Workflow, Product category, Origin, Upload mode) read as
+   quiet uppercase "eyebrows" so the control below is clearly the content. */
+.section-label {
   color: var(--muted);
-  font-size: 13px;
-  font-weight: 650;
+  font-size: 11px;
+  font-weight: 700;
+  letter-spacing: 0.05em;
+  text-transform: uppercase;
 }
 
 .upload-mode-buttons {
