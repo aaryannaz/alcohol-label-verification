@@ -166,8 +166,8 @@
   border-color: #ffffff;
 }
 
-/* The government layout's blue nav bar already has Home / How To, so the topbar
-   How To link is redundant — hide it there. */
+/* The government layout's blue nav bar already has Home / Instructions, so the
+   topbar Instructions link is redundant — hide it there. */
 :root[data-layout="government"] .topbar .docs-link {
   display: none;
 }
@@ -461,7 +461,7 @@ input,
 select,
 textarea {
   width: 100%;
-  min-height: 42px;
+  min-height: 34px;
   border: 1px solid var(--line);
   border-radius: var(--radius);
   background: var(--control-bg);
@@ -479,8 +479,8 @@ select {
 }
 
 textarea {
-  min-height: 78px;
-  padding: 10px 11px;
+  min-height: 60px;
+  padding: 8px 11px;
   resize: vertical;
 }
 
@@ -856,14 +856,13 @@ tr.is-flagged td:first-child {
   border-bottom: 1px solid var(--line);
 }
 
-/* Section labels (Workflow, Product category, Origin, Upload mode) read as
-   quiet uppercase "eyebrows" so the control below is clearly the content. */
+/* Section labels (Workflow, Product category, Origin, Upload mode) are the
+   headers of each mini-section: bigger and bold so the lighter control text
+   below reads as the content. */
 .section-label {
-  color: var(--muted);
-  font-size: 11px;
+  color: var(--text);
+  font-size: 14px;
   font-weight: 700;
-  letter-spacing: 0.05em;
-  text-transform: uppercase;
 }
 
 .upload-mode-buttons {
@@ -884,7 +883,7 @@ tr.is-flagged td:first-child {
   background: var(--subtle-bg);
   color: var(--muted);
   font-size: 13px;
-  font-weight: 500;
+  font-weight: 400;
   cursor: pointer;
   transition: background 140ms ease, color 140ms ease;
 }

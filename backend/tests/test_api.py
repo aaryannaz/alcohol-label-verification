@@ -62,7 +62,7 @@ class ApiTests(unittest.TestCase):
 
         self.assertEqual(response.status_code, 200)
         self.assertIn("text/html", response.headers["content-type"])
-        self.assertIn("How To", response.text)
+        self.assertIn("Instructions", response.text)
         self.assertIn("Each batch file is treated as one review item.", response.text)
         self.assertIn("Use Batch mode when uploading multiple review items at once.", response.text)
         self.assertIn("CSV or Excel import is a future enhancement.", response.text)
