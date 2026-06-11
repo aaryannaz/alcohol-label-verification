@@ -77,6 +77,18 @@ class ValidationTests(unittest.TestCase):
 
         self.assertEqual(check_government_warning(warning), "PASS")
 
+    def test_government_warning_accepts_all_caps(self):
+        # An all-caps warning is TTB-compliant (only the heading must be caps);
+        # the body case is not regulated, so this must PASS, not "Wording mismatch".
+        warning = (
+            "GOVERNMENT WARNING: (1) ACCORDING TO THE SURGEON GENERAL, WOMEN SHOULD NOT "
+            "DRINK ALCOHOLIC BEVERAGES DURING PREGNANCY BECAUSE OF THE RISK OF BIRTH DEFECTS. "
+            "(2) CONSUMPTION OF ALCOHOLIC BEVERAGES IMPAIRS YOUR ABILITY TO DRIVE A CAR OR "
+            "OPERATE MACHINERY, AND MAY CAUSE HEALTH PROBLEMS."
+        )
+
+        self.assertEqual(check_government_warning(warning), "PASS")
+
     def test_government_warning_reports_missing_heading(self):
         warning = (
             "(1) According to the Surgeon General, women should not drink alcoholic beverages "

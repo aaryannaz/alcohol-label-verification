@@ -440,8 +440,11 @@ def normalize_warning_spacing(value):
 def check_government_warning(actual):
     """Validate the health warning against the exact statutory text (27 CFR 16.21).
 
-    Whitespace/OCR line-breaks are normalized away, but punctuation and the
-    ALL-CAPS heading are enforced. Returns granular codes — FAIL_MISSING_HEADING,
+    The heading "GOVERNMENT WARNING" must appear in capital letters (27 CFR
+    16.22). The wording and punctuation must match, but the *case* of the body is
+    not regulated — an all-caps warning is compliant and common on real labels —
+    so the body is compared case-insensitively. Whitespace/OCR line-breaks are
+    normalized away. Returns granular codes — FAIL_MISSING_HEADING,
     FAIL_HEADING_FORMAT (e.g. title-case heading), FAIL_TEXT_MISMATCH, MISSING —
     rather than PASS/FAIL. Typography (bold, type size) is not text-verifiable.
     """
@@ -451,13 +454,15 @@ def check_government_warning(actual):
 
     expected_warning = normalize_warning_spacing(EXPECTED_WARNING)
 
-    if actual_warning == expected_warning:
-        return "PASS"
-
+    # The heading must be present in capital letters, including the colon.
     if EXPECTED_WARNING_HEADING not in actual_warning:
         if "government warning" in actual_warning.lower():
             return "FAIL_HEADING_FORMAT"
         return "FAIL_MISSING_HEADING"
+
+    # Wording + punctuation must match; letter case of the body is not regulated.
+    if actual_warning.lower() == expected_warning.lower():
+        return "PASS"
 
     return "FAIL_TEXT_MISMATCH"
 
