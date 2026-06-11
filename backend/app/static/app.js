@@ -901,6 +901,43 @@ function createBatchSelect(item, key, options) {
   return select;
 }
 
+// A batch row is one label; this control lets a reviewer attach a second image
+// (e.g. the back panel) so the row is verified as a single item, mirroring the
+// First/Second slots in single-upload mode.
+function buildBatchSecondImage(item) {
+  const wrap = document.createElement("div");
+  wrap.className = "batch-second";
+  const locked = state.batch.processing || item.status === "Processing";
+
+  if (item.backFile) {
+    const name = document.createElement("span");
+    name.className = "batch-second-name";
+    name.textContent = "+ second image: " + item.backFile.name + " (" + formatBytes(item.backFile.size) + ")";
+    wrap.appendChild(name);
+
+    const remove = document.createElement("button");
+    remove.type = "button";
+    remove.className = "batch-second-button";
+    remove.dataset.removeBatchSecond = String(item.id);
+    remove.disabled = locked;
+    remove.textContent = "Remove";
+    wrap.appendChild(remove);
+  } else {
+    const label = document.createElement("label");
+    label.className = "batch-second-button";
+    label.textContent = "+ Add second image";
+    const input = document.createElement("input");
+    input.type = "file";
+    input.className = "native-file-input";
+    input.accept = ".pdf,.png,.jpg,.jpeg,.webp,application/pdf,image/png,image/jpeg,image/webp";
+    input.dataset.addBatchSecond = String(item.id);
+    input.disabled = locked;
+    label.appendChild(input);
+    wrap.appendChild(label);
+  }
+  return wrap;
+}
+
 function renderBatchQueue() {
   batchBody.innerHTML = "";
 
@@ -937,6 +974,7 @@ function renderBatchQueue() {
       message.textContent = item.message;
       fileCell.appendChild(message);
     }
+    fileCell.appendChild(buildBatchSecondImage(item));
 
     const categoryCell = document.createElement("td");
     categoryCell.appendChild(createBatchSelect(item, "productCategory", PRODUCT_CATEGORY_OPTIONS));
@@ -1021,6 +1059,7 @@ function addBatchFiles(files) {
       status: clientError ? "Error" : "Ready",
       message: clientError || "Ready to process",
       clientError,
+      backFile: null,
       extracted: null,
       verification: null,
     });
@@ -1047,6 +1086,17 @@ async function processBatchItem(item) {
     return;
   }
 
+  const backError = item.backFile ? validateClientFile(item.backFile) : "";
+  if (backError) {
+    item.clientError = backError;
+    item.status = "Error";
+    item.message = "Second image: " + backError;
+    item.extracted = null;
+    item.verification = null;
+    renderBatchQueue();
+    return;
+  }
+
   item.clientError = "";
   item.status = "Processing";
   item.message = "Extracting and verifying";
@@ -1058,6 +1108,7 @@ async function processBatchItem(item) {
   formData.append("product_category", item.productCategory);
   formData.append("origin_type", item.originType);
   formData.append("front_image", item.file);
+  if (item.backFile) formData.append("back_image", item.backFile);
 
   try {
     // One /verify call extracts and validates the label, so each row lands on a
@@ -1160,12 +1211,12 @@ async function reviewBatchItem(id) {
   if (colaFile) colaFile.value = "";
   renderColaSummary();
   state.files.front = item.file;
-  state.files.back = null;
+  state.files.back = item.backFile || null;
   // The batch item is already extracted; mark the label as read so a COLA-mode
   // Verify doesn't needlessly re-extract it.
   state.extractedKey = labelFileKey();
   syncInputFiles("front", item.file);
-  syncInputFiles("back", null);
+  syncInputFiles("back", item.backFile || null);
   renderFileState("front");
   renderFileState("back");
   setUploadMode("choose");
@@ -1187,6 +1238,43 @@ function removeBatchItem(id) {
   state.batch.items = state.batch.items.filter((item) => item.id !== id);
   renderBatchQueue();
   setStatus(state.batch.items.length ? "Batch item removed" : "Batch cleared");
+}
+
+// The row's inputs changed, so any verdict it already holds is stale — send it
+// back to the queue to be re-processed.
+function resetBatchItemVerdict(item) {
+  if (isBatchItemVerified(item)) {
+    item.status = "Ready";
+    item.message = "Ready to process";
+    item.extracted = null;
+    item.verification = null;
+  }
+}
+
+function attachBatchSecondImage(id, file) {
+  const item = state.batch.items.find((candidate) => candidate.id === id);
+  if (!item || state.batch.processing) return;
+
+  const clientError = validateClientFile(file);
+  if (clientError) {
+    showError("Second image: " + clientError);
+    return;
+  }
+  clearError();
+  item.backFile = file;
+  resetBatchItemVerdict(item);
+  renderBatchQueue();
+  setStatus("Second image added to item #" + id);
+}
+
+function removeBatchSecondImage(id) {
+  const item = state.batch.items.find((candidate) => candidate.id === id);
+  if (!item || state.batch.processing) return;
+
+  item.backFile = null;
+  resetBatchItemVerdict(item);
+  renderBatchQueue();
+  setStatus("Second image removed from item #" + id);
 }
 
 function clearBatchQueue() {
@@ -1417,16 +1505,23 @@ batchBody.addEventListener("change", function(event) {
     const item = state.batch.items.find((candidate) => candidate.id === Number(originControl.dataset.batchOrigin));
     if (item) item.originType = originControl.value;
   }
+
+  const addSecond = event.target.closest("[data-add-batch-second]");
+  if (addSecond && addSecond.files && addSecond.files.length) {
+    attachBatchSecondImage(Number(addSecond.dataset.addBatchSecond), addSecond.files[0]);
+  }
 });
 
 batchBody.addEventListener("click", function(event) {
   const reviewButton = event.target.closest("[data-review-batch]");
   const retryButton = event.target.closest("[data-retry-batch]");
   const removeButton = event.target.closest("[data-remove-batch]");
+  const removeSecondButton = event.target.closest("[data-remove-batch-second]");
 
   if (reviewButton) reviewBatchItem(Number(reviewButton.dataset.reviewBatch));
   if (retryButton) retryBatchItem(Number(retryButton.dataset.retryBatch));
   if (removeButton) removeBatchItem(Number(removeButton.dataset.removeBatch));
+  if (removeSecondButton) removeBatchSecondImage(Number(removeSecondButton.dataset.removeBatchSecond));
 });
 
 productCategory.addEventListener("change", refreshRequirements);

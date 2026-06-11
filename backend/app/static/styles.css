@@ -1198,6 +1198,51 @@ tr.is-flagged td:first-child {
   color: var(--red);
 }
 
+.batch-second {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  flex-wrap: wrap;
+  margin-top: 6px;
+}
+
+.batch-second-name {
+  max-width: 280px;
+  overflow: hidden;
+  color: var(--muted);
+  font-size: 12px;
+  font-weight: 650;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+}
+
+/* Styled as a small button; used for both the attach <label> and the remove
+   <button> so they look identical regardless of element type. */
+.batch-second-button {
+  display: inline-flex;
+  align-items: center;
+  min-height: 26px;
+  border: 1px solid var(--line);
+  border-radius: var(--radius);
+  padding: 0 9px;
+  background: var(--surface);
+  color: var(--text);
+  font-size: 12px;
+  font-weight: 750;
+  cursor: pointer;
+}
+
+.batch-second-button:hover,
+.batch-second-button:focus-within,
+.batch-second-button:focus-visible {
+  border-color: var(--primary);
+}
+
+.batch-second-button:disabled {
+  cursor: not-allowed;
+  opacity: 0.58;
+}
+
 .batch-table select {
   min-width: 150px;
 }

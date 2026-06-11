@@ -304,6 +304,25 @@ class ApiTests(unittest.TestCase):
         # row turns into "Needs attention".
         self.assertEqual(body["validation"]["government_warning"]["label"], "MISSING")
 
+    def test_verify_accepts_a_second_image(self):
+        # Batch pairing sends a front and back image as one item; /verify must
+        # accept both and validate the combined extraction.
+        with patch(
+            "app.extraction._generate_content",
+            return_value=GeminiResponse(json.dumps({"brand_name": "Example"})),
+        ):
+            response = self.client.post(
+                "/verify",
+                data={"product_category": "wine", "origin_type": "domestic"},
+                files={
+                    "front_image": ("front.png", PNG_BYTES, "image/png"),
+                    "back_image": ("back.png", PNG_BYTES, "image/png"),
+                },
+            )
+
+        self.assertEqual(response.status_code, 200)
+        self.assertEqual(response.json()["reviewed"]["brand_name"], "Example")
+
     def test_extract_cola_maps_category_origin_and_coerces_fields(self):
         # The COLA form states its own product type and source, so the response
         # carries product_category + origin_type alongside the field values; both
