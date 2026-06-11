@@ -41,8 +41,8 @@ const BATCH_CONCURRENCY = 5;      // process batch files in parallel (~10 files 
 const ACCEPTED_EXTENSIONS = new Set(["pdf", "png", "jpg", "jpeg", "webp"]);
 const ACCEPTED_MIME_TYPES = new Set(["application/pdf", "image/png", "image/jpeg", "image/webp"]);
 const FILE_LABELS = {
-  front: "Front label",
-  back: "Back label",
+  front: "First label",
+  back: "Second label",
 };
 const PRODUCT_CATEGORY_OPTIONS = [
   { value: "malt_beverage", label: "Malt beverage" },
@@ -713,11 +713,14 @@ function labelFileKey() {
 async function runLabelExtraction() {
   // POST the label artwork and store the reviewed snapshot. Throws on failure;
   // the caller manages busy state and error display.
+  // Order-agnostic: send whichever label slot(s) have a file, first one as the
+  // primary image — so it doesn't matter which slot the reviewer used.
+  const files = [state.files.front, state.files.back].filter(Boolean);
   const formData = new FormData();
   formData.append("product_category", productCategory.value);
   formData.append("origin_type", originType.value);
-  formData.append("front_image", state.files.front);
-  if (state.files.back) formData.append("back_image", state.files.back);
+  formData.append("front_image", files[0]);
+  if (files[1]) formData.append("back_image", files[1]);
   const response = await fetchWithTimeout("/extract", { method: "POST", body: formData });
   const body = await parseApiResponse(response);
   state.extracted = body.extracted || {};
@@ -728,11 +731,11 @@ function maybeAutoExtractLabel() {
   // In the label-only workflow, reading the label IS what fills the form, so do
   // it automatically on upload (mirroring the COLA auto-fill). The "Extract from
   // Label" button stays as an explicit re-run (e.g. after changing category or
-  // adding a back label). Skip in COLA mode (Verify reads the label there), when
-  // there's no front label yet, while a request is in flight, and when these
+  // adding a second label). Skip in COLA mode (Verify reads the label there),
+  // when no label is uploaded yet, while a request is in flight, and when these
   // exact files were already read.
   if (state.workflowMode !== "label") return;
-  if (!state.files.front) return;
+  if (!state.files.front && !state.files.back) return;
   if (state.inFlight) return;
   if (state.extractedKey === labelFileKey()) return;
   extractFields();
@@ -741,8 +744,8 @@ function maybeAutoExtractLabel() {
 async function extractFields() {
   clearError();
 
-  if (!state.files.front) {
-    showError("Front label is required.");
+  if (!state.files.front && !state.files.back) {
+    showError("Add at least one label.");
     setStatus("File selection needs attention");
     return;
   }
@@ -772,7 +775,7 @@ async function extractFields() {
 
 async function verifyReviewedFields() {
   clearError();
-  if (state.workflowMode === "cola" && !state.files.front) {
+  if (state.workflowMode === "cola" && !state.files.front && !state.files.back) {
     showError("Upload the label artwork to verify against the COLA.");
     setStatus("File selection needs attention");
     return;
