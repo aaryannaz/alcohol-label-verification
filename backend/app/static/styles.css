@@ -69,34 +69,6 @@
 }
 
 /* ---------------------------------------------------------------------------
-   Brand-inspired palette (visual only — colors/shadows, no layout changes).
-   Redefines the same custom properties as the light/dark themes. The accent
-   (--primary) is the brand color; --green stays the success/PASS color.
-   --------------------------------------------------------------------------- */
-:root[data-theme="airbnb"] {
-  color-scheme: light;
-  --bg: #ffffff;
-  --surface: #ffffff;
-  --control-bg: #ffffff;
-  --subtle-bg: #f7f7f7;
-  --text: #222222;
-  --muted: #717171;
-  --line: #dddddd;
-  --green: #008a05;
-  --green-soft: #e7f4e7;
-  --primary: #ff385c;
-  --primary-soft: #ffe8ec;
-  --red: #c13515;
-  --red-soft: #fbeae6;
-  --red-line: #f1c4b6;
-  --amber: #9a5b00;
-  --amber-soft: #fff4dc;
-  --blue: #008489;
-  --blue-soft: #e4f3f3;
-  --shadow: 0 6px 16px rgba(0, 0, 0, 0.12);
-}
-
-/* ---------------------------------------------------------------------------
    Style "skin" — changes more than color: font family, corner radius and shadow
    are tokenized, so the theme reads as a federal/government site rather than a
    modern app. Still no layout/markup changes.
