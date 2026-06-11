@@ -316,13 +316,6 @@ function fieldRequirement(key) {
   return "optional";
 }
 
-function fieldNote(key) {
-  const type = fieldRequirement(key);
-  if (type === "required") return "Required";
-  if (type === "conditional") return "Conditional";
-  return "Optional";
-}
-
 function inputName(prefix, key) {
   return prefix + "_" + key;
 }
@@ -334,13 +327,33 @@ function createField(prefix, key) {
   row.dataset.field = key;
 
   const label = document.createElement("label");
-  label.textContent = field.label;
   label.setAttribute("for", inputName(prefix, key));
 
-  const note = document.createElement("span");
-  note.className = "field-note " + fieldRequirement(key);
-  note.textContent = fieldNote(key);
-  label.appendChild(note);
+  const name = document.createElement("span");
+  name.className = "field-name";
+  name.textContent = field.label;
+
+  const requirement = fieldRequirement(key);
+  if (requirement === "required") {
+    const star = document.createElement("span");
+    star.className = "req-mark";
+    star.textContent = "*";
+    star.title = "Required";
+    star.setAttribute("aria-hidden", "true");
+    name.appendChild(star);
+    const sr = document.createElement("span");
+    sr.className = "sr-only";
+    sr.textContent = " required";
+    name.appendChild(sr);
+  }
+  label.appendChild(name);
+
+  if (requirement === "conditional") {
+    const note = document.createElement("span");
+    note.className = "field-note conditional";
+    note.textContent = "if applicable";
+    label.appendChild(note);
+  }
 
   const control = document.createElement(field.type === "textarea" ? "textarea" : "input");
   control.id = inputName(prefix, key);

@@ -591,12 +591,27 @@ input[type="file"] {
   font-weight: 600;
 }
 
-.field-note.required {
-  color: var(--green);
-}
-
 .field-note.conditional {
   color: var(--amber);
+}
+
+/* Red asterisk marking a required field. */
+.req-mark {
+  margin-left: 3px;
+  color: var(--red);
+  font-weight: 700;
+}
+
+.sr-only {
+  position: absolute;
+  width: 1px;
+  height: 1px;
+  padding: 0;
+  margin: -1px;
+  overflow: hidden;
+  clip: rect(0, 0, 0, 0);
+  white-space: nowrap;
+  border: 0;
 }
 
 .field-row {
