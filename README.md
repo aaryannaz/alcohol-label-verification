@@ -76,24 +76,30 @@ for every field at once.
 ## Project Layout
 
 ```text
-pyproject.toml       Vercel deployment metadata and runtime dependencies
-.python-version      Python version for deployment
+requirements.txt     Runtime dependencies (the file Vercel installs)
+pyproject.toml       Packaging metadata + ruff (lint) config
+vercel.json          Vercel build / routing config
+.python-version      Python version (3.12)
+.github/workflows/   CI: ruff + tests on every push / PR
 backend/
   app/
-    clients.py       Gemini client and environment loading
-    extraction.py    Image-to-JSON extraction workflow
-    main.py          FastAPI routes
-    prompts.py       Label extraction prompt
-    schemas.py       Request models and enums
-    static/          Browser UI served by FastAPI
-    validation.py    Compliance comparison helpers
-  scripts/
-    gemini_smoke_test.py
-  tests/
-    test_api.py
-    test_validation.py
-  main_gemini.py     Compatibility entrypoint for older run commands
-  requirements.txt
+    main.py          FastAPI app: routes, exception handlers, middleware
+    fields.py        Canonical regulated-field list (single source of truth)
+    schemas.py       Pydantic request models + product/origin enums
+    clients.py       Gemini client + model / timeout config
+    extraction.py    Image -> JSON field extraction (Gemini, category-aware)
+    prompts.py       The extraction prompt (most domain rules live here)
+    validation.py    Rule-based field comparison + TTB compliance logic
+    uploads.py       Upload validation (extension / content-type / signature)
+    security.py      Rate limiting, optional auth, security headers, body cap
+    observability.py Structured logging + per-request correlation IDs
+    errors.py        AppError + one JSON error envelope for all failures
+    static/          Browser UI (vanilla HTML/CSS/JS) served by FastAPI
+  evals/             Extraction-accuracy eval harness (render, score, cases)
+  tests/             Unit + API tests (test_validation.py, test_api.py)
+  scripts/           gemini_smoke_test.py (Gemini connectivity check)
+  main_gemini.py     Compatibility entrypoint (re-exports the app)
+  requirements.txt   Mirror of the root file (for the backend/ workflow)
 ```
 
 ## Setup
@@ -104,7 +110,10 @@ Create a local environment file:
 cp backend/.env.example backend/.env
 ```
 
-Then edit `backend/.env` and set `GEMINI_API_KEY`.
+Then edit `backend/.env` and set `GEMINI_API_KEY` — get a free key from
+[Google AI Studio](https://aistudio.google.com/apikey). (The app starts without
+one, but extraction will return a `MISSING_GEMINI_API_KEY` error and `/readyz`
+will report not-ready until a key is set.)
 
 Install dependencies:
 
