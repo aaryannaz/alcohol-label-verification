@@ -30,6 +30,19 @@ def _extension(filename: str | None) -> str:
     return Path(filename or "").suffix.lower()
 
 
+# Browsers vary in how they label the same file: case ("IMAGE/PNG"), a trailing
+# parameter ("image/jpeg; charset=binary"), and the non-standard "image/jpg"
+# alias all describe a supported type. Normalise before the equality check so a
+# valid upload is not rejected on a cosmetic header difference. The magic-byte
+# check below is the real signature gate; this header check only screens intent.
+_CONTENT_TYPE_ALIASES = {"image/jpg": "image/jpeg", "image/pjpeg": "image/jpeg"}
+
+
+def _normalize_content_type(content_type: str | None) -> str:
+    base = (content_type or "").split(";", 1)[0].strip().lower()
+    return _CONTENT_TYPE_ALIASES.get(base, base)
+
+
 def _detect_mime_type(data: bytes) -> str | None:
     if data.startswith(b"%PDF"):
         return "application/pdf"
@@ -58,7 +71,7 @@ async def read_validated_upload(upload: UploadFile, field_name: str) -> Validate
             },
         )
 
-    if upload.content_type != expected_mime_type:
+    if _normalize_content_type(upload.content_type) != expected_mime_type:
         raise AppError(
             status_code=400,
             code="UNSUPPORTED_FILE_TYPE",

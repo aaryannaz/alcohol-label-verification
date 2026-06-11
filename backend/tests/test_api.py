@@ -136,6 +136,22 @@ class ApiTests(unittest.TestCase):
         self.assertEqual(response.status_code, 400)
         self.assertEqual(response.json()["error"]["code"], "UNSUPPORTED_FILE_TYPE")
 
+    def test_extract_accepts_quirky_but_valid_content_type(self):
+        # Browsers vary the header: uppercase, a charset parameter, and the
+        # non-standard image/jpg alias all describe a supported upload and must
+        # not be rejected on a cosmetic header difference.
+        for content_type in ("IMAGE/PNG", "image/png; charset=binary", " image/png "):
+            with self.subTest(content_type=content_type), patch(
+                "app.extraction._generate_content",
+                return_value=GeminiResponse(json.dumps({"brand_name": "Example"})),
+            ):
+                response = self.client.post(
+                    "/extract",
+                    data={"product_category": "malt_beverage", "origin_type": "domestic"},
+                    files={"front_image": ("label.png", PNG_BYTES, content_type)},
+                )
+            self.assertEqual(response.status_code, 200, content_type)
+
     def test_extract_rejects_invalid_file_signature(self):
         response = self.client.post(
             "/extract",
