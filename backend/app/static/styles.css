@@ -10,6 +10,8 @@
   --line: #d9ded7;
   --green: #18794e;
   --green-soft: #e8f4ee;
+  --primary: #18794e;
+  --primary-soft: #e8f4ee;
   --red: #b42318;
   --red-soft: #fff0ed;
   --red-line: #ffd0c7;
@@ -31,6 +33,8 @@
   --line: #334038;
   --green: #6fd39a;
   --green-soft: #123322;
+  --primary: #6fd39a;
+  --primary-soft: #123322;
   --red: #ff998c;
   --red-soft: #351916;
   --red-line: #74352f;
@@ -39,6 +43,103 @@
   --blue: #93b8ff;
   --blue-soft: #172742;
   --shadow: 0 10px 30px rgba(0, 0, 0, 0.32);
+}
+
+/* ---------------------------------------------------------------------------
+   Brand-inspired palettes (visual only — colors/shadows, no layout changes).
+   Each redefines the same custom properties as the light/dark themes. The
+   accent (--primary) is the brand color; --green stays the success/PASS color.
+   --------------------------------------------------------------------------- */
+:root[data-theme="airbnb"] {
+  color-scheme: light;
+  --bg: #ffffff;
+  --surface: #ffffff;
+  --control-bg: #ffffff;
+  --subtle-bg: #f7f7f7;
+  --text: #222222;
+  --muted: #717171;
+  --line: #dddddd;
+  --green: #008a05;
+  --green-soft: #e7f4e7;
+  --primary: #ff385c;
+  --primary-soft: #ffe8ec;
+  --red: #c13515;
+  --red-soft: #fbeae6;
+  --red-line: #f1c4b6;
+  --amber: #9a5b00;
+  --amber-soft: #fff4dc;
+  --blue: #008489;
+  --blue-soft: #e4f3f3;
+  --shadow: 0 6px 16px rgba(0, 0, 0, 0.12);
+}
+
+:root[data-theme="vimeo"] {
+  color-scheme: light;
+  --bg: #ffffff;
+  --surface: #ffffff;
+  --control-bg: #ffffff;
+  --subtle-bg: #f4f8fb;
+  --text: #11212f;
+  --muted: #5b6b7b;
+  --line: #d6e0e8;
+  --green: #1f9d55;
+  --green-soft: #e6f5ec;
+  --primary: #1ab7ea;
+  --primary-soft: #e2f6fd;
+  --red: #d83a34;
+  --red-soft: #fbe9e8;
+  --red-line: #f3c2bf;
+  --amber: #b06f00;
+  --amber-soft: #fff2d8;
+  --blue: #1166cc;
+  --blue-soft: #e6f0fc;
+  --shadow: 0 8px 24px rgba(17, 34, 51, 0.1);
+}
+
+:root[data-theme="grammarly"] {
+  color-scheme: light;
+  --bg: #ffffff;
+  --surface: #ffffff;
+  --control-bg: #ffffff;
+  --subtle-bg: #f4f9f7;
+  --text: #20302b;
+  --muted: #6a7a72;
+  --line: #dde7e2;
+  --green: #11a683;
+  --green-soft: #e3f6f0;
+  --primary: #15c39a;
+  --primary-soft: #e3f8f2;
+  --red: #d8443c;
+  --red-soft: #fbe9e8;
+  --red-line: #f3c3bf;
+  --amber: #a06800;
+  --amber-soft: #fff2d6;
+  --blue: #2f7be0;
+  --blue-soft: #e9f1fd;
+  --shadow: 0 8px 24px rgba(32, 48, 43, 0.1);
+}
+
+:root[data-theme="eventbrite"] {
+  color-scheme: light;
+  --bg: #ffffff;
+  --surface: #ffffff;
+  --control-bg: #ffffff;
+  --subtle-bg: #f8f7fa;
+  --text: #1e0a3c;
+  --muted: #6f7287;
+  --line: #e6e4ee;
+  --green: #1c8a4e;
+  --green-soft: #e7f4ec;
+  --primary: #d1410c;
+  --primary-soft: #fdeae1;
+  --red: #b3271a;
+  --red-soft: #fbe6e3;
+  --red-line: #f0bdb6;
+  --amber: #8a5a00;
+  --amber-soft: #fdf0d6;
+  --blue: #3659e3;
+  --blue-soft: #eceffd;
+  --shadow: 0 8px 24px rgba(30, 10, 60, 0.1);
 }
 
 * {
@@ -126,6 +227,23 @@ h3 {
   color: var(--text);
   text-decoration: none;
   background: var(--subtle-bg);
+}
+
+.theme-select {
+  display: inline-flex;
+  align-items: center;
+  gap: 8px;
+  color: var(--text);
+  font-size: 13px;
+  font-weight: 750;
+  white-space: nowrap;
+}
+
+.theme-select select {
+  width: auto;
+  min-height: 40px;
+  padding: 0 10px;
+  font-weight: 650;
 }
 
 .theme-toggle {
@@ -448,7 +566,7 @@ button:disabled {
 }
 
 .primary-button {
-  background: var(--green);
+  background: var(--primary);
   color: #ffffff;
 }
 
@@ -475,7 +593,7 @@ button:disabled {
   width: 16px;
   height: 16px;
   border: 2px solid var(--line);
-  border-top-color: var(--green);
+  border-top-color: var(--primary);
   border-radius: 50%;
   animation: spin 0.7s linear infinite;
   flex: 0 0 auto;
@@ -709,7 +827,7 @@ tr.is-flagged td:first-child {
 }
 
 .mode-btn.active {
-  background: var(--green);
+  background: var(--primary);
   color: #ffffff;
 }
 
@@ -789,7 +907,7 @@ tr.is-flagged td:first-child {
   height: 100%;
   width: 40%;
   border-radius: 999px;
-  background: var(--green);
+  background: var(--primary);
   animation: upload-indeterminate 1.1s ease-in-out infinite;
 }
 
@@ -827,7 +945,7 @@ tr.is-flagged td:first-child {
 
 .file-select-button:hover,
 .file-select-button:focus-visible {
-  border-color: var(--green);
+  border-color: var(--primary);
 }
 
 .file-summary {
@@ -898,13 +1016,13 @@ tr.is-flagged td:first-child {
 }
 
 .drop-zone.drag-over {
-  border-color: var(--green);
-  background: var(--green-soft);
+  border-color: var(--primary);
+  background: var(--primary-soft);
 }
 
 .drop-zone.has-file {
   border-style: solid;
-  border-color: var(--green);
+  border-color: var(--primary);
 }
 
 .drop-label {
@@ -960,8 +1078,8 @@ tr.is-flagged td:first-child {
 }
 
 .batch-drop-zone.drag-over {
-  border-color: var(--green);
-  background: var(--green-soft);
+  border-color: var(--primary);
+  background: var(--primary-soft);
 }
 
 .batch-table-wrap {

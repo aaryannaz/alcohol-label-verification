@@ -77,7 +77,8 @@ const state = {
 };
 
 const THEME_STORAGE_KEY = "alcohol-label-theme";
-const themeToggle = document.querySelector("#themeToggle");
+const THEMES = ["light", "dark", "airbnb", "vimeo", "grammarly", "eventbrite"];
+const themeSelect = document.querySelector("#themeSelect");
 const productCategory = document.querySelector("#productCategory");
 const originType = document.querySelector("#originType");
 const frontImage = document.querySelector("#frontImage");
@@ -120,13 +121,14 @@ const uploadInputs = Array.from(document.querySelectorAll("[data-file-slot]"));
 const dropZones = Array.from(document.querySelectorAll("[data-drop-slot]"));
 
 function currentTheme() {
-  return document.documentElement.dataset.theme === "dark" ? "dark" : "light";
+  const theme = document.documentElement.dataset.theme;
+  return THEMES.includes(theme) ? theme : "light";
 }
 
 function setTheme(theme) {
-  const normalizedTheme = theme === "dark" ? "dark" : "light";
+  const normalizedTheme = THEMES.includes(theme) ? theme : "light";
   document.documentElement.dataset.theme = normalizedTheme;
-  themeToggle.checked = normalizedTheme === "dark";
+  if (themeSelect) themeSelect.value = normalizedTheme;
   try {
     localStorage.setItem(THEME_STORAGE_KEY, normalizedTheme);
   } catch {
@@ -1339,10 +1341,12 @@ document.addEventListener("drop", function(event) {
   }
 });
 
-themeToggle.checked = currentTheme() === "dark";
-themeToggle.addEventListener("change", function() {
-  setTheme(themeToggle.checked ? "dark" : "light");
-});
+if (themeSelect) {
+  themeSelect.value = currentTheme();
+  themeSelect.addEventListener("change", function() {
+    setTheme(themeSelect.value);
+  });
+}
 
 modeChooseFile.addEventListener("click", function() { setUploadMode("choose"); });
 modeDragDrop.addEventListener("click", function() { setUploadMode("drop"); });

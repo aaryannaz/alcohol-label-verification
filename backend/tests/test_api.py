@@ -44,7 +44,7 @@ class ApiTests(unittest.TestCase):
         self.assertEqual(response.status_code, 200)
         self.assertIn("text/html", response.headers["content-type"])
         self.assertIn("Alcohol Label Verification", response.text)
-        self.assertIn("themeToggle", response.text)
+        self.assertIn("themeSelect", response.text)
         self.assertIn("data-file-slot=\"front\"", response.text)
         self.assertIn("data-drop-slot=\"front\"", response.text)
         self.assertIn("modeBatch", response.text)
