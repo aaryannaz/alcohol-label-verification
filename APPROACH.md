@@ -23,11 +23,13 @@ application, and flag anything that doesn't match — fast enough to actually us
    wine appellation triggers, etc.). Because it's pure, it's deterministic,
    auditable, and the most heavily tested part of the system.
 
-**Expected-vs-Reviewed workflow.** One extraction pre-fills both an "Expected
-COLA" column and a "Reviewed Label" column. The reviewer corrects the Expected
-side to match their application, then Verify re-runs validation **without another
-AI call**. This mirrors how a reviewer actually works (correct + confirm rather
-than transcribe) and keeps the AI to one call per label.
+**One extraction, then correct-and-compare.** One extraction pre-fills a single
+set of editable fields. The reviewer edits them to match the approved COLA
+application, then Verify compares those values against the **original label
+snapshot** captured at extract time — **without another AI call**. This mirrors
+how a reviewer works (correct + confirm rather than transcribe), keeps the AI to
+one call per label, and keeps the input to one clean column (the field-by-field
+comparison shows in the results).
 
 **Category-aware extraction.** The response schema is scoped to the fields that
 apply to the selected product category (malt beverage / wine / distilled
@@ -74,8 +76,10 @@ app — one deployable unit, appropriate for a prototype on a short timeline.
 
 - Label artwork is provided as an image (PNG/JPEG/WebP) or PDF, ≤ 10 MB, and a
   single uploaded file may contain all panels for one review item.
-- There is no separate COLA upload yet — the Expected side is pre-filled from the
-  artwork and corrected by the reviewer.
+- There is no separate COLA upload yet — the fields are pre-filled from the label
+  and edited by the reviewer to represent the COLA application; a COLA-document
+  upload (so the expected values come from the application itself) is the
+  documented next step.
 - The government warning must match the exact statutory wording; the
   "GOVERNMENT WARNING" heading must be capitalized, but the body's letter case is
   not regulated (all-caps is compliant). Bold, type size, and placement are

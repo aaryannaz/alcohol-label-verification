@@ -152,22 +152,16 @@
 
         <section class="panel fields-panel" aria-labelledby="fields-title">
           <div class="section-heading">
-            <h2 id="fields-title">Fields</h2>
-            <button id="extractButton" class="secondary-button" type="button">Extract Fields</button>
+            <h2 id="fields-title">COLA application fields</h2>
+            <button id="extractButton" class="secondary-button" type="button">Extract from Label</button>
           </div>
 
-          <div class="field-columns">
-            <form id="expectedFields" class="field-stack" aria-label="Expected COLA fields">
-              <h3>Expected COLA</h3>
-            </form>
+          <p class="fields-help">These auto-fill from the label. Edit each field to match the approved COLA application, then Verify to compare it against the label.</p>
 
-            <form id="reviewedFields" class="field-stack" aria-label="Reviewed label fields">
-              <h3>Reviewed Label</h3>
-            </form>
-          </div>
+          <form id="expectedFields" class="field-stack field-grid" aria-label="COLA application fields"></form>
 
           <div class="action-row">
-            <button id="verifyButton" class="primary-button" type="button">Verify Reviewed Fields</button>
+            <button id="verifyButton" class="primary-button" type="button">Verify Against Label</button>
           </div>
         </section>
 
@@ -196,8 +190,8 @@
                 <tr>
                   <th>Field</th>
                   <th>Status</th>
-                  <th>Expected</th>
-                  <th>Reviewed</th>
+                  <th>Expected (COLA)</th>
+                  <th>Label</th>
                 </tr>
               </thead>
               <tbody id="resultsBody">

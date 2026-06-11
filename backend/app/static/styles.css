@@ -347,6 +347,24 @@ input[type="file"] {
   min-width: 0;
 }
 
+.fields-help {
+  margin: 0 0 16px;
+  color: var(--muted);
+  font-size: 13px;
+  line-height: 1.45;
+}
+
+/* The single COLA form lays its fields out in two compact columns; long
+   textarea fields (warning, name/address) span the full width. */
+.field-grid {
+  grid-template-columns: repeat(2, minmax(0, 1fr));
+  gap: 14px 18px;
+}
+
+.field-grid .field-row:has(textarea) {
+  grid-column: 1 / -1;
+}
+
 .field-note {
   color: var(--muted);
   font-size: 12px;
@@ -595,7 +613,8 @@ tr.is-flagged td:first-child {
     padding: 10px;
   }
 
-  .field-columns {
+  .field-columns,
+  .field-grid {
     grid-template-columns: 1fr;
   }
 

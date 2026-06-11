@@ -78,7 +78,6 @@ const originType = document.querySelector("#originType");
 const frontImage = document.querySelector("#frontImage");
 const backImage = document.querySelector("#backImage");
 const expectedFields = document.querySelector("#expectedFields");
-const reviewedFields = document.querySelector("#reviewedFields");
 const requirementChips = document.querySelector("#requirementChips");
 const extractButton = document.querySelector("#extractButton");
 const verifyButton = document.querySelector("#verifyButton");
@@ -278,8 +277,8 @@ function createField(prefix, key) {
 }
 
 function renderFieldStack(container, prefix) {
-  const heading = container.querySelector("h3").outerHTML;
-  container.innerHTML = heading;
+  const headingEl = container.querySelector("h3");
+  container.innerHTML = headingEl ? headingEl.outerHTML : "";
 
   let optionalHeaderAdded = false;
   for (const key of orderedVisibleFields()) {
@@ -425,13 +424,6 @@ function formValues(container) {
   return values;
 }
 
-function setReviewedValues(values) {
-  for (const [key, value] of Object.entries(values || {})) {
-    const control = reviewedFields.querySelector("[name=" + JSON.stringify(key) + "]");
-    if (control) control.value = value || "";
-  }
-}
-
 function setExpectedValues(values) {
   for (const [key, value] of Object.entries(values || {})) {
     const control = expectedFields.querySelector("[name=" + JSON.stringify(key) + "]");
@@ -475,7 +467,7 @@ function isFlaggedStatus(status) {
 function renderResults(response) {
   state.lastResult = response;
   const expected = response.expected || formValues(expectedFields);
-  const reviewed = response.reviewed || response.extracted || formValues(reviewedFields);
+  const reviewed = response.reviewed || response.extracted || state.extracted || {};
   const validation = response.validation || {};
   const requirements = response.field_requirements || {};
   resultsBody.innerHTML = "";
@@ -598,8 +590,6 @@ async function refreshRequirements() {
   state.requirements = body.field_requirements;
   renderRequirementChips();
   renderFieldStack(expectedFields, "expected");
-  renderFieldStack(reviewedFields, "reviewed");
-  setReviewedValues(state.extracted);
   setExpectedValues(state.extracted);
   setStatus("Ready");
 }
@@ -625,9 +615,8 @@ async function extractFields() {
     const response = await fetchWithTimeout("/extract", { method: "POST", body: formData });
     const body = await parseApiResponse(response);
     state.extracted = body.extracted || {};
-    setReviewedValues(state.extracted);
     setExpectedValues(state.extracted);
-    setStatus("Fields extracted — review Expected COLA fields and adjust if needed, then click Verify");
+    setStatus("Fields extracted from the label — edit each field to match the COLA application, then Verify");
   } catch (error) {
     showError(error.message);
     setStatus("Extraction failed");
@@ -648,7 +637,7 @@ async function verifyReviewedFields() {
         product_category: productCategory.value,
         origin_type: originType.value,
         expected: formValues(expectedFields),
-        reviewed: formValues(reviewedFields),
+        reviewed: state.extracted,
       }),
     });
     const body = await parseApiResponse(response);
@@ -937,9 +926,8 @@ async function reviewBatchItem(id) {
   setUploadMode("choose");
   renderEmptyResults("No verification results for this batch item yet.");
   await refreshRequirements();
-  setReviewedValues(item.extracted);
   setExpectedValues(item.extracted);
-  setStatus("Loaded batch item #" + item.id + " — review Expected COLA fields and verify");
+  setStatus("Loaded batch item #" + item.id + " — edit fields to match the COLA application, then Verify");
   document.querySelector("#fields-title").scrollIntoView({ block: "start" });
 }
 
