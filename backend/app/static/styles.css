@@ -667,6 +667,14 @@ tr.is-flagged td:first-child {
   gap: 7px;
 }
 
+.workflow-toggle {
+  display: grid;
+  gap: 7px;
+  margin-bottom: 16px;
+  padding-bottom: 16px;
+  border-bottom: 1px solid var(--line);
+}
+
 .upload-mode-label {
   color: var(--muted);
   font-size: 13px;
@@ -753,6 +761,14 @@ tr.is-flagged td:first-child {
 .cola-drop-zone {
   min-height: 60px;
   align-content: center;
+}
+
+/* These set an explicit display, which would otherwise defeat the `hidden`
+   attribute (same reason .upload-pane needs its own [hidden] rule). */
+.cola-upload[hidden],
+.cola-drop-zone[hidden],
+.file-select-button[hidden] {
+  display: none;
 }
 
 .file-control {

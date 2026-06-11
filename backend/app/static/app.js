@@ -58,6 +58,7 @@ const state = {
   requirements: { required: [], conditional: [], optional: [] },
   extracted: {},
   expectedValues: {},
+  workflowMode: "cola",
   colaLoaded: false,
   colaFile: null,
   validation: {},
@@ -90,6 +91,10 @@ const colaFileName = document.getElementById("colaFileName");
 const colaRemove = document.getElementById("colaRemove");
 const colaChooseBtn = document.getElementById("colaChooseBtn");
 const colaDropZone = document.getElementById("colaDropZone");
+const colaUploadBlock = document.querySelector(".cola-upload");
+const fieldsHelp = document.querySelector(".fields-help");
+const modeColaWorkflow = document.getElementById("modeColaWorkflow");
+const modeLabelWorkflow = document.getElementById("modeLabelWorkflow");
 const statusText = document.querySelector("#statusText");
 const errorBox = document.querySelector("#errorBox");
 const resultsBody = document.querySelector("#resultsBody");
@@ -384,7 +389,7 @@ function setBusy(busy) {
   // origin) and the action buttons while a request is in flight, and show a
   // spinner / announce busy state to assistive tech.
   state.inFlight = busy;
-  const controls = [productCategory, originType, extractButton, verifyButton, modeChooseFile, modeDragDrop, modeBatch, colaFile, colaRemove];
+  const controls = [productCategory, originType, extractButton, verifyButton, modeChooseFile, modeDragDrop, modeBatch, colaFile, colaRemove, modeColaWorkflow, modeLabelWorkflow];
   for (const control of controls) {
     if (control) control.disabled = busy;
   }
@@ -697,15 +702,44 @@ async function extractCola(file) {
   }
 }
 
+function clearExpectedFields() {
+  for (const control of expectedFields.querySelectorAll("input, textarea")) {
+    control.value = "";
+  }
+}
+
 function clearCola() {
   state.colaFile = null;
   state.colaLoaded = false;
   state.expectedValues = state.extracted || {};
   if (colaFile) colaFile.value = "";
   renderColaSummary();
+  // Blank the form first so COLA-derived values don't linger; then re-apply
+  // whatever the label extraction left (empty until the reviewer extracts).
+  clearExpectedFields();
   setExpectedValues(state.expectedValues);
   clearError();
   setStatus("COLA removed");
+}
+
+const COLA_HELP = "These auto-fill from the uploaded COLA application. Upload the label artwork, then Verify to compare the label against the COLA.";
+const LABEL_HELP = "These auto-fill from the label. Edit each field to match the approved COLA application, then Verify to compare it against the label.";
+
+function setWorkflowMode(mode) {
+  const isCola = mode === "cola";
+  state.workflowMode = isCola ? "cola" : "label";
+  if (colaUploadBlock) colaUploadBlock.hidden = !isCola;
+  if (modeColaWorkflow) {
+    modeColaWorkflow.classList.toggle("active", isCola);
+    modeColaWorkflow.setAttribute("aria-pressed", String(isCola));
+  }
+  if (modeLabelWorkflow) {
+    modeLabelWorkflow.classList.toggle("active", !isCola);
+    modeLabelWorkflow.setAttribute("aria-pressed", String(!isCola));
+  }
+  // Leaving COLA mode drops any loaded COLA so the form reverts to label-driven.
+  if (!isCola && state.colaLoaded) clearCola();
+  if (fieldsHelp) fieldsHelp.textContent = isCola ? COLA_HELP : LABEL_HELP;
 }
 
 async function extractFields() {
@@ -1306,6 +1340,9 @@ if (colaFile) {
   });
 }
 if (colaRemove) colaRemove.addEventListener("click", clearCola);
+if (modeColaWorkflow) modeColaWorkflow.addEventListener("click", function() { setWorkflowMode("cola"); });
+if (modeLabelWorkflow) modeLabelWorkflow.addEventListener("click", function() { setWorkflowMode("label"); });
+setWorkflowMode(state.workflowMode);
 if (exportButton) exportButton.addEventListener("click", exportResults);
 if (printButton) printButton.addEventListener("click", printResults);
 
