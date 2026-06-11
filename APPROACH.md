@@ -40,8 +40,9 @@ currently ~99.5% accuracy. Prompt and model changes are gated on it.
 
 **Performance.** Extraction runs at ~2s by using `gemini-2.5-flash` with its
 "thinking" phase disabled — reading a label is perception, not reasoning, so
-thinking only added latency. Batch mode processes up to 10 files **in parallel**
-(a small worker pool), finishing a full batch in roughly the same ~10s budget.
+thinking only added latency. Batch mode processes files **in parallel** (a small
+worker pool), so a realistic batch (around 10 files) finishes within the ~10s
+budget instead of ~20s sequentially.
 
 ## Tools used
 
@@ -85,8 +86,9 @@ app — one deployable unit, appropriate for a prototype on a short timeline.
   appears and the reviewer confirms applicability.
 - Standard-of-fill checks are advisory: the approved-size tables change by
   regulation, so a non-standard size is flagged for confirmation, not failed.
-- Batch is capped at 10 files (15 was deemed overkill), processed in parallel to
-  land near the ~10-second target.
+- A realistic batch is around 10 files (15 would be unusual); files are
+  processed in parallel to land near the ~10-second target. There is no hard cap
+  — a larger batch simply takes proportionally longer.
 - Rate limiting is in-memory and single-instance; a multi-instance production
   deployment would back it with a shared store (e.g. Redis).
 

@@ -37,8 +37,7 @@ async function loadFieldConfig() {
   }
 }
 const MAX_UPLOAD_BYTES = 10 * 1024 * 1024;
-const MAX_BATCH_FILES = 10;       // cap per the batch requirement (15 is overkill)
-const BATCH_CONCURRENCY = 5;      // process files in parallel so 10 finish in ~10s
+const BATCH_CONCURRENCY = 5;      // process batch files in parallel (~10 files in ~10s)
 const ACCEPTED_EXTENSIONS = new Set(["pdf", "png", "jpg", "jpeg", "webp"]);
 const ACCEPTED_MIME_TYPES = new Set(["application/pdf", "image/png", "image/jpeg", "image/webp"]);
 const FILE_LABELS = {
@@ -797,19 +796,10 @@ function updateBatchControls() {
 }
 
 function addBatchFiles(files) {
-  let incomingFiles = Array.from(files || []);
+  const incomingFiles = Array.from(files || []);
   if (!incomingFiles.length) return;
 
   clearError();
-
-  // Enforce the 10-file batch cap (across the existing queue + new files).
-  const remaining = MAX_BATCH_FILES - state.batch.items.length;
-  let droppedForCap = 0;
-  if (incomingFiles.length > remaining) {
-    droppedForCap = incomingFiles.length - Math.max(0, remaining);
-    incomingFiles = incomingFiles.slice(0, Math.max(0, remaining));
-  }
-
   let invalidCount = 0;
 
   for (const file of incomingFiles) {
@@ -830,19 +820,11 @@ function addBatchFiles(files) {
   }
 
   renderBatchQueue();
-  const addedCount = incomingFiles.length;
-  if (addedCount) {
-    setStatus(addedCount === 1 ? "Batch file added" : addedCount + " batch files added");
-  }
+  setStatus(incomingFiles.length === 1 ? "Batch file added" : incomingFiles.length + " batch files added");
 
-  const messages = [];
-  if (droppedForCap) {
-    messages.push("Batch is limited to " + MAX_BATCH_FILES + " files; " + droppedForCap + " not added.");
-  }
   if (invalidCount) {
-    messages.push(invalidCount + " batch file" + (invalidCount === 1 ? " needs" : "s need") + " attention before processing.");
+    showError(invalidCount + " batch file" + (invalidCount === 1 ? " needs" : "s need") + " attention before processing.");
   }
-  if (messages.length) showError(messages.join(" "));
 }
 
 async function processBatchItem(item) {
