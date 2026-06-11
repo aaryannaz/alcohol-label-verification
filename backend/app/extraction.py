@@ -17,7 +17,7 @@ from pydantic import BaseModel, create_model
 from .clients import GEMINI_MODEL, get_gemini_client
 from .errors import AppError
 from .fields import fields_for_category
-from .prompts import EXTRACTION_PROMPT
+from .prompts import COLA_EXTRACTION_PROMPT, EXTRACTION_PROMPT
 from .schemas import LabelFields
 from .uploads import read_validated_upload
 
@@ -120,13 +120,9 @@ def build_contents(uploads):
     return contents
 
 
-async def run_extraction(contents, config=None) -> dict:
-    """Call Gemini with retries, parse the JSON response, and coerce it into the
-    canonical LabelFields shape. Shared by the API and the eval harness so both
-    exercise the identical extraction path. `config` scopes the response schema
-    to a product category; defaults to all fields."""
-    if config is None:
-        config = _generation_config(None)
+async def _run_and_parse(contents, config) -> dict:
+    """Call Gemini with retries and return the parsed raw JSON object. Shared by
+    label and COLA extraction; callers coerce the dict into their target shape."""
     last_error = None
     start = time.monotonic()
 
@@ -192,7 +188,17 @@ async def run_extraction(contents, config=None) -> dict:
             details={},
         )
 
-    return _coerce_fields(extracted)
+    return extracted
+
+
+async def run_extraction(contents, config=None) -> dict:
+    """Label extraction: call Gemini and coerce into the canonical LabelFields
+    shape. Shared by the API and the eval harness so both exercise the identical
+    extraction path. `config` scopes the response schema to a product category;
+    defaults to all fields."""
+    if config is None:
+        config = _generation_config(None)
+    return _coerce_fields(await _run_and_parse(contents, config))
 
 
 async def extract_label_fields(front_image: UploadFile, back_image: UploadFile | None = None, product_category: str | None = None) -> dict:
@@ -204,3 +210,63 @@ async def extract_label_fields(front_image: UploadFile, back_image: UploadFile |
         uploads.append((back_upload.data, back_upload.mime_type))
 
     return await run_extraction(build_contents(uploads), _generation_config(product_category))
+
+
+# --- COLA application extraction -------------------------------------------------
+# The COLA form states the product type and source, so we don't know the category
+# up front: the response schema includes product_category + origin_type alongside
+# the label-field keys, and the result is mapped back to canonical enum values.
+
+_COLA_CATEGORY_MAP = {
+    "wine": "wine",
+    "distilled spirits": "distilled_spirits",
+    "distilled_spirits": "distilled_spirits",
+    "spirits": "distilled_spirits",
+    "malt beverage": "malt_beverage",
+    "malt_beverage": "malt_beverage",
+    "malt": "malt_beverage",
+    "beer": "malt_beverage",
+}
+_COLA_ORIGIN_MAP = {"domestic": "domestic", "imported": "imported"}
+
+
+@lru_cache
+def _cola_generation_config():
+    """Generation config for reading a COLA form: the schema adds product_category
+    and origin_type to the label-field keys so the form's own type/source boxes
+    drive the category and origin selection."""
+    keys = list(LabelFields.model_fields)
+    scoped_model = create_model(
+        "ColaFieldsScoped",
+        __base__=BaseModel,
+        product_category=(str, ""),
+        origin_type=(str, ""),
+        **{key: (str, "") for key in keys},
+    )
+    return types.GenerateContentConfig(
+        response_mime_type="application/json",
+        response_schema=scoped_model,
+        temperature=0,
+        thinking_config=types.ThinkingConfig(thinking_budget=0),
+    )
+
+
+def _coerce_cola(raw: dict) -> dict:
+    """Split the raw COLA response into {product_category, origin_type, fields},
+    mapping the form's type/source strings to canonical enum values (None when
+    unrecognised, so the UI keeps its current selection)."""
+    category = _COLA_CATEGORY_MAP.get((raw.get("product_category") or "").strip().lower())
+    origin = _COLA_ORIGIN_MAP.get((raw.get("origin_type") or "").strip().lower())
+    return {
+        "product_category": category,
+        "origin_type": origin,
+        "fields": _coerce_fields(raw),
+    }
+
+
+async def extract_cola_fields(cola_file: UploadFile) -> dict:
+    """Extract the application's stated values from an uploaded COLA form."""
+    upload = await read_validated_upload(cola_file, "cola_file")
+    contents = [COLA_EXTRACTION_PROMPT, types.Part.from_bytes(data=upload.data, mime_type=upload.mime_type)]
+    raw = await _run_and_parse(contents, _cola_generation_config())
+    return _coerce_cola(raw)

@@ -1,3 +1,52 @@
+COLA_EXTRACTION_PROMPT = """
+You are reading a TTB COLA application form (TTB Form 5100.31, "Application for
+and Certification/Exemption of Label/Bottle Approval"), possibly exported from
+the COLA public registry. This is a STRUCTURED FORM with numbered boxes, NOT
+label artwork. Read the values the applicant entered into the numbered
+application boxes. The affixed label images on the form are NOT what you are
+reading here — extract only the typed application data.
+
+Return JSON with these keys. Use an empty string for any box that is blank or
+absent. Do not invent values.
+
+- product_category: from box 5 "TYPE OF PRODUCT". Return EXACTLY one of:
+  "wine", "distilled_spirits", or "malt_beverage" (map WINE->wine,
+  DISTILLED SPIRITS->distilled_spirits, MALT BEVERAGE->malt_beverage). It is the
+  box that is checked/marked.
+- origin_type: from box 3 "SOURCE OF PRODUCT". Return EXACTLY one of "domestic"
+  or "imported" (the checked box).
+- brand_name: from box 6 "BRAND NAME". Return the complete brand name as typed.
+- fanciful_name: from box 7 "FANCIFUL NAME (If any)". Empty string if blank.
+- class_type: the "CLASS/TYPE DESCRIPTION" shown on the form (often on the TTB
+  qualification page), e.g. "DESSERT /PORT/SHERRY/(COOKING) WINE". Return it as
+  printed. Do NOT include the words "Imported" or "Domestic".
+- domestic_name_address: from box 8 "NAME AND ADDRESS OF APPLICANT ..." ONLY IF
+  the source (box 3) is Domestic. Return the company name plus city and state as
+  typed (e.g. "CLEARWATER CANYON CELLARS LLC, LEWISTON ID"). If imported, leave
+  this empty.
+- importer_name_address: from box 8 ONLY IF the source (box 3) is Imported.
+  Otherwise empty.
+- country_of_origin: ONLY for an imported product, the foreign country of origin
+  if the form states one. Return just the country name. Empty for domestic.
+- grape_varietal: from box 10 "GRAPE VARIETAL(S) (Wine Only)". If two or more are
+  listed, comma-separate them. Empty if blank.
+- appellation_of_origin: from box 11 "WINE APPELLATION (If on label)". Empty if
+  blank.
+- net_contents: from box 15 only if a net-contents value is shown there (blown,
+  branded, or embossed). Otherwise empty.
+- alcohol_content: only if the form explicitly states an alcohol-by-volume
+  percentage; return just the percentage (e.g. "13.5%"). Usually empty.
+- All other keys (government_warning, sulfite_declaration,
+  fdc_yellow_5_declaration, cochineal_carmine_declaration, aspartame_declaration,
+  statement_of_age, commodity_statement, coloring_materials, wood_treatment,
+  state_of_distillation, vintage_date, percentage_of_foreign_wine): the COLA
+  application form does not carry these as typed fields. Return an empty string
+  for each.
+
+Return valid JSON only. Do not use markdown. Do not wrap the response in triple
+backticks.
+"""
+
 EXTRACTION_PROMPT = """
 Analyze the uploaded alcohol image or images.
 If two images are provided, the first is the front label and the second is the back label.

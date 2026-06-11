@@ -18,7 +18,7 @@ from .errors import (
     unhandled_exception_handler,
     validation_error_handler,
 )
-from .extraction import extract_label_fields
+from .extraction import extract_cola_fields, extract_label_fields
 from .fields import field_specs_payload
 from .observability import RequestIdMiddleware, configure_logging
 from .schemas import OriginType, ProductCategory, VerifyReviewedRequest
@@ -137,6 +137,19 @@ async def extract(
         "product_category": product_category.value,
         "origin_type": origin_type.value,
         "extracted": extracted,
+    }
+
+
+@app.post("/extract-cola", dependencies=COST_GUARDS)
+async def extract_cola(cola_file: UploadFile = File(...)):
+    """Read the approved COLA application form and return the application's stated
+    values plus the product category and origin detected from the form itself."""
+    result = await extract_cola_fields(cola_file)
+
+    return {
+        "product_category": result["product_category"],
+        "origin_type": result["origin_type"],
+        "extracted": result["fields"],
     }
 
 

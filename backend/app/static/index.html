@@ -30,6 +30,20 @@
             <h2 id="setup-title">Application</h2>
           </div>
 
+          <div class="cola-upload">
+            <div class="cola-upload-head">
+              <span class="cola-upload-title">COLA application <span class="cola-optional">(optional)</span></span>
+              <label class="file-select-button" for="colaFile">Select COLA file</label>
+              <input id="colaFile" class="native-file-input" type="file" accept=".pdf,.png,.jpg,.jpeg,.webp,application/pdf,image/png,image/jpeg,image/webp" />
+            </div>
+            <div class="file-summary" id="colaSummary" aria-live="polite">
+              <span class="file-empty">No COLA uploaded</span>
+              <span class="file-name" id="colaFileName"></span>
+              <button class="remove-file-button" id="colaRemove" type="button" hidden>Remove</button>
+            </div>
+            <p class="cola-help">Upload the approved COLA (TTB&nbsp;F&nbsp;5100.31) to auto-fill the application fields and set category &amp; origin. Then upload the label artwork below and Verify.</p>
+          </div>
+
           <div class="control-grid">
             <label>
               Product category

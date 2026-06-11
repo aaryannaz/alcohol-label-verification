@@ -57,6 +57,9 @@ const ORIGIN_OPTIONS = [
 const state = {
   requirements: { required: [], conditional: [], optional: [] },
   extracted: {},
+  expectedValues: {},
+  colaLoaded: false,
+  colaFile: null,
   validation: {},
   lastResult: null,
   inFlight: false,
@@ -81,6 +84,10 @@ const expectedFields = document.querySelector("#expectedFields");
 const requirementChips = document.querySelector("#requirementChips");
 const extractButton = document.querySelector("#extractButton");
 const verifyButton = document.querySelector("#verifyButton");
+const colaFile = document.getElementById("colaFile");
+const colaSummary = document.getElementById("colaSummary");
+const colaFileName = document.getElementById("colaFileName");
+const colaRemove = document.getElementById("colaRemove");
 const statusText = document.querySelector("#statusText");
 const errorBox = document.querySelector("#errorBox");
 const resultsBody = document.querySelector("#resultsBody");
@@ -375,7 +382,7 @@ function setBusy(busy) {
   // origin) and the action buttons while a request is in flight, and show a
   // spinner / announce busy state to assistive tech.
   state.inFlight = busy;
-  const controls = [productCategory, originType, extractButton, verifyButton, modeChooseFile, modeDragDrop, modeBatch];
+  const controls = [productCategory, originType, extractButton, verifyButton, modeChooseFile, modeDragDrop, modeBatch, colaFile, colaRemove];
   for (const control of controls) {
     if (control) control.disabled = busy;
   }
@@ -637,8 +644,66 @@ async function refreshRequirements() {
   state.requirements = body.field_requirements;
   renderRequirementChips();
   renderFieldStack(expectedFields, "expected");
-  setExpectedValues(state.extracted);
+  setExpectedValues(state.expectedValues);
   setStatus("Ready");
+}
+
+function renderColaSummary() {
+  if (!colaSummary) return;
+  const has = Boolean(state.colaFile);
+  colaSummary.classList.toggle("has-file", has);
+  if (colaFileName) {
+    colaFileName.textContent = has
+      ? state.colaFile.name + (state.colaLoaded ? " — fields loaded" : "")
+      : "";
+  }
+  if (colaRemove) colaRemove.hidden = !has;
+}
+
+async function extractCola(file) {
+  const error = validateClientFile(file);
+  if (error) {
+    showError(error);
+    setStatus("File selection needs attention");
+    if (colaFile) colaFile.value = "";
+    return;
+  }
+  clearError();
+  state.colaFile = file;
+  renderColaSummary();
+
+  const formData = new FormData();
+  formData.append("cola_file", file);
+
+  setBusy(true);
+  setStatus("Reading the COLA application");
+  try {
+    const response = await fetchWithTimeout("/extract-cola", { method: "POST", body: formData });
+    const body = await parseApiResponse(response);
+    if (body.product_category) productCategory.value = body.product_category;
+    if (body.origin_type) originType.value = body.origin_type;
+    state.expectedValues = body.extracted || {};
+    state.colaLoaded = true;
+    await refreshRequirements();
+    renderColaSummary();
+    setStatus("COLA fields loaded — upload the label artwork, then Verify against it");
+  } catch (error) {
+    showError(error.message);
+    setStatus("COLA extraction failed");
+  } finally {
+    setBusy(false);
+  }
+}
+
+function clearCola() {
+  state.colaFile = null;
+  state.colaLoaded = false;
+  state.expectedValues = state.extracted || {};
+  if (colaFile) colaFile.value = "";
+  renderColaSummary();
+  setExpectedValues(state.expectedValues);
+  clearError();
+  setStatus("COLA removed");
 }
 
 async function extractFields() {
@@ -662,8 +727,15 @@ async function extractFields() {
     const response = await fetchWithTimeout("/extract", { method: "POST", body: formData });
     const body = await parseApiResponse(response);
     state.extracted = body.extracted || {};
-    setExpectedValues(state.extracted);
-    setStatus("Fields extracted from the label — edit each field to match the COLA application, then Verify");
+    if (state.colaLoaded) {
+      // The COLA already populated the expected fields; the label only supplies
+      // the values being checked. Don't overwrite the reviewer's COLA values.
+      setStatus("Label read — now Verify it against the COLA application fields");
+    } else {
+      state.expectedValues = state.extracted;
+      setExpectedValues(state.expectedValues);
+      setStatus("Fields extracted from the label — edit each field to match the COLA application, then Verify");
+    }
   } catch (error) {
     showError(error.message);
     setStatus("Extraction failed");
@@ -964,6 +1036,11 @@ async function reviewBatchItem(id) {
   productCategory.value = item.productCategory;
   originType.value = item.originType;
   state.extracted = item.extracted;
+  state.expectedValues = item.extracted;
+  state.colaLoaded = false;
+  state.colaFile = null;
+  if (colaFile) colaFile.value = "";
+  renderColaSummary();
   state.files.front = item.file;
   state.files.back = null;
   syncInputFiles("front", item.file);
@@ -1117,6 +1194,7 @@ for (const button of document.querySelectorAll("[data-remove-file]")) {
 setUploadMode("choose");
 renderFileState("front");
 renderFileState("back");
+renderColaSummary();
 renderBatchQueue();
 
 document.addEventListener("dragover", function(event) {
@@ -1178,6 +1256,12 @@ productCategory.addEventListener("change", refreshRequirements);
 originType.addEventListener("change", refreshRequirements);
 extractButton.addEventListener("click", extractFields);
 verifyButton.addEventListener("click", verifyReviewedFields);
+if (colaFile) {
+  colaFile.addEventListener("change", function() {
+    if (colaFile.files.length) extractCola(colaFile.files[0]);
+  });
+}
+if (colaRemove) colaRemove.addEventListener("click", clearCola);
 if (exportButton) exportButton.addEventListener("click", exportResults);
 if (printButton) printButton.addEventListener("click", printResults);
 
