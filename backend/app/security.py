@@ -34,7 +34,7 @@ CORS_ALLOW_ORIGINS = [origin.strip() for origin in os.getenv("CORS_ALLOW_ORIGINS
 
 CONTENT_SECURITY_POLICY = (
     "default-src 'self'; "
-    "img-src 'self' data:; "
+    "img-src 'self' data: blob:; "  # blob: for the in-page label image preview
     "style-src 'self' 'unsafe-inline'; "
     "object-src 'none'; "
     "frame-ancestors 'none'; "

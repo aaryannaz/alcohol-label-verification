@@ -316,6 +316,43 @@ input[type="file"] {
   margin-top: 16px;
 }
 
+.label-preview {
+  margin-top: 18px;
+  display: grid;
+  gap: 10px;
+}
+
+.label-preview h3 {
+  margin: 0 0 2px;
+  font-size: 14px;
+}
+
+.label-preview-item {
+  margin: 0;
+  display: grid;
+  gap: 6px;
+}
+
+.label-preview-label {
+  color: var(--muted);
+  font-size: 12px;
+  font-weight: 650;
+}
+
+.label-preview-img {
+  width: 100%;
+  max-height: 360px;
+  object-fit: contain;
+  border: 1px solid var(--line);
+  border-radius: 6px;
+  background: var(--subtle-bg);
+}
+
+.label-preview-note {
+  color: var(--muted);
+  font-size: 12px;
+}
+
 .chip {
   display: inline-flex;
   align-items: center;

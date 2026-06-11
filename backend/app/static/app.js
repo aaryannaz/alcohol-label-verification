@@ -185,6 +185,56 @@ function renderFileState(slot) {
   for (const zone of document.querySelectorAll("[data-drop-slot=" + JSON.stringify(slot) + "]")) {
     zone.classList.toggle("has-file", Boolean(file));
   }
+
+  renderLabelPreview();
+}
+
+function renderLabelPreview() {
+  const container = document.getElementById("labelPreview");
+  if (!container) return;
+
+  // Release any previous object URLs before re-rendering.
+  (state.previewUrls || []).forEach((url) => URL.revokeObjectURL(url));
+  state.previewUrls = [];
+  container.innerHTML = "";
+
+  const present = [["front", state.files.front], ["back", state.files.back]].filter(function(entry) { return entry[1]; });
+  if (!present.length) {
+    container.hidden = true;
+    return;
+  }
+  container.hidden = false;
+
+  const heading = document.createElement("h3");
+  heading.textContent = "Label preview";
+  container.appendChild(heading);
+
+  for (const [slot, file] of present) {
+    const item = document.createElement("figure");
+    item.className = "label-preview-item";
+
+    const caption = document.createElement("figcaption");
+    caption.className = "label-preview-label";
+    caption.textContent = FILE_LABELS[slot];
+    item.appendChild(caption);
+
+    if (file.type && file.type.indexOf("image/") === 0) {
+      const url = URL.createObjectURL(file);
+      state.previewUrls.push(url);
+      const img = document.createElement("img");
+      img.src = url;
+      img.alt = FILE_LABELS[slot] + " label artwork";
+      img.className = "label-preview-img";
+      item.appendChild(img);
+    } else {
+      const note = document.createElement("span");
+      note.className = "label-preview-note";
+      note.textContent = file.name + " — PDF, not previewed inline";
+      item.appendChild(note);
+    }
+
+    container.appendChild(item);
+  }
 }
 
 function setSelectedFile(slot, file) {
