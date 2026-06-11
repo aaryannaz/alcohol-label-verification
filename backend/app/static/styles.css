@@ -166,10 +166,10 @@
   border-color: #ffffff;
 }
 
+/* The government layout's blue nav bar already has Home / How To, so the topbar
+   How To link is redundant — hide it there. */
 :root[data-layout="government"] .topbar .docs-link {
-  background: transparent;
-  color: #ffffff;
-  border-color: rgba(255, 255, 255, 0.45);
+  display: none;
 }
 
 :root[data-layout="government"] .gov-nav {
