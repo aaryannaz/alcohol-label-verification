@@ -506,6 +506,11 @@ textarea[name="importer_name_address"] {
   max-width: 100%;
   min-width: 0;
   min-height: 0;
+  /* The input/select rule sets a fixed 19px height to match the label text, but
+     the native "Choose File" button is taller than that and gets its bottom edge
+     clipped (overflow: clip). Let the file control size to its own height. */
+  height: auto;
+  overflow: visible;
   padding: 0;
   border: none;
   background: none;
