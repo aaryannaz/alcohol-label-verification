@@ -461,7 +461,7 @@ input,
 select,
 textarea {
   width: 100%;
-  min-height: 26px;
+  min-height: 18px;
   border: 1px solid var(--line);
   border-radius: var(--radius);
   background: var(--control-bg);
@@ -470,7 +470,9 @@ textarea {
 
 input,
 select {
-  padding: 0 9px;
+  height: 19px;
+  line-height: 1.1;
+  padding: 0 8px;
 }
 
 /* Selects sit inside <label>s (weight 650); keep their value text lighter. */
