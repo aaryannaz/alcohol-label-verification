@@ -37,6 +37,8 @@ async function loadFieldConfig() {
   }
 }
 const MAX_UPLOAD_BYTES = 10 * 1024 * 1024;
+const MAX_BATCH_FILES = 10;       // cap per the batch requirement (15 is overkill)
+const BATCH_CONCURRENCY = 5;      // process files in parallel so 10 finish in ~10s
 const ACCEPTED_EXTENSIONS = new Set(["pdf", "png", "jpg", "jpeg", "webp"]);
 const ACCEPTED_MIME_TYPES = new Set(["application/pdf", "image/png", "image/jpeg", "image/webp"]);
 const FILE_LABELS = {
@@ -795,10 +797,19 @@ function updateBatchControls() {
 }
 
 function addBatchFiles(files) {
-  const incomingFiles = Array.from(files || []);
+  let incomingFiles = Array.from(files || []);
   if (!incomingFiles.length) return;
 
   clearError();
+
+  // Enforce the 10-file batch cap (across the existing queue + new files).
+  const remaining = MAX_BATCH_FILES - state.batch.items.length;
+  let droppedForCap = 0;
+  if (incomingFiles.length > remaining) {
+    droppedForCap = incomingFiles.length - Math.max(0, remaining);
+    incomingFiles = incomingFiles.slice(0, Math.max(0, remaining));
+  }
+
   let invalidCount = 0;
 
   for (const file of incomingFiles) {
@@ -819,11 +830,19 @@ function addBatchFiles(files) {
   }
 
   renderBatchQueue();
-  setStatus(incomingFiles.length === 1 ? "Batch file added" : incomingFiles.length + " batch files added");
-
-  if (invalidCount) {
-    showError(invalidCount + " batch file" + (invalidCount === 1 ? " needs" : "s need") + " attention before processing.");
+  const addedCount = incomingFiles.length;
+  if (addedCount) {
+    setStatus(addedCount === 1 ? "Batch file added" : addedCount + " batch files added");
   }
+
+  const messages = [];
+  if (droppedForCap) {
+    messages.push("Batch is limited to " + MAX_BATCH_FILES + " files; " + droppedForCap + " not added.");
+  }
+  if (invalidCount) {
+    messages.push(invalidCount + " batch file" + (invalidCount === 1 ? " needs" : "s need") + " attention before processing.");
+  }
+  if (messages.length) showError(messages.join(" "));
 }
 
 async function processBatchItem(item) {
@@ -862,6 +881,22 @@ async function processBatchItem(item) {
   renderBatchQueue();
 }
 
+// Run the batch items through a small pool of parallel workers so a full batch
+// of 10 finishes in ~10s instead of ~20s sequentially.
+async function runBatchConcurrently(items, limit) {
+  const pending = items.slice();
+  async function worker() {
+    while (pending.length) {
+      await processBatchItem(pending.shift());
+    }
+  }
+  const workers = [];
+  for (let i = 0; i < Math.min(limit, items.length); i += 1) {
+    workers.push(worker());
+  }
+  await Promise.all(workers);
+}
+
 async function processBatchQueue() {
   clearError();
   const queue = state.batch.items.filter(canProcessBatchItem);
@@ -874,11 +909,9 @@ async function processBatchQueue() {
 
   state.batch.processing = true;
   renderBatchQueue();
-  setStatus("Processing batch");
+  setStatus("Processing " + queue.length + " file" + (queue.length === 1 ? "" : "s") + "…");
 
-  for (const item of queue) {
-    await processBatchItem(item);
-  }
+  await runBatchConcurrently(queue, BATCH_CONCURRENCY);
 
   state.batch.processing = false;
   renderBatchQueue();
