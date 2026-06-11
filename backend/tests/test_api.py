@@ -51,9 +51,8 @@ class ApiTests(unittest.TestCase):
         self.assertIn("id=\"batchPanel\"", response.text)
         self.assertIn("batchDropZone", response.text)
         self.assertIn("processBatchButton", response.text)
-        self.assertIn("Feedback", response.text)
-        self.assertIn("github.com/aaryannaz/alcohol-label-verification/issues/new", response.text)
         self.assertIn("/how-to", response.text)
+        self.assertNotIn("github.com", response.text)
         self.assertNotIn(">Swagger<", response.text)
         self.assertNotIn("Treasury DOGE</p>", response.text)
 
@@ -65,7 +64,6 @@ class ApiTests(unittest.TestCase):
         self.assertIn("How To", response.text)
         self.assertIn("Each batch file is treated as one review item.", response.text)
         self.assertIn("Use Batch mode when uploading multiple review items at once.", response.text)
-        self.assertIn("Use Feedback to open a GitHub issue with notes or questions.", response.text)
         self.assertIn("CSV or Excel import is a future enhancement.", response.text)
         self.assertNotIn(">Swagger<", response.text)
 
