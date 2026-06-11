@@ -33,8 +33,11 @@
           <div class="cola-upload">
             <div class="cola-upload-head">
               <span class="cola-upload-title">COLA application <span class="cola-optional">(optional)</span></span>
-              <label class="file-select-button" for="colaFile">Select COLA file</label>
+              <label class="file-select-button" for="colaFile" id="colaChooseBtn">Select COLA file</label>
               <input id="colaFile" class="native-file-input" type="file" accept=".pdf,.png,.jpg,.jpeg,.webp,application/pdf,image/png,image/jpeg,image/webp" />
+            </div>
+            <div class="drop-zone cola-drop-zone" id="colaDropZone" data-cola-drop aria-describedby="colaDropHint" hidden>
+              <span class="drop-hint" id="colaDropHint">Drop the COLA file here.</span>
             </div>
             <div class="file-summary" id="colaSummary" aria-live="polite">
               <span class="file-empty">No COLA uploaded</span>

@@ -88,6 +88,8 @@ const colaFile = document.getElementById("colaFile");
 const colaSummary = document.getElementById("colaSummary");
 const colaFileName = document.getElementById("colaFileName");
 const colaRemove = document.getElementById("colaRemove");
+const colaChooseBtn = document.getElementById("colaChooseBtn");
+const colaDropZone = document.getElementById("colaDropZone");
 const statusText = document.querySelector("#statusText");
 const errorBox = document.querySelector("#errorBox");
 const resultsBody = document.querySelector("#resultsBody");
@@ -1097,7 +1099,16 @@ function initBatchDropZone(zone) {
   });
 }
 
+function setColaMode(mode) {
+  // The COLA upload mirrors the label upload: a drop zone in Drag & Drop mode,
+  // a file picker otherwise.
+  const dropMode = mode === "drop";
+  if (colaChooseBtn) colaChooseBtn.hidden = dropMode;
+  if (colaDropZone) colaDropZone.hidden = !dropMode;
+}
+
 function setUploadMode(mode) {
+  setColaMode(mode);
   if (mode === "choose") {
     chooseFileInputs.hidden = false;
     dropZoneInputs.hidden = true;
@@ -1167,6 +1178,39 @@ function initDropZone(zone) {
     if (files[0]) setSelectedFile(slot, files[0]);
   });
 }
+
+function initColaDropZone(zone) {
+  if (!zone) return;
+  zone.addEventListener("dragenter", function(event) {
+    if (!draggedFiles(event)) return;
+    event.preventDefault();
+    zone.classList.add("drag-over");
+  });
+  zone.addEventListener("dragover", function(event) {
+    if (!draggedFiles(event)) return;
+    event.preventDefault();
+    zone.classList.add("drag-over");
+  });
+  zone.addEventListener("dragleave", function(event) {
+    if (zone.contains(event.relatedTarget)) return;
+    zone.classList.remove("drag-over");
+  });
+  zone.addEventListener("drop", function(event) {
+    if (!draggedFiles(event)) return;
+    event.preventDefault();
+    event.stopPropagation();
+    zone.classList.remove("drag-over");
+    const files = Array.from(event.dataTransfer.files || []);
+    if (files.length > 1) {
+      showError("Drop a single COLA application file.");
+      setStatus("File selection needs attention");
+      return;
+    }
+    if (files[0]) extractCola(files[0]);
+  });
+}
+
+initColaDropZone(colaDropZone);
 
 for (const input of uploadInputs) {
   input.addEventListener("change", function() {

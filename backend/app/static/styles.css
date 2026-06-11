@@ -750,6 +750,11 @@ tr.is-flagged td:first-child {
   color: var(--muted);
 }
 
+.cola-drop-zone {
+  min-height: 60px;
+  align-content: center;
+}
+
 .file-control {
   display: grid;
   gap: 7px;
