@@ -32,7 +32,11 @@ logger = logging.getLogger(__name__)
 # Retry behaviour is configurable so it can be tuned to the deployment's request
 # timeout (e.g. a short budget on serverless). Backoff is exponential.
 MAX_ATTEMPTS = int(os.getenv("GEMINI_MAX_ATTEMPTS", "3"))
-RETRY_BACKOFF_SECONDS = float(os.getenv("GEMINI_RETRY_BACKOFF_SECONDS", "1.0"))
+RETRY_BACKOFF_SECONDS = float(os.getenv("GEMINI_RETRY_BACKOFF_SECONDS", "0.4"))
+# Overall wall-clock budget across all retries. The stakeholder bar is ~5s per
+# label; a typical call returns in ~2s, so this caps the retry pile-up: once the
+# budget is spent we stop retrying instead of stacking attempts into ~80s.
+GEMINI_DEADLINE_SECONDS = float(os.getenv("GEMINI_DEADLINE_SECONDS", "6.0"))
 
 @lru_cache
 def _generation_config(product_category=None):
@@ -121,10 +125,13 @@ def build_contents(uploads):
 
 
 async def _run_and_parse(contents, config) -> dict:
-    """Call Gemini with retries and return the parsed raw JSON object. Shared by
-    label and COLA extraction; callers coerce the dict into their target shape."""
+    """Call Gemini with retries (bounded by an overall wall-clock budget) and
+    return the parsed raw JSON object. Shared by label and COLA extraction;
+    callers coerce the dict into their target shape."""
     last_error = None
     start = time.monotonic()
+    deadline = start + GEMINI_DEADLINE_SECONDS
+    response = None
 
     for attempt in range(MAX_ATTEMPTS):
         try:
@@ -144,14 +151,20 @@ async def _run_and_parse(contents, config) -> dict:
         except Exception as exc:
             last_error = exc
             logger.warning("Gemini extraction attempt %s/%s failed: %s", attempt + 1, MAX_ATTEMPTS, exc)
-            if attempt + 1 < MAX_ATTEMPTS:
-                await asyncio.sleep(RETRY_BACKOFF_SECONDS * (2 ** attempt))
-    else:
-        logger.error("Gemini extraction failed after %s attempts: %s", MAX_ATTEMPTS, last_error)
+            # Stop if we are out of attempts or have spent the wall-clock budget —
+            # don't stack more retries past the ~5s bar.
+            if attempt + 1 >= MAX_ATTEMPTS or time.monotonic() >= deadline:
+                break
+            backoff = RETRY_BACKOFF_SECONDS * (2 ** attempt)
+            await asyncio.sleep(min(backoff, max(0.0, deadline - time.monotonic())))
+
+    if response is None:
+        logger.error("Gemini extraction failed after %.0f ms / %s attempt(s): %s",
+                     (time.monotonic() - start) * 1000, attempt + 1, last_error)
         raise AppError(
             status_code=502,
             code="GEMINI_API_FAILURE",
-            message=f"Gemini extraction failed after {MAX_ATTEMPTS} attempts.",
+            message="Gemini extraction failed.",
             details={},
         )
 

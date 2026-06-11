@@ -257,6 +257,52 @@ class ApiTests(unittest.TestCase):
         self.assertEqual(extracted["government_warning"], "")
         self.assertEqual(extracted["fanciful_name"], "")
 
+    def test_extract_retries_are_bounded_by_wall_clock_budget(self):
+        # With the budget spent, the retry loop must stop after the first attempt
+        # rather than stacking all MAX_ATTEMPTS calls into the ~5s window.
+        import app.extraction as extraction
+
+        calls = {"n": 0}
+
+        def boom(*_a, **_k):
+            calls["n"] += 1
+            raise RuntimeError("transient")
+
+        with patch("app.extraction._generate_content", side_effect=boom), \
+                patch.object(extraction, "GEMINI_DEADLINE_SECONDS", 0.0):
+            response = self.client.post(
+                "/extract",
+                data={"product_category": "malt_beverage", "origin_type": "domestic"},
+                files={"front_image": ("label.png", PNG_BYTES, "image/png")},
+            )
+
+        self.assertEqual(response.status_code, 502)
+        self.assertEqual(response.json()["error"]["code"], "GEMINI_API_FAILURE")
+        self.assertEqual(calls["n"], 1)  # budget exhausted -> no retries
+
+    def test_extract_retries_within_budget_then_fails(self):
+        # With ample budget, it still retries up to MAX_ATTEMPTS before giving up.
+        import app.extraction as extraction
+
+        calls = {"n": 0}
+
+        def boom(*_a, **_k):
+            calls["n"] += 1
+            raise RuntimeError("transient")
+
+        with patch("app.extraction._generate_content", side_effect=boom), \
+                patch.object(extraction, "MAX_ATTEMPTS", 3), \
+                patch.object(extraction, "GEMINI_DEADLINE_SECONDS", 30.0), \
+                patch.object(extraction, "RETRY_BACKOFF_SECONDS", 0.0):
+            response = self.client.post(
+                "/extract",
+                data={"product_category": "malt_beverage", "origin_type": "domestic"},
+                files={"front_image": ("label.png", PNG_BYTES, "image/png")},
+            )
+
+        self.assertEqual(response.status_code, 502)
+        self.assertEqual(calls["n"], 3)  # all attempts used (budget not hit)
+
     def test_extract_coerces_nullish_string_literals_to_empty(self):
         model_output = {
             "brand_name": "Example Winery",
