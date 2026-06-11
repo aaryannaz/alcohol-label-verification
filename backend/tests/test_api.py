@@ -273,6 +273,37 @@ class ApiTests(unittest.TestCase):
         self.assertEqual(extracted["government_warning"], "")
         self.assertEqual(extracted["fanciful_name"], "")
 
+    def test_verify_extracts_and_validates_in_one_call(self):
+        # /verify (used by batch mode) extracts then validates with expected ==
+        # reviewed, so the response carries the full verification shape a single
+        # /verify-reviewed would, from one Gemini call.
+        model_output = {
+            "brand_name": "Example Brewing Co.",
+            "class_type": "India Pale Ale",
+            "government_warning": "",
+        }
+
+        with patch(
+            "app.extraction._generate_content",
+            return_value=GeminiResponse(json.dumps(model_output)),
+        ):
+            response = self.client.post(
+                "/verify",
+                data={"product_category": "malt_beverage", "origin_type": "domestic"},
+                files={"front_image": ("label.png", PNG_BYTES, "image/png")},
+            )
+
+        self.assertEqual(response.status_code, 200)
+        body = response.json()
+        self.assertIn("validation", body)
+        self.assertIn("compliance_checks", body)
+        # expected and reviewed are both seeded from the extraction.
+        self.assertEqual(body["expected"], body["reviewed"])
+        self.assertEqual(body["reviewed"]["brand_name"], "Example Brewing Co.")
+        # A missing government warning surfaces as a non-passing verdict the batch
+        # row turns into "Needs attention".
+        self.assertEqual(body["validation"]["government_warning"]["label"], "MISSING")
+
     def test_extract_cola_maps_category_origin_and_coerces_fields(self):
         # The COLA form states its own product type and source, so the response
         # carries product_category + origin_type alongside the field values; both
@@ -442,8 +473,9 @@ class ApiTests(unittest.TestCase):
         self.assertEqual(names.get("standard_of_fill"), "FAIL")
 
     def test_removed_legacy_verify_endpoints_are_gone(self):
-        # The dead flat-form endpoints were deleted in favor of /verify-reviewed.
-        self.assertEqual(self.client.post("/verify").status_code, 404)
+        # The dead flat-form /verify-front endpoint was deleted in favor of
+        # /verify-reviewed. (/verify now exists as the batch extract+validate
+        # endpoint — covered by test_verify_extracts_and_validates_in_one_call.)
         self.assertEqual(self.client.post("/verify-front").status_code, 404)
 
     def test_request_validation_uses_error_envelope(self):

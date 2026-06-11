@@ -140,6 +140,29 @@ async def extract(
     }
 
 
+@app.post("/verify", dependencies=COST_GUARDS)
+async def verify(
+    product_category: ProductCategory = Form(...),
+    origin_type: OriginType = Form(...),
+    front_image: UploadFile = File(...),
+    back_image: UploadFile | None = File(default=None),
+):
+    """Extract a label and validate it in one call. Expected and reviewed are both
+    seeded from the extraction (the documented COLA simplification — there is no
+    separate COLA upload here), so this is a completeness + statutory-warning +
+    label-compliance check. Used by batch mode to give each row a real verdict in
+    a single Gemini call, keeping the per-file request count (and rate-limit
+    footprint) the same as a bare /extract."""
+    extracted = await extract_label_fields(front_image, back_image, product_category.value)
+
+    return build_verification_response(
+        product_category=product_category.value,
+        origin_type=origin_type.value,
+        expected=extracted,
+        reviewed=extracted,
+    )
+
+
 @app.post("/extract-cola", dependencies=COST_GUARDS)
 async def extract_cola(cola_file: UploadFile = File(...)):
     """Read the approved COLA application form and return the application's stated

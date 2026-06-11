@@ -828,19 +828,61 @@ async function verifyReviewedFields() {
 }
 
 function batchStatusClass(status) {
-  if (status === "Needs review") return "status-neutral";
+  if (status === "Pass") return "status-pass";
+  if (status === "Needs attention") return "status-missing";
   if (status === "Processing") return "status-processing";
   if (status === "Error") return "status-fail";
   return "status-ready";
 }
 
 function batchStatusText(item) {
-  if (item.status === "Needs review") return "Needs review";
   return item.status;
 }
 
+// True once a row carries a verdict and can be opened in the editor.
+function isBatchItemVerified(item) {
+  return item.status === "Pass" || item.status === "Needs attention";
+}
+
 function canProcessBatchItem(item) {
-  return Boolean(item.file) && !item.clientError && item.status !== "Needs review" && item.status !== "Processing";
+  return Boolean(item.file) && !item.clientError && item.status !== "Processing" && !isBatchItemVerified(item);
+}
+
+// Derive a row's triage verdict from a full /verify response. A label needs
+// attention when any applicable field is flagged (missing/failed), the
+// government warning is non-compliant, or a label-level compliance check fails.
+// Mirrors the per-field flagging in renderResults so the badge and the editor
+// agree. Returns the counts so the row message can be specific.
+function computeBatchVerdict(body) {
+  const validation = body.validation || {};
+  const requirements = body.field_requirements || {};
+  const keys = [].concat(
+    requirements.required || [],
+    requirements.conditional || [],
+    requirements.optional || [],
+  );
+  const checkKeys = keys.length ? keys : Object.keys(validation);
+  let attention = 0;
+  let checked = 0;
+
+  for (const key of checkKeys) {
+    const raw = validation[key];
+    if (raw === undefined) continue;
+    checked += 1;
+    if (raw && typeof raw === "object") {
+      if (!(raw.expected === "PASS" && raw.label === "PASS")) attention += 1;
+    } else if (isFlaggedStatus(raw)) {
+      attention += 1;
+    }
+  }
+
+  let failedChecks = 0;
+  for (const check of (body.compliance_checks || [])) {
+    if (check.status === "FAIL") failedChecks += 1;
+  }
+
+  const flagged = attention + failedChecks;
+  return { verdict: flagged ? "Needs attention" : "Pass", flagged, checked };
 }
 
 function createBatchSelect(item, key, options) {
@@ -912,13 +954,13 @@ function renderBatchQueue() {
     const actions = document.createElement("div");
     actions.className = "batch-row-actions";
 
-    if (item.status === "Needs review") {
+    if (isBatchItemVerified(item)) {
       const reviewButton = document.createElement("button");
       reviewButton.className = "small-button";
       reviewButton.dataset.reviewBatch = String(item.id);
       reviewButton.disabled = state.batch.processing;
       reviewButton.type = "button";
-      reviewButton.textContent = "Review";
+      reviewButton.textContent = item.status === "Needs attention" ? "Review" : "Open";
       actions.appendChild(reviewButton);
     }
 
@@ -980,6 +1022,7 @@ function addBatchFiles(files) {
       message: clientError || "Ready to process",
       clientError,
       extracted: null,
+      verification: null,
     });
     state.batch.nextId += 1;
   }
@@ -999,14 +1042,16 @@ async function processBatchItem(item) {
     item.status = "Error";
     item.message = clientError;
     item.extracted = null;
+    item.verification = null;
     renderBatchQueue();
     return;
   }
 
   item.clientError = "";
   item.status = "Processing";
-  item.message = "Extracting fields";
+  item.message = "Extracting and verifying";
   item.extracted = null;
+  item.verification = null;
   renderBatchQueue();
 
   const formData = new FormData();
@@ -1015,14 +1060,21 @@ async function processBatchItem(item) {
   formData.append("front_image", item.file);
 
   try {
-    const response = await fetchWithTimeout("/extract", { method: "POST", body: formData });
+    // One /verify call extracts and validates the label, so each row lands on a
+    // real Pass / Needs-attention verdict instead of an unreviewed "extracted".
+    const response = await fetchWithTimeout("/verify", { method: "POST", body: formData });
     const body = await parseApiResponse(response);
-    item.extracted = body.extracted || {};
-    item.status = "Needs review";
-    item.message = "Open in editor to verify";
+    item.extracted = body.reviewed || body.extracted || {};
+    item.verification = body;
+    const { verdict, flagged, checked } = computeBatchVerdict(body);
+    item.status = verdict;
+    item.message = verdict === "Pass"
+      ? checked + " field" + (checked === 1 ? "" : "s") + " checked, all clear"
+      : flagged + " item" + (flagged === 1 ? "" : "s") + " need attention";
   } catch (error) {
     item.status = "Error";
     item.message = error.message;
+    item.verification = null;
   }
 
   renderBatchQueue();
@@ -1063,9 +1115,13 @@ async function processBatchQueue() {
   state.batch.processing = false;
   renderBatchQueue();
 
-  const readyCount = state.batch.items.filter((item) => item.status === "Needs review").length;
+  const passCount = state.batch.items.filter((item) => item.status === "Pass").length;
+  const attentionCount = state.batch.items.filter((item) => item.status === "Needs attention").length;
   const errorCount = state.batch.items.filter((item) => item.status === "Error").length;
-  setStatus("Batch complete: " + readyCount + " ready to review" + (errorCount ? ", " + errorCount + " need attention" : ""));
+  const parts = [passCount + " passed"];
+  if (attentionCount) parts.push(attentionCount + " need attention");
+  if (errorCount) parts.push(errorCount + " errored");
+  setStatus("Batch complete: " + parts.join(", "));
 }
 
 async function retryBatchItem(id) {
@@ -1078,12 +1134,17 @@ async function retryBatchItem(id) {
   await processBatchItem(item);
   state.batch.processing = false;
   renderBatchQueue();
-  setStatus(item.status === "Needs review" ? "Batch item ready to review" : "Batch item needs attention");
+  const retryMessage = {
+    "Pass": "Batch item passed",
+    "Needs attention": "Batch item needs attention",
+    "Error": "Batch item errored",
+  };
+  setStatus(retryMessage[item.status] || "Batch item processed");
 }
 
 async function reviewBatchItem(id) {
   const item = state.batch.items.find((candidate) => candidate.id === id);
-  if (!item || item.status !== "Needs review" || !item.extracted) {
+  if (!item || !isBatchItemVerified(item) || !item.extracted) {
     showError("Process this batch item before reviewing it.");
     setStatus("Batch item needs extraction");
     return;
@@ -1108,9 +1169,15 @@ async function reviewBatchItem(id) {
   renderFileState("front");
   renderFileState("back");
   setUploadMode("choose");
-  renderEmptyResults("No verification results for this batch item yet.");
   await refreshRequirements();
   setExpectedValues(item.extracted);
+  // Show the auto-verdict immediately so the reviewer lands on the flagged
+  // fields; they can correct the COLA side and re-Verify from here.
+  if (item.verification) {
+    renderResults(item.verification);
+  } else {
+    renderEmptyResults("No verification results for this batch item yet.");
+  }
   setStatus("Loaded batch item #" + item.id + " — edit fields to match the COLA application, then Verify");
   document.querySelector("#fields-title").scrollIntoView({ block: "start" });
 }
