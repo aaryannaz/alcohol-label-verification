@@ -28,7 +28,15 @@ def score_case(product_category, expected, extracted):
         got = extracted.get(field) or ""
 
         if field == "government_warning":
-            ok = _is_empty(got) if _is_empty(exp) else check_government_warning(got) == "PASS"
+            if _is_empty(exp):
+                ok = _is_empty(got)
+            else:
+                # Score by verdict parity, not "must PASS": the tool must reach the
+                # same compliance verdict on the extracted text as on the ground
+                # truth. For a deliberately non-compliant label (title-case heading,
+                # altered punctuation) the model must transcribe it verbatim — if it
+                # "helpfully" corrects the text, the verdict flips and we catch it.
+                ok = check_government_warning(got) == check_government_warning(exp)
         elif _is_empty(exp):
             # Field should be absent — correct only if the model also left it empty.
             ok = _is_empty(got)

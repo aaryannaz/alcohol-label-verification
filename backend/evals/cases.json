@@ -905,6 +905,93 @@
         "grape_varietal": "",
         "percentage_of_foreign_wine": ""
       }
+    },
+    {
+      "name": "domestic-malt-noncompliant-titlecase-warning",
+      "description": "Domestic malt beverage whose GOVERNMENT WARNING heading is printed in title case ('Government Warning:') instead of the required all-caps. Tests that the model transcribes the heading verbatim rather than silently normalising it to caps, so the tool's FAIL_HEADING_FORMAT verdict (27 CFR 16.22) is preserved end to end.",
+      "product_category": "malt_beverage",
+      "origin_type": "domestic",
+      "artwork_lines": [
+        "Cedar & Stone Brewing",
+        "Hazy Days Ahead",
+        "India Pale Ale",
+        "6.2% Alc/Vol",
+        "12 FL OZ",
+        "Brewed and Bottled by Cedar & Stone Brewing Co.",
+        "Asheville, North Carolina",
+        "Government Warning: (1) According to the Surgeon General, women should not drink alcoholic beverages during pregnancy because of the risk of birth defects. (2) Consumption of alcoholic beverages impairs your ability to drive a car or operate machinery, and may cause health problems."
+      ],
+      "expected": {
+        "brand_name": "Cedar & Stone Brewing",
+        "class_type": "India Pale Ale",
+        "alcohol_content": "6.2%",
+        "net_contents": "12 FL OZ",
+        "government_warning": "Government Warning: (1) According to the Surgeon General, women should not drink alcoholic beverages during pregnancy because of the risk of birth defects. (2) Consumption of alcoholic beverages impairs your ability to drive a car or operate machinery, and may cause health problems.",
+        "domestic_name_address": "Cedar & Stone Brewing Co., Asheville, North Carolina",
+        "fanciful_name": "Hazy Days Ahead",
+        "importer_name_address": "",
+        "country_of_origin": "",
+        "sulfite_declaration": "",
+        "appellation_of_origin": ""
+      }
+    },
+    {
+      "name": "domestic-spirits-noncompliant-warning-missing-comma",
+      "description": "Domestic distilled spirits with the correct all-caps heading but altered statutory punctuation: the comma after 'Surgeon General' is dropped. Tests that the model reproduces the exact (wrong) punctuation rather than auto-correcting it, so the tool's FAIL_TEXT_MISMATCH verdict is preserved end to end.",
+      "product_category": "distilled_spirits",
+      "origin_type": "domestic",
+      "artwork_lines": [
+        "Stillhouse 13",
+        "Kentucky Straight Bourbon Whiskey",
+        "45% Alc/Vol (90 Proof)",
+        "750 mL",
+        "Distilled and Bottled by Stillhouse 13 Distillery",
+        "Bardstown, Kentucky",
+        "GOVERNMENT WARNING: (1) According to the Surgeon General women should not drink alcoholic beverages during pregnancy because of the risk of birth defects. (2) Consumption of alcoholic beverages impairs your ability to drive a car or operate machinery, and may cause health problems."
+      ],
+      "expected": {
+        "brand_name": "Stillhouse 13",
+        "class_type": "Kentucky Straight Bourbon Whiskey",
+        "alcohol_content": "45%",
+        "net_contents": "750 mL",
+        "government_warning": "GOVERNMENT WARNING: (1) According to the Surgeon General women should not drink alcoholic beverages during pregnancy because of the risk of birth defects. (2) Consumption of alcoholic beverages impairs your ability to drive a car or operate machinery, and may cause health problems.",
+        "domestic_name_address": "Stillhouse 13 Distillery, Bardstown, Kentucky",
+        "fanciful_name": "",
+        "importer_name_address": "",
+        "country_of_origin": "",
+        "sulfite_declaration": "",
+        "appellation_of_origin": ""
+      }
+    },
+    {
+      "name": "domestic-wine-noncompliant-warning-truncated",
+      "description": "Domestic wine whose GOVERNMENT WARNING prints only the first numbered sentence; the second statutory sentence about operating machinery is missing. Tests that the model extracts only the text actually present (not the full statutory text from memory), so the tool's FAIL_TEXT_MISMATCH verdict for an incomplete warning is preserved end to end.",
+      "product_category": "wine",
+      "origin_type": "domestic",
+      "artwork_lines": [
+        "Sonoma Ridge",
+        "2021 Chardonnay",
+        "Sonoma County",
+        "13.5% Alc/Vol",
+        "750 mL",
+        "Produced and Bottled by Sonoma Ridge Winery",
+        "Healdsburg, California",
+        "Contains Sulfites",
+        "GOVERNMENT WARNING: (1) According to the Surgeon General, women should not drink alcoholic beverages during pregnancy because of the risk of birth defects."
+      ],
+      "expected": {
+        "brand_name": "Sonoma Ridge",
+        "class_type": "Chardonnay",
+        "alcohol_content": "13.5%",
+        "net_contents": "750 mL",
+        "government_warning": "GOVERNMENT WARNING: (1) According to the Surgeon General, women should not drink alcoholic beverages during pregnancy because of the risk of birth defects.",
+        "domestic_name_address": "Sonoma Ridge Winery, Healdsburg, California",
+        "fanciful_name": "",
+        "importer_name_address": "",
+        "country_of_origin": "",
+        "sulfite_declaration": "Contains Sulfites",
+        "appellation_of_origin": "Sonoma County"
+      }
     }
   ]
 }
