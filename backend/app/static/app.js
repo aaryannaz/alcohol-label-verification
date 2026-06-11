@@ -57,6 +57,7 @@ const ORIGIN_OPTIONS = [
 const state = {
   requirements: { required: [], conditional: [], optional: [] },
   extracted: {},
+  extractedKey: null,
   expectedValues: {},
   workflowMode: "cola",
   colaLoaded: false,
@@ -91,6 +92,7 @@ const colaFileName = document.getElementById("colaFileName");
 const colaRemove = document.getElementById("colaRemove");
 const colaChooseBtn = document.getElementById("colaChooseBtn");
 const colaDropZone = document.getElementById("colaDropZone");
+const colaProgress = document.getElementById("colaProgress");
 const colaUploadBlock = document.querySelector(".cola-upload");
 const fieldsHelp = document.querySelector(".fields-help");
 const modeColaWorkflow = document.getElementById("modeColaWorkflow");
@@ -683,6 +685,7 @@ async function extractCola(file) {
   formData.append("cola_file", file);
 
   setBusy(true);
+  if (colaProgress) colaProgress.hidden = false;
   setStatus("Reading the COLA application");
   try {
     const response = await fetchWithTimeout("/extract-cola", { method: "POST", body: formData });
@@ -698,6 +701,7 @@ async function extractCola(file) {
     showError(error.message);
     setStatus("COLA extraction failed");
   } finally {
+    if (colaProgress) colaProgress.hidden = true;
     setBusy(false);
   }
 }
@@ -737,9 +741,31 @@ function setWorkflowMode(mode) {
     modeLabelWorkflow.classList.toggle("active", !isCola);
     modeLabelWorkflow.setAttribute("aria-pressed", String(!isCola));
   }
+  // In COLA mode there's no separate Extract step: Verify reads the label itself.
+  if (extractButton) extractButton.hidden = isCola;
   // Leaving COLA mode drops any loaded COLA so the form reverts to label-driven.
   if (!isCola && state.colaLoaded) clearCola();
   if (fieldsHelp) fieldsHelp.textContent = isCola ? COLA_HELP : LABEL_HELP;
+}
+
+function labelFileKey() {
+  const f = state.files.front;
+  const b = state.files.back;
+  return [f ? f.name + ":" + f.size : "", b ? b.name + ":" + b.size : ""].join("|");
+}
+
+async function runLabelExtraction() {
+  // POST the label artwork and store the reviewed snapshot. Throws on failure;
+  // the caller manages busy state and error display.
+  const formData = new FormData();
+  formData.append("product_category", productCategory.value);
+  formData.append("origin_type", originType.value);
+  formData.append("front_image", state.files.front);
+  if (state.files.back) formData.append("back_image", state.files.back);
+  const response = await fetchWithTimeout("/extract", { method: "POST", body: formData });
+  const body = await parseApiResponse(response);
+  state.extracted = body.extracted || {};
+  state.extractedKey = labelFileKey();
 }
 
 async function extractFields() {
@@ -751,18 +777,10 @@ async function extractFields() {
     return;
   }
 
-  const formData = new FormData();
-  formData.append("product_category", productCategory.value);
-  formData.append("origin_type", originType.value);
-  formData.append("front_image", state.files.front);
-  if (state.files.back) formData.append("back_image", state.files.back);
-
   setBusy(true);
   setStatus("Extracting fields");
   try {
-    const response = await fetchWithTimeout("/extract", { method: "POST", body: formData });
-    const body = await parseApiResponse(response);
-    state.extracted = body.extracted || {};
+    await runLabelExtraction();
     if (state.colaLoaded) {
       // The COLA already populated the expected fields; the label only supplies
       // the values being checked. Don't overwrite the reviewer's COLA values.
@@ -782,9 +800,21 @@ async function extractFields() {
 
 async function verifyReviewedFields() {
   clearError();
+  if (state.workflowMode === "cola" && !state.files.front) {
+    showError("Upload the label artwork to verify against the COLA.");
+    setStatus("File selection needs attention");
+    return;
+  }
   setBusy(true);
-  setStatus("Verifying fields");
   try {
+    // COLA mode has no separate Extract button, so read the label here — but
+    // only when the label file has changed since the last read, so re-verifying
+    // after editing fields stays instant (no extra Gemini call).
+    if (state.workflowMode === "cola" && state.extractedKey !== labelFileKey()) {
+      setStatus("Reading the label");
+      await runLabelExtraction();
+    }
+    setStatus("Verifying fields");
     const response = await fetchWithTimeout("/verify-reviewed", {
       method: "POST",
       headers: { "Content-Type": "application/json" },
@@ -1079,6 +1109,9 @@ async function reviewBatchItem(id) {
   renderColaSummary();
   state.files.front = item.file;
   state.files.back = null;
+  // The batch item is already extracted; mark the label as read so a COLA-mode
+  // Verify doesn't needlessly re-extract it.
+  state.extractedKey = labelFileKey();
   syncInputFiles("front", item.file);
   syncInputFiles("back", null);
   renderFileState("front");

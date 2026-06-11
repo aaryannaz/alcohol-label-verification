@@ -767,8 +767,41 @@ tr.is-flagged td:first-child {
    attribute (same reason .upload-pane needs its own [hidden] rule). */
 .cola-upload[hidden],
 .cola-drop-zone[hidden],
-.file-select-button[hidden] {
+.file-select-button[hidden],
+.cola-progress[hidden] {
   display: none;
+}
+
+.cola-progress {
+  display: grid;
+  gap: 6px;
+}
+
+.cola-progress-track {
+  height: 6px;
+  border-radius: 999px;
+  border: 1px solid var(--line);
+  background: var(--subtle-bg);
+  overflow: hidden;
+}
+
+.cola-progress-fill {
+  height: 100%;
+  width: 40%;
+  border-radius: 999px;
+  background: var(--green);
+  animation: cola-indeterminate 1.1s ease-in-out infinite;
+}
+
+@keyframes cola-indeterminate {
+  0% { margin-left: -42%; }
+  100% { margin-left: 100%; }
+}
+
+.cola-progress-text {
+  color: var(--muted);
+  font-size: 12px;
+  font-weight: 650;
 }
 
 .file-control {
