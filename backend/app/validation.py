@@ -57,6 +57,17 @@ ORIGIN_REQUIRED_FIELDS = {
     "imported": ("importer_name_address", "country_of_origin"),
 }
 
+# These address / country fields are origin-specific, not merely origin-required:
+# a field that isn't required for the selected origin isn't applicable to it at
+# all (a domestic product has no importer or country-of-origin; an imported
+# product has no domestic bottler). Derived from ORIGIN_REQUIRED_FIELDS so the
+# two can't drift. Cross-origin values that DO appear on the label are still
+# surfaced by the origin-consistency check in compute_label_checks().
+ORIGIN_SCOPED_FIELDS = {
+    field: tuple(origin for origin, fields in ORIGIN_REQUIRED_FIELDS.items() if field in fields)
+    for field in set().union(*ORIGIN_REQUIRED_FIELDS.values())
+}
+
 ADDRESS_FIELDS = {"domestic_name_address", "importer_name_address"}
 
 # Fail fast if a requirement matrix references a field that is not in the
@@ -497,6 +508,13 @@ def _ordered_unique(fields):
 
 def get_field_requirements(product_category: str, origin_type: str) -> dict:
     applicable = set(fields_for_category(product_category))
+    # Drop origin-specific fields that don't belong to the selected origin, so an
+    # imported product never shows the domestic-bottler field and a domestic one
+    # never shows importer / country-of-origin.
+    applicable -= {
+        field for field, origins in ORIGIN_SCOPED_FIELDS.items()
+        if origin_type not in origins
+    }
     required = _ordered_unique(
         COMMON_REQUIRED_FIELDS
         + PRODUCT_REQUIRED_FIELDS[product_category]

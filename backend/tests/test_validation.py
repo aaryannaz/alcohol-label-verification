@@ -195,7 +195,9 @@ class ValidationTests(unittest.TestCase):
 
         self.assertEqual(validation["importer_name_address"], "MISSING")
         self.assertEqual(validation["country_of_origin"], "MISSING")
-        self.assertEqual(validation["domestic_name_address"], "NOT REQUIRED")
+        # The domestic-bottler field is not applicable to an imported product, so
+        # it is not in the field set at all (not merely "NOT REQUIRED").
+        self.assertNotIn("domestic_name_address", validation)
 
     def test_distilled_spirits_alcohol_content_is_required(self):
         validation = validate_distilled_spirits(
