@@ -97,7 +97,6 @@ const colaDropZone = document.getElementById("colaDropZone");
 const colaProgress = document.getElementById("colaProgress");
 const labelProgress = document.getElementById("labelProgress");
 const colaUploadBlock = document.querySelector(".cola-upload");
-const fieldsHelp = document.querySelector(".fields-help");
 const modeColaWorkflow = document.getElementById("modeColaWorkflow");
 const modeLabelWorkflow = document.getElementById("modeLabelWorkflow");
 const statusText = document.querySelector("#statusText");
@@ -683,9 +682,6 @@ function clearCola() {
   setStatus("COLA removed");
 }
 
-const COLA_HELP = "These auto-fill from the uploaded COLA application. Upload the label artwork, then Verify to compare the label against the COLA.";
-const LABEL_HELP = "These auto-fill from the label. Edit each field to match the approved COLA application, then Verify to compare it against the label.";
-
 function setWorkflowMode(mode) {
   const isCola = mode === "cola";
   state.workflowMode = isCola ? "cola" : "label";
@@ -702,7 +698,6 @@ function setWorkflowMode(mode) {
   if (extractButton) extractButton.hidden = isCola;
   // Leaving COLA mode drops any loaded COLA so the form reverts to label-driven.
   if (!isCola && state.colaLoaded) clearCola();
-  if (fieldsHelp) fieldsHelp.textContent = isCola ? COLA_HELP : LABEL_HELP;
 }
 
 function labelFileKey() {
