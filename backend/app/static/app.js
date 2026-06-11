@@ -87,7 +87,6 @@ const originType = document.querySelector("#originType");
 const frontImage = document.querySelector("#frontImage");
 const backImage = document.querySelector("#backImage");
 const expectedFields = document.querySelector("#expectedFields");
-const requirementChips = document.querySelector("#requirementChips");
 const extractButton = document.querySelector("#extractButton");
 const verifyButton = document.querySelector("#verifyButton");
 const colaFile = document.getElementById("colaFile");
@@ -390,22 +389,6 @@ function renderFieldStack(container, prefix) {
   }
 }
 
-function renderRequirementChips() {
-  requirementChips.innerHTML = "";
-  for (const key of state.requirements.required) {
-    const chip = document.createElement("span");
-    chip.className = "chip required";
-    chip.textContent = FIELD_LOOKUP[key].label + ": required";
-    requirementChips.appendChild(chip);
-  }
-  for (const key of state.requirements.conditional) {
-    const chip = document.createElement("span");
-    chip.className = "chip conditional";
-    chip.textContent = FIELD_LOOKUP[key].label + ": conditional";
-    requirementChips.appendChild(chip);
-  }
-}
-
 function showError(message) {
   errorBox.hidden = false;
   errorBox.textContent = message;
@@ -625,7 +608,6 @@ async function refreshRequirements() {
   const response = await fetch("/field-requirements?" + params.toString());
   const body = await parseApiResponse(response);
   state.requirements = body.field_requirements;
-  renderRequirementChips();
   renderFieldStack(expectedFields, "expected");
   setExpectedValues(state.expectedValues);
   setStatus("Ready");

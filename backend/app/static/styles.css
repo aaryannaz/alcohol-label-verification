@@ -497,13 +497,6 @@ input[type="file"] {
   pointer-events: none;
 }
 
-.chips {
-  display: flex;
-  flex-wrap: wrap;
-  gap: 8px;
-  margin-top: 16px;
-}
-
 .label-preview {
   display: grid;
   gap: 14px;
@@ -534,30 +527,6 @@ input[type="file"] {
 .label-preview-note {
   color: var(--muted);
   font-size: 12px;
-}
-
-.chip {
-  display: inline-flex;
-  align-items: center;
-  max-width: 100%;
-  min-height: 28px;
-  padding: 0 9px;
-  border-radius: 999px;
-  font-size: 12px;
-  font-weight: 700;
-  line-height: 1.25;
-  overflow-wrap: anywhere;
-  white-space: normal;
-}
-
-.chip.required {
-  color: var(--green);
-  background: var(--green-soft);
-}
-
-.chip.conditional {
-  color: var(--amber);
-  background: var(--amber-soft);
 }
 
 .field-columns {
@@ -941,10 +910,6 @@ tr.is-flagged td:first-child {
   color: var(--text);
 }
 
-.cola-optional {
-  color: var(--muted);
-  font-weight: 600;
-}
 
 
 .cola-drop-zone {
