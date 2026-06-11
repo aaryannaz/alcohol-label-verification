@@ -191,6 +191,7 @@ function renderFileState(slot) {
 
 function renderLabelPreview() {
   const container = document.getElementById("labelPreview");
+  const panel = document.getElementById("labelPreviewPanel");
   if (!container) return;
 
   // Release any previous object URLs before re-rendering.
@@ -200,14 +201,10 @@ function renderLabelPreview() {
 
   const present = [["front", state.files.front], ["back", state.files.back]].filter(function(entry) { return entry[1]; });
   if (!present.length) {
-    container.hidden = true;
+    if (panel) panel.hidden = true;
     return;
   }
-  container.hidden = false;
-
-  const heading = document.createElement("h3");
-  heading.textContent = "Label preview";
-  container.appendChild(heading);
+  if (panel) panel.hidden = false;
 
   for (const [slot, file] of present) {
     const item = document.createElement("figure");
