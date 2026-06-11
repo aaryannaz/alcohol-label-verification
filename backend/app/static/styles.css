@@ -486,6 +486,17 @@ textarea {
   resize: vertical;
 }
 
+/* Address fields are almost always a single line on a label, so start them at
+   the input/label text height instead of the tall government-warning box.
+   Still resizable (resize: vertical) if a reviewer needs more room. */
+textarea[name="domestic_name_address"],
+textarea[name="importer_name_address"] {
+  min-height: 21px;
+  height: 21px;
+  line-height: 1.1;
+  padding: 1px 8px;
+}
+
 /* Native "old-school" file input: strip our box styling so the browser shows
    its default "Choose File | filename" control. */
 .file-native {
