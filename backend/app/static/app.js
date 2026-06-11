@@ -265,6 +265,7 @@ function setSelectedFile(slot, file) {
   syncInputFiles(slot, file);
   renderFileState(slot);
   setStatus(FILE_LABELS[slot] + " selected");
+  maybeAutoExtractLabel();
   return true;
 }
 
@@ -766,6 +767,20 @@ async function runLabelExtraction() {
   const body = await parseApiResponse(response);
   state.extracted = body.extracted || {};
   state.extractedKey = labelFileKey();
+}
+
+function maybeAutoExtractLabel() {
+  // In the label-only workflow, reading the label IS what fills the form, so do
+  // it automatically on upload (mirroring the COLA auto-fill). The "Extract from
+  // Label" button stays as an explicit re-run (e.g. after changing category or
+  // adding a back label). Skip in COLA mode (Verify reads the label there), when
+  // there's no front label yet, while a request is in flight, and when these
+  // exact files were already read.
+  if (state.workflowMode !== "label") return;
+  if (!state.files.front) return;
+  if (state.inFlight) return;
+  if (state.extractedKey === labelFileKey()) return;
+  extractFields();
 }
 
 async function extractFields() {
