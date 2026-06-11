@@ -495,6 +495,7 @@ textarea[name="importer_name_address"] {
   height: 21px;
   line-height: 1.1;
   padding: 1px 8px;
+  resize: none;
 }
 
 /* Native "old-school" file input: strip our box styling so the browser shows
@@ -783,6 +784,14 @@ th {
 .status-processing {
   color: var(--amber);
   background: var(--amber-soft);
+}
+
+/* The compared text shown under a per-side status badge (government warning). */
+.cell-value {
+  display: block;
+  margin-top: 5px;
+  color: var(--muted);
+  white-space: pre-wrap;
 }
 
 tr.is-flagged td {

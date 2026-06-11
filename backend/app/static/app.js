@@ -350,12 +350,11 @@ function createField(prefix, key) {
   control.name = key;
   control.autocomplete = "off";
 
-  // The government warning is always checked against the fixed statutory text,
-  // so the Expected-column box is read-only (editing it would do nothing).
-  if (prefix === "expected" && key === "government_warning") {
-    control.readOnly = true;
-    control.placeholder = "Checked against the statutory wording — no entry needed.";
-    control.classList.add("readonly-field");
+  // The government warning is checked against the fixed statutory text on BOTH
+  // sides, so the Expected box is editable: in the label workflow it auto-fills
+  // from the label extraction, and a reviewer can paste/correct it otherwise.
+  if (key === "government_warning") {
+    control.placeholder = "GOVERNMENT WARNING: (1) According to the Surgeon General…";
   }
 
   row.appendChild(label);
@@ -470,6 +469,23 @@ function statusLabel(status) {
   return STATUS_LABELS[status] || status;
 }
 
+function makeBadge(status) {
+  const badge = document.createElement("span");
+  badge.className = "status-badge " + statusClass(status);
+  badge.textContent = statusLabel(status);
+  badge.title = status;
+  return badge;
+}
+
+// A field's value shown beneath its per-side badge (used for the government
+// warning, where each column carries both a status and the compared text).
+function makeValueText(value) {
+  const span = document.createElement("span");
+  span.className = "cell-value";
+  span.textContent = value || "";
+  return span;
+}
+
 function isFlaggedStatus(status) {
   const cls = statusClass(status);
   return cls === "status-fail" || cls === "status-missing";
@@ -503,21 +519,35 @@ function renderResults(response) {
     const statusCell = document.createElement("td");
     const expectedCell = document.createElement("td");
     const reviewedCell = document.createElement("td");
-    const badge = document.createElement("span");
-    const status = validation[key] || "NOT REVIEWED";
-
-    if (status === "PASS" || status === "EXEMPT_TABLE_WINE") passed += 1;
-    else if (isFlaggedStatus(status)) attention += 1;
-
     fieldCell.textContent = config.label;
-    badge.className = "status-badge " + statusClass(status);
-    badge.textContent = statusLabel(status);
-    badge.title = status;
-    statusCell.appendChild(badge);
-    expectedCell.textContent = expected[key] || "";
-    reviewedCell.textContent = reviewed[key] || "";
 
-    if (isFlaggedStatus(status)) row.className = "is-flagged";
+    const raw = validation[key];
+    if (raw && typeof raw === "object") {
+      // government_warning is checked against the statutory text on both sides
+      // and returns {expected, label}: a badge in each value column, plus a
+      // combined STATUS that passes only when both sides match the statute.
+      const combined =
+        raw.expected === "PASS" && raw.label === "PASS" ? "PASS" : "FAIL";
+      statusCell.appendChild(makeBadge(combined));
+      expectedCell.appendChild(makeBadge(raw.expected));
+      expectedCell.appendChild(makeValueText(expected[key]));
+      reviewedCell.appendChild(makeBadge(raw.label));
+      reviewedCell.appendChild(makeValueText(reviewed[key]));
+      if (combined === "PASS") {
+        passed += 1;
+      } else {
+        attention += 1;
+        row.className = "is-flagged";
+      }
+    } else {
+      const status = raw || "NOT REVIEWED";
+      if (status === "PASS" || status === "EXEMPT_TABLE_WINE") passed += 1;
+      else if (isFlaggedStatus(status)) attention += 1;
+      statusCell.appendChild(makeBadge(status));
+      expectedCell.textContent = expected[key] || "";
+      reviewedCell.textContent = reviewed[key] || "";
+      if (isFlaggedStatus(status)) row.className = "is-flagged";
+    }
 
     row.appendChild(fieldCell);
     row.appendChild(statusCell);

@@ -139,6 +139,37 @@ class ValidationTests(unittest.TestCase):
 
         self.assertEqual(check_government_warning(warning), "PASS")
 
+    def test_government_warning_checks_both_sides_against_statute(self):
+        statutory = (
+            "GOVERNMENT WARNING: (1) According to the Surgeon General, women should not "
+            "drink alcoholic beverages during pregnancy because of the risk of birth defects. "
+            "(2) Consumption of alcoholic beverages impairs your ability to drive a car or "
+            "operate machinery, and may cause health problems."
+        )
+        validation = validate_malt_beverage(
+            expected={
+                "brand_name": "Example Brewing Co.",
+                "class_type": "Ale",
+                "net_contents": "12 fl oz",
+                "domestic_name_address": "Example Brewing Co., Chicago IL",
+                "government_warning": statutory,
+            },
+            reviewed={
+                "brand_name": "Example Brewing Co.",
+                "class_type": "Ale",
+                "net_contents": "12 fl oz",
+                "domestic_name_address": "Example Brewing Co., Chicago IL",
+                "government_warning": "",
+            },
+            origin_type="domestic",
+        )
+
+        # The warning carries an independent status per side, not one PASS/FAIL.
+        self.assertEqual(
+            validation["government_warning"],
+            {"expected": "PASS", "label": "MISSING"},
+        )
+
     def test_parse_abv_and_wine_path(self):
         self.assertEqual(parse_abv("13.5%"), 13.5)
         self.assertEqual(get_wine_path("domestic", "6.9%"), "domestic_wine_under_7")

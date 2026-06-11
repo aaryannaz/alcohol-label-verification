@@ -544,7 +544,13 @@ def _validate_by_requirements(product_category: str, origin_type: str, expected:
         if field not in applicable:
             continue  # field not relevant to this product category
         if field == "government_warning":
-            validation[field] = check_government_warning(reviewed.get(field))
+            # The health warning must match the exact statutory text (27 CFR 16.21)
+            # on BOTH the COLA application and the label, so each side is checked
+            # against the statute independently and surfaced as its own status.
+            validation[field] = {
+                "expected": check_government_warning(expected.get(field)),
+                "label": check_government_warning(reviewed.get(field)),
+            }
         elif field == "alcohol_content" and product_category == "wine":
             validation[field] = check_wine_alcohol_content(expected.get(field), reviewed)
         elif field == "appellation_of_origin" and product_category == "wine":
