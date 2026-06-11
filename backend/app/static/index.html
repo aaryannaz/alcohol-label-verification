@@ -50,8 +50,7 @@
           <div class="cola-upload">
             <div class="cola-upload-head">
               <span class="cola-upload-title">COLA application</span>
-              <label class="file-select-button" for="colaFile" id="colaChooseBtn">Choose File</label>
-              <input id="colaFile" class="native-file-input" type="file" accept=".pdf,.png,.jpg,.jpeg,.webp,application/pdf,image/png,image/jpeg,image/webp" />
+              <input id="colaFile" class="file-native" type="file" accept=".pdf,.png,.jpg,.jpeg,.webp,application/pdf,image/png,image/jpeg,image/webp" />
             </div>
             <div class="drop-zone cola-drop-zone" id="colaDropZone" data-cola-drop aria-describedby="colaDropHint" hidden>
               <span class="drop-hint" id="colaDropHint">Drop the COLA file here.</span>
@@ -97,24 +96,12 @@
             <div id="chooseFileInputs" class="upload-pane">
               <div class="file-control">
                 <label for="frontImage">First label</label>
-                <label class="file-select-button" for="frontImage">Choose File</label>
-                <input id="frontImage" class="native-file-input" data-file-slot="front" type="file" accept=".pdf,.png,.jpg,.jpeg,.webp,application/pdf,image/png,image/jpeg,image/webp" />
-                <div class="file-summary" data-file-summary="front" aria-live="polite">
-                  <span class="file-empty">No file selected</span>
-                  <span class="file-name" data-file-name="front"></span>
-                  <button class="remove-file-button" data-remove-file="front" type="button" hidden>Remove</button>
-                </div>
+                <input id="frontImage" class="file-native" data-file-slot="front" type="file" accept=".pdf,.png,.jpg,.jpeg,.webp,application/pdf,image/png,image/jpeg,image/webp" />
               </div>
 
               <div class="file-control">
                 <label for="backImage">Second label</label>
-                <label class="file-select-button" for="backImage">Choose File</label>
-                <input id="backImage" class="native-file-input" data-file-slot="back" type="file" accept=".pdf,.png,.jpg,.jpeg,.webp,application/pdf,image/png,image/jpeg,image/webp" />
-                <div class="file-summary" data-file-summary="back" aria-live="polite">
-                  <span class="file-empty">No file selected</span>
-                  <span class="file-name" data-file-name="back"></span>
-                  <button class="remove-file-button" data-remove-file="back" type="button" hidden>Remove</button>
-                </div>
+                <input id="backImage" class="file-native" data-file-slot="back" type="file" accept=".pdf,.png,.jpg,.jpeg,.webp,application/pdf,image/png,image/jpeg,image/webp" />
               </div>
             </div>
 

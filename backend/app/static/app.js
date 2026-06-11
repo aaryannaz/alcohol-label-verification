@@ -93,7 +93,6 @@ const colaFile = document.getElementById("colaFile");
 const colaSummary = document.getElementById("colaSummary");
 const colaFileName = document.getElementById("colaFileName");
 const colaRemove = document.getElementById("colaRemove");
-const colaChooseBtn = document.getElementById("colaChooseBtn");
 const colaDropZone = document.getElementById("colaDropZone");
 const colaProgress = document.getElementById("colaProgress");
 const labelProgress = document.getElementById("labelProgress");
@@ -615,6 +614,9 @@ async function refreshRequirements() {
 function renderColaSummary() {
   if (!colaSummary) return;
   const has = Boolean(state.colaFile);
+  // The native file input already shows the filename / "No file chosen", so only
+  // surface the summary once a COLA is loaded (to confirm the fields were read).
+  colaSummary.style.display = has ? "" : "none";
   colaSummary.classList.toggle("has-file", has);
   if (colaFileName) {
     colaFileName.textContent = has
@@ -1142,9 +1144,9 @@ function initBatchDropZone(zone) {
 
 function setColaMode(mode) {
   // The COLA upload mirrors the label upload: a drop zone in Drag & Drop mode,
-  // a file picker otherwise.
+  // the native file picker otherwise.
   const dropMode = mode === "drop";
-  if (colaChooseBtn) colaChooseBtn.hidden = dropMode;
+  if (colaFile) colaFile.hidden = dropMode;
   if (colaDropZone) colaDropZone.hidden = !dropMode;
 }
 

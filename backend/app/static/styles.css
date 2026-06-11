@@ -479,8 +479,17 @@ textarea {
   resize: vertical;
 }
 
-input[type="file"] {
-  padding: 9px;
+/* Native "old-school" file input: strip our box styling so the browser shows
+   its default "Choose File | filename" control. */
+.file-native {
+  width: auto;
+  min-height: 0;
+  padding: 0;
+  border: none;
+  background: none;
+  color: var(--text);
+  cursor: pointer;
+  font-size: 13px;
 }
 
 .readonly-field {
@@ -558,7 +567,7 @@ input[type="file"] {
 .field-hint {
   margin-left: 6px;
   color: var(--muted);
-  font-size: 11px;
+  font-size: 10px;
   font-weight: 500;
 }
 
