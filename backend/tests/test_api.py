@@ -273,6 +273,56 @@ class ApiTests(unittest.TestCase):
         self.assertEqual(extracted["government_warning"], "")
         self.assertEqual(extracted["fanciful_name"], "")
 
+    def test_extract_cola_maps_category_origin_and_coerces_fields(self):
+        # The COLA form states its own product type and source, so the response
+        # carries product_category + origin_type alongside the field values; both
+        # are mapped to canonical enum values and the fields coerced to the full set.
+        model_output = {
+            "product_category": "Distilled Spirits",
+            "origin_type": "Imported",
+            "brand_name": "Old Example",
+            "class_type": "Imported Whisky",
+            "alcohol_content": "40% Alc/Vol",
+        }
+
+        with patch(
+            "app.extraction._generate_content",
+            return_value=GeminiResponse(json.dumps(model_output)),
+        ):
+            response = self.client.post(
+                "/extract-cola",
+                files={"cola_file": ("cola.pdf", PDF_BYTES, "application/pdf")},
+            )
+
+        self.assertEqual(response.status_code, 200)
+        body = response.json()
+        self.assertEqual(body["product_category"], "distilled_spirits")
+        self.assertEqual(body["origin_type"], "imported")
+        extracted = body["extracted"]
+        self.assertEqual(set(extracted), set(LabelFields.model_fields))
+        self.assertEqual(extracted["brand_name"], "Old Example")
+        # Leading "Imported " is stripped from class_type here too.
+        self.assertEqual(extracted["class_type"], "Whisky")
+
+    def test_extract_cola_leaves_selection_unchanged_on_unknown_type(self):
+        # Unrecognised type/source strings map to None so the UI keeps its
+        # current selection rather than being forced to a wrong category.
+        model_output = {"product_category": "mystery", "origin_type": "", "brand_name": "X"}
+
+        with patch(
+            "app.extraction._generate_content",
+            return_value=GeminiResponse(json.dumps(model_output)),
+        ):
+            response = self.client.post(
+                "/extract-cola",
+                files={"cola_file": ("cola.pdf", PDF_BYTES, "application/pdf")},
+            )
+
+        self.assertEqual(response.status_code, 200)
+        body = response.json()
+        self.assertIsNone(body["product_category"])
+        self.assertIsNone(body["origin_type"])
+
     def test_extract_retries_are_bounded_by_wall_clock_budget(self):
         # With the budget spent, the retry loop must stop after the first attempt
         # rather than stacking all MAX_ATTEMPTS calls into the ~5s window.
