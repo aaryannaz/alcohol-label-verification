@@ -350,12 +350,8 @@ function createField(prefix, key) {
   control.name = key;
   control.autocomplete = "off";
 
-  // The government warning is checked against the fixed statutory text on BOTH
-  // sides, so the Expected box is editable: in the label workflow it auto-fills
-  // from the label extraction, and a reviewer can paste/correct it otherwise.
-  if (key === "government_warning") {
-    control.placeholder = "GOVERNMENT WARNING: (1) According to the Surgeon General…";
-  }
+  // The government warning is editable and checked against the statutory text on
+  // both sides; in the label workflow it auto-fills from the label extraction.
 
   row.appendChild(label);
   row.appendChild(control);

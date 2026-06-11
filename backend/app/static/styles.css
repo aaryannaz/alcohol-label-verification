@@ -512,7 +512,10 @@ textarea[name="importer_name_address"] {
      clipped (overflow: clip). Let the file control size to its own height. */
   height: auto;
   overflow: visible;
-  padding: 0;
+  /* Browsers force overflow:clip on file inputs; with no left padding the native
+     button sits at x=0 and its left border gets clipped. A little left padding
+     gives the button room inside the clip box so it isn't cut off. */
+  padding: 0 0 0 2px;
   border: none;
   background: none;
   color: var(--text);
