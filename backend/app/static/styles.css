@@ -860,7 +860,7 @@ tr.is-flagged td:first-child {
    below reads as the content. */
 .section-label {
   color: var(--text);
-  font-size: 14px;
+  font-size: 16px;
   font-weight: 700;
 }
 
