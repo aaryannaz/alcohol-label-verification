@@ -217,6 +217,24 @@ async def extract_label_fields(front_image: UploadFile, back_image: UploadFile |
 # up front: the response schema includes product_category + origin_type alongside
 # the label-field keys, and the result is mapped back to canonical enum values.
 
+# The COLA application form only carries these fields as typed boxes; scoping the
+# response schema to them (instead of all 24 label fields) cuts the output the
+# model must generate, which is the main lever on COLA-extraction latency. Fields
+# the form doesn't carry (government warning, additive disclosures, etc.) are
+# filled as empty by _coerce_fields downstream.
+_COLA_FIELDS = (
+    "brand_name",
+    "fanciful_name",
+    "class_type",
+    "domestic_name_address",
+    "importer_name_address",
+    "country_of_origin",
+    "alcohol_content",
+    "net_contents",
+    "grape_varietal",
+    "appellation_of_origin",
+)
+
 _COLA_CATEGORY_MAP = {
     "wine": "wine",
     "distilled spirits": "distilled_spirits",
@@ -235,13 +253,12 @@ def _cola_generation_config():
     """Generation config for reading a COLA form: the schema adds product_category
     and origin_type to the label-field keys so the form's own type/source boxes
     drive the category and origin selection."""
-    keys = list(LabelFields.model_fields)
     scoped_model = create_model(
         "ColaFieldsScoped",
         __base__=BaseModel,
         product_category=(str, ""),
         origin_type=(str, ""),
-        **{key: (str, "") for key in keys},
+        **{key: (str, "") for key in _COLA_FIELDS},
     )
     return types.GenerateContentConfig(
         response_mime_type="application/json",

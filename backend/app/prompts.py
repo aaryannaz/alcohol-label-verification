@@ -36,12 +36,6 @@ absent. Do not invent values.
   branded, or embossed). Otherwise empty.
 - alcohol_content: only if the form explicitly states an alcohol-by-volume
   percentage; return just the percentage (e.g. "13.5%"). Usually empty.
-- All other keys (government_warning, sulfite_declaration,
-  fdc_yellow_5_declaration, cochineal_carmine_declaration, aspartame_declaration,
-  statement_of_age, commodity_statement, coloring_materials, wood_treatment,
-  state_of_distillation, vintage_date, percentage_of_foreign_wine): the COLA
-  application form does not carry these as typed fields. Return an empty string
-  for each.
 
 Return valid JSON only. Do not use markdown. Do not wrap the response in triple
 backticks.
