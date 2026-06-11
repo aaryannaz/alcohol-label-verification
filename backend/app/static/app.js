@@ -343,12 +343,6 @@ function createField(prefix, key) {
     sr.textContent = " required";
     name.appendChild(sr);
   }
-  if (requirement === "conditional") {
-    const hint = document.createElement("span");
-    hint.className = "field-hint";
-    hint.textContent = "if applicable";
-    name.appendChild(hint);
-  }
   label.appendChild(name);
 
   const control = document.createElement(field.type === "textarea" ? "textarea" : "input");
