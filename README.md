@@ -6,13 +6,12 @@
 
 TTB reviewers currently compare physical label artwork against approved COLA applications by eye. This prototype automates that comparison:
 
-1. The reviewer uploads label artwork as one combined file or as separate front/back files.
-2. Gemini Vision extracts all regulated fields from the artwork into structured JSON.
-3. Extracted fields populate both the Expected COLA and Reviewed Label columns simultaneously.
-4. The reviewer corrects the Expected COLA side to match their COLA application if needed.
-5. Clicking Verify compares both sides field-by-field and flags mismatches.
+1. The reviewer uploads the approved COLA application (TTB Form 5100.31) and the label artwork (one combined file or separate front/back files).
+2. Gemini Vision reads the COLA form's typed boxes to fill a single set of editable application fields, and auto-sets the product category and origin from the form's own type/source boxes.
+3. Gemini Vision separately reads the label artwork as the values being checked.
+4. The reviewer can correct any field, then clicking Verify compares COLA-says vs. label-shows field-by-field and flags mismatches — with no further AI call, since validation is pure.
 
-This eliminates manual data entry for the common case where the label artwork closely matches the COLA, reducing reviewer effort to correction and confirmation rather than transcription.
+If no COLA is uploaded, the same fields are pre-filled from the label extraction itself for the reviewer to correct — reducing effort to confirmation rather than transcription.
 
 ## Tools
 
@@ -61,7 +60,7 @@ reviewer's visual judgment — the tool does not assert them:
 - **Standard-of-fill currency:** the approved-fill checks for wine/spirits are advisory — the size tables (27 CFR 4.72/5.203) change by regulation, so a "not approved" result flags the size for the reviewer to confirm against the current CFR rather than asserting a hard violation. Wine standard-of-fill exceptions (e.g. 27 CFR 4.70(b)) are not modeled.
 - **Verbatim alcohol-content statement format:** whether the ABV statement's abbreviations are acceptable, and (spirits) whether a proof statement is "adequately distinguished" from the ABV, are not checked (the latter is a typographic/placement judgment, not text-verifiable).
 - **Handwritten or low-quality labels:** extraction accuracy depends on image quality.
-- **COLA document upload:** the Expected COLA side is pre-filled from the label artwork and corrected manually; a future improvement would extract fields from an uploaded COLA PDF.
+- **COLA form coverage:** the COLA reader is tuned for the TTB Form 5100.31 layout (including COLA-public-registry exports); other application formats (a brand spec sheet, a scanned legacy form) aren't tuned for yet. The form also doesn't carry the full label text, so fields it doesn't state (e.g. the government warning) come from the label or read as missing.
 - **Batch import:** batch mode supports multiple label files in one browser session; CSV/Excel mapping to expected COLA fields is a future enhancement.
 
 ## Extraction accuracy
@@ -204,6 +203,7 @@ The minimal UI is served by FastAPI from `backend/app/static/`. It supports:
 - `GET /fields` returns the canonical field set (key, label, control, applicable categories) — the single source of truth the UI loads.
 - `GET /field-requirements` returns required, conditional, and optional fields for a `product_category` and `origin_type` (scoped to the category).
 - `POST /extract` extracts label fields from uploaded artwork (category-aware response schema).
+- `POST /extract-cola` reads an uploaded COLA application form (TTB Form 5100.31) and returns the application's stated field values plus the product category and origin detected from the form.
 - `POST /verify-reviewed` validates reviewed/corrected fields plus the label-only compliance checks, without making another Gemini call.
 - `GET /health` liveness; `GET /readyz` readiness (verifies the API key is configured, returns the model id; 503 if not ready).
 
@@ -221,14 +221,14 @@ Upload endpoints accept PDF, PNG, JPEG, and WebP files up to 10 MB each. Upload 
 }
 ```
 
-The browser client wraps `/extract` and `/verify-reviewed` in an abort-on-timeout so the UI surfaces a clean "request timed out" message instead of hanging.
+The browser client wraps `/extract`, `/extract-cola`, and `/verify-reviewed` in an abort-on-timeout so the UI surfaces a clean "request timed out" message instead of hanging.
 
 ## Security
 
 The API is open by default for the demo but ships the controls to lock it down
 (all configurable via environment variables — see `backend/.env.example`):
 
-- **Rate limiting:** the cost-bearing endpoints (`/extract`, `/verify-reviewed`) are rate-limited per client IP (`RATE_LIMIT_REQUESTS` / `RATE_LIMIT_WINDOW_SECONDS`) to blunt cost-amplification abuse. The limiter is in-memory and single-instance; back it with a shared store (e.g. Redis) for a multi-instance deployment.
+- **Rate limiting:** the cost-bearing endpoints (`/extract`, `/extract-cola`, `/verify-reviewed`) are rate-limited per client IP (`RATE_LIMIT_REQUESTS` / `RATE_LIMIT_WINDOW_SECONDS`) to blunt cost-amplification abuse. The limiter is in-memory and single-instance; back it with a shared store (e.g. Redis) for a multi-instance deployment.
 - **Optional bearer auth:** set `APP_API_TOKEN` to require `Authorization: Bearer <token>` on the cost-bearing endpoints.
 - **Security headers:** every response carries a Content-Security-Policy (`default-src 'self'`, no inline scripts — the theme bootstrap is an external file), `X-Frame-Options: DENY`, `X-Content-Type-Options: nosniff`, and `Referrer-Policy: no-referrer`.
 - **Docs gating:** set `ENABLE_DOCS=false` to disable Swagger/OpenAPI in production.

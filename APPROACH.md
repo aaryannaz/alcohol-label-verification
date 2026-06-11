@@ -23,13 +23,18 @@ application, and flag anything that doesn't match — fast enough to actually us
    wine appellation triggers, etc.). Because it's pure, it's deterministic,
    auditable, and the most heavily tested part of the system.
 
-**One extraction, then correct-and-compare.** One extraction pre-fills a single
-set of editable fields. The reviewer edits them to match the approved COLA
-application, then Verify compares those values against the **original label
-snapshot** captured at extract time — **without another AI call**. This mirrors
-how a reviewer works (correct + confirm rather than transcribe), keeps the AI to
-one call per label, and keeps the input to one clean column (the field-by-field
-comparison shows in the results).
+**Two-document comparison (COLA vs. label).** The reviewer uploads the approved
+COLA application (TTB Form 5100.31) and the label artwork. Gemini reads the
+application's stated values straight off the COLA form to fill a single set of
+editable fields (and auto-sets product category and origin from the form's own
+type/source boxes); it separately reads the label artwork as the values being
+checked. Verify then compares COLA-says vs. label-shows — what a TTB reviewer
+actually does — **without another AI call**, since validation is pure.
+
+If no COLA is uploaded, the tool falls back to pre-filling those same fields from
+the label extraction itself; the reviewer corrects them to the COLA values and
+Verify compares against the original label snapshot. Either way the input stays
+one clean column and the field-by-field comparison shows in the results.
 
 **Category-aware extraction.** The response schema is scoped to the fields that
 apply to the selected product category (malt beverage / wine / distilled
@@ -61,8 +66,9 @@ app — one deployable unit, appropriate for a prototype on a short timeline.
 
 ## Key decisions & trade-offs
 
-- **One Gemini call per label** (pre-fills both columns) instead of a separate
-  COLA-document upload: simpler, cheaper, faster. Documented as a simplification.
+- **Decoupled extraction and validation** — the COLA and the label are each read
+  by their own Gemini call, but the comparison itself is a separate, pure step.
+  Re-verifying after the reviewer edits a field costs no AI call.
 - **No AI in the verdict** — the pass/fail comparison is pure Python, so results
   are deterministic and explainable, not a black box.
 - **Single source of truth for the field set** (`fields.py`): adding or renaming
@@ -76,10 +82,13 @@ app — one deployable unit, appropriate for a prototype on a short timeline.
 
 - Label artwork is provided as an image (PNG/JPEG/WebP) or PDF, ≤ 10 MB, and a
   single uploaded file may contain all panels for one review item.
-- There is no separate COLA upload yet — the fields are pre-filled from the label
-  and edited by the reviewer to represent the COLA application; a COLA-document
-  upload (so the expected values come from the application itself) is the
-  documented next step.
+- The COLA can be uploaded as the TTB COLA application form (Form 5100.31, e.g.
+  exported from the COLA public registry); the expected values are read from the
+  form's typed boxes. The form carries the application metadata (brand, fanciful,
+  class/type, name/address, grape varietal, appellation, net contents) but not
+  the full label text, so fields it doesn't state (e.g. the government warning,
+  ABV) are left for the reviewer or compared as missing. When no COLA is
+  uploaded, the fields are pre-filled from the label for the reviewer to correct.
 - The government warning must match the exact statutory wording; the
   "GOVERNMENT WARNING" heading must be capitalized, but the body's letter case is
   not regulated (all-caps is compliant). Bold, type size, and placement are
@@ -98,7 +107,8 @@ app — one deployable unit, appropriate for a prototype on a short timeline.
 
 ## Known limitations / future work
 
-- Separate COLA document upload (two-document flow) for divergent cases.
+- The COLA reader targets the TTB Form 5100.31 layout; other application formats
+  (a brand's own spec sheet, a scanned legacy form) aren't tuned for yet.
 - Typography/placement rules (bold, minimum type size, distilled-spirits
   "same field of vision," "separate and apart") aren't machine-verifiable from
   text — documented rather than enforced.
