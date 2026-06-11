@@ -562,15 +562,15 @@ textarea {
   min-width: 0;
 }
 
-/* The single COLA form lays its fields out in two compact columns; long
-   textarea fields (warning, name/address) span the full width. */
+/* Each field puts its label on the left and the input box on the right; subgrid
+   keeps the label column aligned across every row. */
 .field-grid {
-  grid-template-columns: repeat(2, minmax(0, 1fr));
-  gap: 14px 18px;
+  grid-template-columns: minmax(110px, max-content) minmax(0, 1fr);
+  gap: 12px 14px;
 }
 
 .field-grid .field-row:has(textarea) {
-  grid-column: 1 / -1;
+  align-items: start;
 }
 
 /* Compact inline hint for conditional fields (sits next to the field name). */
@@ -601,8 +601,10 @@ textarea {
 }
 
 .field-row {
+  grid-column: 1 / -1;
   display: grid;
-  gap: 7px;
+  grid-template-columns: subgrid;
+  align-items: center;
 }
 
 .optional-divider {
