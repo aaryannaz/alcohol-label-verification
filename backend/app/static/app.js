@@ -93,6 +93,7 @@ const colaRemove = document.getElementById("colaRemove");
 const colaChooseBtn = document.getElementById("colaChooseBtn");
 const colaDropZone = document.getElementById("colaDropZone");
 const colaProgress = document.getElementById("colaProgress");
+const labelProgress = document.getElementById("labelProgress");
 const colaUploadBlock = document.querySelector(".cola-upload");
 const fieldsHelp = document.querySelector(".fields-help");
 const modeColaWorkflow = document.getElementById("modeColaWorkflow");
@@ -793,6 +794,7 @@ async function extractFields() {
   }
 
   setBusy(true);
+  if (labelProgress) labelProgress.hidden = false;
   setStatus("Extracting fields");
   try {
     await runLabelExtraction();
@@ -809,6 +811,7 @@ async function extractFields() {
     showError(error.message);
     setStatus("Extraction failed");
   } finally {
+    if (labelProgress) labelProgress.hidden = true;
     setBusy(false);
   }
 }

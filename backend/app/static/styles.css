@@ -768,16 +768,16 @@ tr.is-flagged td:first-child {
 .cola-upload[hidden],
 .cola-drop-zone[hidden],
 .file-select-button[hidden],
-.cola-progress[hidden] {
+.upload-progress[hidden] {
   display: none;
 }
 
-.cola-progress {
+.upload-progress {
   display: grid;
   gap: 6px;
 }
 
-.cola-progress-track {
+.upload-progress-track {
   height: 6px;
   border-radius: 999px;
   border: 1px solid var(--line);
@@ -785,20 +785,20 @@ tr.is-flagged td:first-child {
   overflow: hidden;
 }
 
-.cola-progress-fill {
+.upload-progress-fill {
   height: 100%;
   width: 40%;
   border-radius: 999px;
   background: var(--green);
-  animation: cola-indeterminate 1.1s ease-in-out infinite;
+  animation: upload-indeterminate 1.1s ease-in-out infinite;
 }
 
-@keyframes cola-indeterminate {
+@keyframes upload-indeterminate {
   0% { margin-left: -42%; }
   100% { margin-left: 100%; }
 }
 
-.cola-progress-text {
+.upload-progress-text {
   color: var(--muted);
   font-size: 12px;
   font-weight: 650;

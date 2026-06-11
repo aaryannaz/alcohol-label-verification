@@ -24,11 +24,7 @@
       </header>
 
       <main class="workspace">
-        <section class="panel setup-panel" aria-labelledby="setup-title">
-          <div class="section-heading">
-            <h2 id="setup-title">Application</h2>
-          </div>
-
+        <section class="panel setup-panel" aria-label="Application">
           <div class="workflow-toggle">
             <span class="upload-mode-label">Workflow</span>
             <div class="upload-mode-buttons">
@@ -51,9 +47,9 @@
               <span class="file-name" id="colaFileName"></span>
               <button class="remove-file-button" id="colaRemove" type="button" hidden>Remove</button>
             </div>
-            <div class="cola-progress" id="colaProgress" role="status" aria-live="polite" hidden>
-              <div class="cola-progress-track"><div class="cola-progress-fill"></div></div>
-              <span class="cola-progress-text">Reading the COLA application…</span>
+            <div class="upload-progress" id="colaProgress" role="status" aria-live="polite" hidden>
+              <div class="upload-progress-track"><div class="upload-progress-fill"></div></div>
+              <span class="upload-progress-text">Reading the COLA application…</span>
             </div>
             <p class="cola-help">Upload the approved COLA (TTB&nbsp;F&nbsp;5100.31) to auto-fill the application fields and set category &amp; origin. Then upload the label artwork below and Verify.</p>
           </div>
@@ -136,6 +132,11 @@
           </div>
 
           <div id="requirementChips" class="chips" aria-live="polite"></div>
+
+          <div class="upload-progress" id="labelProgress" role="status" aria-live="polite" hidden>
+            <div class="upload-progress-track"><div class="upload-progress-fill"></div></div>
+            <span class="upload-progress-text">Reading the label…</span>
+          </div>
         </section>
 
         <div class="main-column">
