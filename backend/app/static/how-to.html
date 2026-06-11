@@ -28,13 +28,17 @@
       <main class="info-page">
         <section class="panel info-panel" aria-labelledby="workflow-title">
           <h2 id="workflow-title">Workflow</h2>
+          <p class="how-to-intro">Pick a <strong>Workflow mode</strong> at the top of the page — it sets where the COLA application fields come from:</p>
+          <ul class="how-to-list">
+            <li><strong>Upload COLA form</strong> — upload the approved COLA application and its stated values are read into the COLA application fields automatically.</li>
+            <li><strong>Extract from label</strong> — skip the COLA form and click <strong>Extract from Label</strong> to pre-fill the COLA application fields from the label image instead.</li>
+          </ul>
           <ol class="how-to-list">
-            <li>Select the product category and origin.</li>
-            <li>Upload one label file, or upload your label images as separate files (order doesn't matter).</li>
+            <li>Choose the product category and origin. The required fields adjust to match.</li>
+            <li>Upload the label artwork — one file, or the front and back as separate files (order doesn't matter).</li>
+            <li>Review and correct the <strong>COLA application fields</strong> so they match the approved application.</li>
+            <li>Click <strong>Verify Against Label</strong>. Each field is marked against the label, and the government warning is checked separately.</li>
             <li>Use Batch mode when uploading multiple review items at once.</li>
-            <li>Click Extract Fields to populate the Expected COLA and Reviewed Label fields.</li>
-            <li>Correct the Expected COLA fields to match the approved application.</li>
-            <li>Click Verify Reviewed Fields and review the results.</li>
           </ol>
         </section>
 
@@ -53,7 +57,8 @@
           <ul class="how-to-list">
             <li>Batch accepts multiple PDF or image files at once and processes them in parallel.</li>
             <li>Each batch file is treated as one review item.</li>
-            <li>Open a completed batch item in the editor to review and verify it.</li>
+            <li>Every file is automatically extracted and verified, so each row lands on a verdict: <strong>Pass</strong> (all required fields present, the government warning compliant, and label checks passed) or <strong>Needs attention</strong>.</li>
+            <li>Open a row in the editor to see the field-by-field results and re-verify after correcting the COLA application fields.</li>
             <li>CSV or Excel import is a future enhancement.</li>
           </ul>
         </section>
@@ -63,6 +68,7 @@
           <ul class="how-to-list">
             <li>Government warning text is checked for exact wording, punctuation, and capitalization.</li>
             <li>Bold type cannot be verified because extraction returns text, not typography metadata.</li>
+            <li>In batch mode the expected and label values both come from the label, so a row's verdict is a completeness and compliance check; upload the COLA form or edit the fields to compare against a different approved value.</li>
           </ul>
         </section>
       </main>
