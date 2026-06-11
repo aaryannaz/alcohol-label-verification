@@ -77,7 +77,7 @@ const state = {
 };
 
 const THEME_STORAGE_KEY = "alcohol-label-theme";
-const THEMES = ["light", "dark", "airbnb", "vimeo", "grammarly", "eventbrite"];
+const THEMES = ["light", "dark", "government", "corporate", "airbnb", "vimeo", "grammarly", "eventbrite"];
 const themeSelect = document.querySelector("#themeSelect");
 const productCategory = document.querySelector("#productCategory");
 const originType = document.querySelector("#originType");
