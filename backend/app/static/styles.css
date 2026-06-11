@@ -473,6 +473,11 @@ select {
   padding: 0 11px;
 }
 
+/* Selects sit inside <label>s (weight 650); keep their value text lighter. */
+select {
+  font-weight: 500;
+}
+
 textarea {
   min-height: 78px;
   padding: 10px 11px;
@@ -868,7 +873,7 @@ tr.is-flagged td:first-child {
   background: var(--subtle-bg);
   color: var(--muted);
   font-size: 13px;
-  font-weight: 650;
+  font-weight: 500;
   cursor: pointer;
   transition: background 140ms ease, color 140ms ease;
 }
