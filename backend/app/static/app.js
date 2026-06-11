@@ -1,4 +1,7 @@
-const FIELD_CONFIG = [
+// Fallback field config. The authoritative list is fetched from GET /fields at
+// startup (loadFieldConfig); this hardcoded copy only keeps the UI working if
+// that request fails. The backend (fields.py) is the single source of truth.
+let FIELD_CONFIG = [
   { key: "brand_name", label: "Brand name", type: "input" },
   { key: "class_type", label: "Class/type designation", type: "input" },
   { key: "alcohol_content", label: "Alcohol content", type: "input" },
@@ -12,7 +15,27 @@ const FIELD_CONFIG = [
   { key: "fanciful_name", label: "Fanciful name", type: "input" },
 ];
 
-const FIELD_LOOKUP = Object.fromEntries(FIELD_CONFIG.map((field) => [field.key, field]));
+let FIELD_LOOKUP = Object.fromEntries(FIELD_CONFIG.map((field) => [field.key, field]));
+
+function setFieldConfig(specs) {
+  FIELD_CONFIG = specs.map((spec) => ({
+    key: spec.key,
+    label: spec.label,
+    type: spec.control === "textarea" ? "textarea" : "input",
+  }));
+  FIELD_LOOKUP = Object.fromEntries(FIELD_CONFIG.map((field) => [field.key, field]));
+}
+
+async function loadFieldConfig() {
+  try {
+    const response = await fetch("/fields");
+    if (!response.ok) return;
+    const body = await response.json();
+    if (Array.isArray(body.fields) && body.fields.length) setFieldConfig(body.fields);
+  } catch (error) {
+    // Network/parse failure — keep the fallback config so the UI still works.
+  }
+}
 const MAX_UPLOAD_BYTES = 10 * 1024 * 1024;
 const ACCEPTED_EXTENSIONS = new Set(["pdf", "png", "jpg", "jpeg", "webp"]);
 const ACCEPTED_MIME_TYPES = new Set(["application/pdf", "image/png", "image/jpeg", "image/webp"]);
@@ -34,6 +57,8 @@ const state = {
   requirements: { required: [], conditional: [], optional: [] },
   extracted: {},
   validation: {},
+  lastResult: null,
+  inFlight: false,
   files: {
     front: null,
     back: null,
@@ -59,6 +84,10 @@ const verifyButton = document.querySelector("#verifyButton");
 const statusText = document.querySelector("#statusText");
 const errorBox = document.querySelector("#errorBox");
 const resultsBody = document.querySelector("#resultsBody");
+const resultsSummary = document.getElementById("resultsSummary");
+const busySpinner = document.getElementById("busySpinner");
+const exportButton = document.getElementById("exportButton");
+const printButton = document.getElementById("printButton");
 const modeChooseFile = document.getElementById("modeChooseFile");
 const modeDragDrop = document.getElementById("modeDragDrop");
 const modeBatch = document.getElementById("modeBatch");
@@ -234,6 +263,14 @@ function createField(prefix, key) {
   control.name = key;
   control.autocomplete = "off";
 
+  // The government warning is always checked against the fixed statutory text,
+  // so the Expected-column box is read-only (editing it would do nothing).
+  if (prefix === "expected" && key === "government_warning") {
+    control.readOnly = true;
+    control.placeholder = "Checked against the statutory wording — no entry needed.";
+    control.classList.add("readonly-field");
+  }
+
   row.appendChild(label);
   row.appendChild(control);
   return row;
@@ -286,6 +323,83 @@ function setStatus(message) {
   statusText.textContent = message;
 }
 
+function setBusy(busy) {
+  // Lock the inputs that would race a rebuild of the field stacks (category /
+  // origin) and the action buttons while a request is in flight, and show a
+  // spinner / announce busy state to assistive tech.
+  state.inFlight = busy;
+  const controls = [productCategory, originType, extractButton, verifyButton, modeChooseFile, modeDragDrop, modeBatch];
+  for (const control of controls) {
+    if (control) control.disabled = busy;
+  }
+  for (const input of uploadInputs) {
+    input.disabled = busy;
+  }
+  if (busySpinner) busySpinner.hidden = !busy;
+  const workspace = document.querySelector(".workspace");
+  if (workspace) workspace.setAttribute("aria-busy", busy ? "true" : "false");
+}
+
+function csvEscape(value) {
+  const text = value == null ? "" : String(value);
+  return /[",\n\r]/.test(text) ? '"' + text.replace(/"/g, '""') + '"' : text;
+}
+
+function buildResultsCsv(result) {
+  const rows = [];
+  rows.push(["Product category", result.product_category || ""]);
+  rows.push(["Origin", result.origin_type || ""]);
+  if (result.wine_path) rows.push(["Wine path", result.wine_path]);
+  rows.push([]);
+  rows.push(["Field", "Status", "Expected", "Reviewed"]);
+  const expected = result.expected || {};
+  const reviewed = result.reviewed || {};
+  const validation = result.validation || {};
+  const requirements = result.field_requirements || {};
+  const keys = [].concat(requirements.required || [], requirements.conditional || [], requirements.optional || []);
+  for (const key of (keys.length ? keys : Object.keys(validation))) {
+    const config = FIELD_LOOKUP[key];
+    rows.push([config ? config.label : key, validation[key] || "", expected[key] || "", reviewed[key] || ""]);
+  }
+  const checks = result.compliance_checks || [];
+  if (checks.length) {
+    rows.push([]);
+    rows.push(["Label compliance check", "Status", "Detail"]);
+    for (const check of checks) rows.push([check.label, check.status, check.detail]);
+  }
+  return rows.map((row) => row.map(csvEscape).join(",")).join("\r\n");
+}
+
+function downloadTextFile(filename, text, mimeType) {
+  const blob = new Blob([text], { type: mimeType });
+  const url = URL.createObjectURL(blob);
+  const link = document.createElement("a");
+  link.href = url;
+  link.download = filename;
+  document.body.appendChild(link);
+  link.click();
+  document.body.removeChild(link);
+  setTimeout(() => URL.revokeObjectURL(url), 0);
+}
+
+function exportResults() {
+  if (!state.lastResult) {
+    showError("Run a verification first, then export.");
+    return;
+  }
+  clearError();
+  downloadTextFile("label-verification.csv", buildResultsCsv(state.lastResult), "text/csv;charset=utf-8");
+}
+
+function printResults() {
+  if (!state.lastResult) {
+    showError("Run a verification first, then print.");
+    return;
+  }
+  clearError();
+  window.print();
+}
+
 function renderEmptyResults(message) {
   const row = document.createElement("tr");
   const cell = document.createElement("td");
@@ -295,6 +409,10 @@ function renderEmptyResults(message) {
   cell.textContent = message || "No verification results yet.";
   row.appendChild(cell);
   resultsBody.appendChild(row);
+  const compliance = document.getElementById("complianceChecks");
+  if (compliance) compliance.innerHTML = "";
+  state.lastResult = null;
+  if (resultsSummary) resultsSummary.textContent = "";
 }
 
 function formValues(container) {
@@ -320,20 +438,62 @@ function setExpectedValues(values) {
   }
 }
 
+const STATUS_LABELS = {
+  "PASS": "Pass",
+  "FAIL": "Fail",
+  "MISSING": "Missing",
+  "NOT REQUIRED": "Not required",
+  "NOT REVIEWED": "Not reviewed",
+  "EXPECTED VALUE MISSING": "No expected value",
+  "FAIL_MISSING_HEADING": "Heading missing",
+  "FAIL_HEADING_FORMAT": "Heading format",
+  "FAIL_TEXT_MISMATCH": "Wording mismatch",
+  "PRESENT_ON_LABEL_CONFIRM_APPLICABILITY": "On label — confirm",
+  "EXEMPT_TABLE_WINE": "Exempt (table wine)",
+  "FAIL_APPELLATION_REQUIRED_BY_TRIGGER": "Appellation required",
+  "FAIL_NOT_ALLCAPS": "Not all-caps",
+};
+
 function statusClass(status) {
-  if (status === "PASS") return "status-pass";
+  if (status === "PASS" || status === "EXEMPT_TABLE_WINE") return "status-pass";
   if (status === "NOT REQUIRED") return "status-neutral";
+  if (status === "PRESENT_ON_LABEL_CONFIRM_APPLICABILITY") return "status-processing";
   if (status === "MISSING" || status === "EXPECTED VALUE MISSING") return "status-missing";
   return "status-fail";
 }
 
+function statusLabel(status) {
+  return STATUS_LABELS[status] || status;
+}
+
+function isFlaggedStatus(status) {
+  const cls = statusClass(status);
+  return cls === "status-fail" || cls === "status-missing";
+}
+
 function renderResults(response) {
+  state.lastResult = response;
   const expected = response.expected || formValues(expectedFields);
   const reviewed = response.reviewed || response.extracted || formValues(reviewedFields);
   const validation = response.validation || {};
+  const requirements = response.field_requirements || {};
   resultsBody.innerHTML = "";
 
-  for (const key of FIELD_CONFIG.map((field) => field.key)) {
+  // Show only the fields applicable to this product category, in requirement
+  // order (required, then conditional, then optional). Falls back to all fields.
+  const applicable = [].concat(
+    requirements.required || [],
+    requirements.conditional || [],
+    requirements.optional || [],
+  );
+  const keys = applicable.length ? applicable : FIELD_CONFIG.map((field) => field.key);
+
+  let passed = 0;
+  let attention = 0;
+
+  for (const key of keys) {
+    const config = FIELD_LOOKUP[key];
+    if (!config) continue;
     const row = document.createElement("tr");
     const fieldCell = document.createElement("td");
     const statusCell = document.createElement("td");
@@ -342,18 +502,77 @@ function renderResults(response) {
     const badge = document.createElement("span");
     const status = validation[key] || "NOT REVIEWED";
 
-    fieldCell.textContent = FIELD_LOOKUP[key].label;
+    if (status === "PASS" || status === "EXEMPT_TABLE_WINE") passed += 1;
+    else if (isFlaggedStatus(status)) attention += 1;
+
+    fieldCell.textContent = config.label;
     badge.className = "status-badge " + statusClass(status);
-    badge.textContent = status;
+    badge.textContent = statusLabel(status);
+    badge.title = status;
     statusCell.appendChild(badge);
     expectedCell.textContent = expected[key] || "";
     reviewedCell.textContent = reviewed[key] || "";
+
+    if (isFlaggedStatus(status)) row.className = "is-flagged";
 
     row.appendChild(fieldCell);
     row.appendChild(statusCell);
     row.appendChild(expectedCell);
     row.appendChild(reviewedCell);
     resultsBody.appendChild(row);
+  }
+
+  if (resultsSummary) {
+    const checked = keys.filter((key) => FIELD_LOOKUP[key]).length;
+    resultsSummary.textContent = `${checked} fields checked · ${passed} passed · ${attention} need attention`;
+  }
+
+  renderComplianceChecks(response.compliance_checks || []);
+}
+
+function complianceStatusClass(status) {
+  if (status === "PASS") return "status-pass";
+  if (status === "FAIL") return "status-missing";
+  return "status-neutral";
+}
+
+function renderComplianceChecks(checks) {
+  const container = document.getElementById("complianceChecks");
+  if (!container) return;
+  container.innerHTML = "";
+  if (!checks.length) return;
+
+  const heading = document.createElement("h3");
+  heading.textContent = "Label compliance checks";
+  container.appendChild(heading);
+
+  const list = document.createElement("ul");
+  for (const check of checks) {
+    const item = document.createElement("li");
+    const badge = document.createElement("span");
+    badge.className = "status-badge " + complianceStatusClass(check.status);
+    badge.textContent = check.status;
+    item.appendChild(badge);
+    item.appendChild(document.createTextNode(" " + check.label + " — " + check.detail));
+    list.appendChild(item);
+  }
+  container.appendChild(list);
+}
+
+const REQUEST_TIMEOUT_MS = 90000;
+
+async function fetchWithTimeout(url, options) {
+  const controller = new AbortController();
+  const timer = setTimeout(() => controller.abort(), REQUEST_TIMEOUT_MS);
+  try {
+    return await fetch(url, Object.assign({}, options, { signal: controller.signal }));
+  } catch (error) {
+    if (error && error.name === "AbortError") {
+      throw new Error("The request timed out. Please try again.");
+    }
+    throw error;
+  } finally {
+    clearTimeout(timer);
   }
 }
 
@@ -399,10 +618,10 @@ async function extractFields() {
   formData.append("front_image", state.files.front);
   if (state.files.back) formData.append("back_image", state.files.back);
 
-  extractButton.disabled = true;
+  setBusy(true);
   setStatus("Extracting fields");
   try {
-    const response = await fetch("/extract", { method: "POST", body: formData });
+    const response = await fetchWithTimeout("/extract", { method: "POST", body: formData });
     const body = await parseApiResponse(response);
     state.extracted = body.extracted || {};
     setReviewedValues(state.extracted);
@@ -412,16 +631,16 @@ async function extractFields() {
     showError(error.message);
     setStatus("Extraction failed");
   } finally {
-    extractButton.disabled = false;
+    setBusy(false);
   }
 }
 
 async function verifyReviewedFields() {
   clearError();
-  verifyButton.disabled = true;
+  setBusy(true);
   setStatus("Verifying fields");
   try {
-    const response = await fetch("/verify-reviewed", {
+    const response = await fetchWithTimeout("/verify-reviewed", {
       method: "POST",
       headers: { "Content-Type": "application/json" },
       body: JSON.stringify({
@@ -438,7 +657,7 @@ async function verifyReviewedFields() {
     showError(error.message);
     setStatus("Verification failed");
   } finally {
-    verifyButton.disabled = false;
+    setBusy(false);
   }
 }
 
@@ -630,7 +849,7 @@ async function processBatchItem(item) {
   formData.append("front_image", item.file);
 
   try {
-    const response = await fetch("/extract", { method: "POST", body: formData });
+    const response = await fetchWithTimeout("/extract", { method: "POST", body: formData });
     const body = await parseApiResponse(response);
     item.extracted = body.extracted || {};
     item.status = "Needs review";
@@ -909,8 +1128,10 @@ productCategory.addEventListener("change", refreshRequirements);
 originType.addEventListener("change", refreshRequirements);
 extractButton.addEventListener("click", extractFields);
 verifyButton.addEventListener("click", verifyReviewedFields);
+if (exportButton) exportButton.addEventListener("click", exportResults);
+if (printButton) printButton.addEventListener("click", printResults);
 
-refreshRequirements().catch(function(error) {
+loadFieldConfig().then(refreshRequirements).catch(function(error) {
   showError(error.message);
   setStatus("Unable to load requirements");
 });

@@ -1,21 +1,27 @@
+"""Gemini client construction and model / timeout configuration (env-driven)."""
+
+import os
 from functools import lru_cache
 from pathlib import Path
-import os
 
 from dotenv import load_dotenv
 from google import genai
+from google.genai import types
 
 from .errors import AppError
-
 
 BACKEND_DIR = Path(__file__).resolve().parents[1]
 load_dotenv(dotenv_path=BACKEND_DIR / ".env")
 
-GEMINI_MODEL = "gemini-2.5-flash-lite"
+# Single source of truth for the model id. Override per environment with GEMINI_MODEL.
+GEMINI_MODEL = os.getenv("GEMINI_MODEL", "gemini-2.5-flash-lite")
+
+# Per-request timeout (milliseconds) so a hung Gemini call fails fast instead of
+# pinning a worker for the whole retry budget. Override with GEMINI_TIMEOUT_MS.
+GEMINI_TIMEOUT_MS = int(os.getenv("GEMINI_TIMEOUT_MS", "25000"))
 
 
-@lru_cache
-def get_gemini_client():
+def _require_api_key() -> str:
     api_key = os.getenv("GEMINI_API_KEY")
     if not api_key:
         raise AppError(
@@ -24,4 +30,19 @@ def get_gemini_client():
             message="GEMINI_API_KEY is not configured.",
             details={"hint": "Add GEMINI_API_KEY to backend/.env or the deployment environment."},
         )
-    return genai.Client(api_key=api_key)
+    return api_key
+
+
+@lru_cache
+def _build_client(api_key: str):
+    return genai.Client(
+        api_key=api_key,
+        http_options=types.HttpOptions(timeout=GEMINI_TIMEOUT_MS),
+    )
+
+
+def get_gemini_client():
+    # Key the cache on the API key value so a rotated key is picked up without a
+    # restart, while a stable key still reuses one client. The missing-key check
+    # runs first and raises (it is never cached).
+    return _build_client(_require_api_key())

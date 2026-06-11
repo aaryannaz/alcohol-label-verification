@@ -1,11 +1,12 @@
-from app.clients import get_gemini_client
+from app.clients import GEMINI_MODEL, get_gemini_client
 
 
 def main():
     response = get_gemini_client().models.generate_content(
-        model="gemini-2.5-flash",
+        model=GEMINI_MODEL,
         contents="Say hello",
     )
+    print(f"Model: {GEMINI_MODEL}")
     print(response.text)
 
 

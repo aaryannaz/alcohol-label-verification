@@ -12,5 +12,14 @@ dependencies = [
   "uvicorn==0.49.0",
 ]
 
-[project.scripts]
-app = "backend.app.main:app"
+[project.optional-dependencies]
+dev = ["ruff==0.14.4"]
+
+[tool.ruff]
+line-length = 120
+target-version = "py312"
+extend-exclude = ["backend/venv", "**/venv", "**/__pycache__"]
+
+[tool.ruff.lint]
+select = ["E", "F", "I", "W", "B", "UP"]
+ignore = ["E501", "B008"]  # E501: long prompt strings; B008: FastAPI Depends()/Form() in defaults

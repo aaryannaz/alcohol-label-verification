@@ -1,10 +1,12 @@
+"""Upload validation: extension, browser content-type, and magic-byte signature
+checks (plus size cap) before any bytes are forwarded to Gemini."""
+
 from dataclasses import dataclass
 from pathlib import Path
 
 from fastapi import UploadFile
 
 from .errors import AppError
-
 
 MAX_UPLOAD_BYTES = 10 * 1024 * 1024
 READ_CHUNK_BYTES = 1024 * 1024

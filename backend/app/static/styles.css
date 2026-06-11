@@ -295,6 +295,12 @@ input[type="file"] {
   padding: 9px;
 }
 
+.readonly-field {
+  background: var(--subtle-bg);
+  color: var(--muted);
+  cursor: not-allowed;
+}
+
 .native-file-input {
   position: absolute;
   width: 1px;
@@ -406,6 +412,49 @@ button:disabled {
   font-weight: 700;
 }
 
+.status-line {
+  display: inline-flex;
+  align-items: center;
+  gap: 8px;
+}
+
+.spinner {
+  width: 16px;
+  height: 16px;
+  border: 2px solid var(--line);
+  border-top-color: var(--green);
+  border-radius: 50%;
+  animation: spin 0.7s linear infinite;
+  flex: 0 0 auto;
+}
+
+@keyframes spin {
+  to {
+    transform: rotate(360deg);
+  }
+}
+
+.results-toolbar {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 12px;
+  flex-wrap: wrap;
+  margin-bottom: 14px;
+}
+
+.results-summary {
+  margin: 0;
+  color: var(--muted);
+  font-size: 13px;
+  font-weight: 650;
+}
+
+.results-actions {
+  display: flex;
+  gap: 8px;
+}
+
 .error-box {
   margin-bottom: 14px;
   border: 1px solid var(--red-line);
@@ -483,6 +532,39 @@ th {
 .status-processing {
   color: var(--amber);
   background: var(--amber-soft);
+}
+
+tr.is-flagged td {
+  background: var(--red-soft);
+}
+
+tr.is-flagged td:first-child {
+  box-shadow: inset 3px 0 0 var(--red);
+}
+
+.compliance-checks {
+  margin-top: 18px;
+}
+
+.compliance-checks h3 {
+  margin-bottom: 10px;
+}
+
+.compliance-checks ul {
+  display: grid;
+  gap: 8px;
+  margin: 0;
+  padding: 0;
+  list-style: none;
+}
+
+.compliance-checks li {
+  display: flex;
+  align-items: baseline;
+  gap: 8px;
+  font-size: 13px;
+  line-height: 1.45;
+  color: var(--text);
 }
 
 @media (max-width: 980px) {
@@ -805,5 +887,38 @@ th {
   .batch-actions .file-select-button,
   .batch-actions button {
     width: 100%;
+  }
+}
+
+@media print {
+  .topbar,
+  .setup-panel,
+  .fields-panel,
+  .batch-panel,
+  .results-actions,
+  #busySpinner {
+    display: none !important;
+  }
+
+  .workspace {
+    display: block;
+    padding: 0;
+  }
+
+  .results-panel {
+    border: none;
+    box-shadow: none;
+  }
+
+  .table-wrap {
+    overflow: visible !important;
+  }
+
+  table {
+    min-width: 0 !important;
+  }
+
+  body {
+    background: #ffffff;
   }
 }

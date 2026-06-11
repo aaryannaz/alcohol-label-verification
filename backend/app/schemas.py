@@ -1,6 +1,11 @@
+"""Pydantic request models and the product-category / origin enums. LabelFields
+is generated from the canonical field list in fields.py."""
+
 from enum import Enum
 
-from pydantic import BaseModel
+from pydantic import BaseModel, create_model
+
+from .fields import FIELD_KEYS
 
 
 class ProductCategory(str, Enum):
@@ -14,18 +19,13 @@ class OriginType(str, Enum):
     imported = "imported"
 
 
-class LabelFields(BaseModel):
-    brand_name: str = ""
-    class_type: str = ""
-    alcohol_content: str = ""
-    net_contents: str = ""
-    government_warning: str = ""
-    domestic_name_address: str = ""
-    importer_name_address: str = ""
-    country_of_origin: str = ""
-    sulfite_declaration: str = ""
-    appellation_of_origin: str = ""
-    fanciful_name: str = ""
+# Generated from the canonical field list in fields.py so the model can never
+# drift from FIELD_KEYS. Every field is an optional string defaulting to "".
+LabelFields = create_model(
+    "LabelFields",
+    __base__=BaseModel,
+    **{key: (str, "") for key in FIELD_KEYS},
+)
 
 
 class VerifyReviewedRequest(BaseModel):

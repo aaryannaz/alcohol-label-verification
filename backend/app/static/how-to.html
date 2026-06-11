@@ -4,17 +4,7 @@
     <meta charset="utf-8" />
     <meta name="viewport" content="width=device-width, initial-scale=1" />
     <title>How To | Alcohol Label Verification</title>
-    <script>
-      (() => {
-        try {
-          const storedTheme = localStorage.getItem("alcohol-label-theme");
-          const prefersDark = window.matchMedia("(prefers-color-scheme: dark)").matches;
-          document.documentElement.dataset.theme = storedTheme || (prefersDark ? "dark" : "light");
-        } catch {
-          document.documentElement.dataset.theme = "light";
-        }
-      })();
-    </script>
+    <script src="/static/theme-init.js"></script>
     <link rel="stylesheet" href="/static/styles.css" />
   </head>
   <body>

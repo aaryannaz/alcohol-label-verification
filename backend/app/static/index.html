@@ -4,17 +4,7 @@
     <meta charset="utf-8" />
     <meta name="viewport" content="width=device-width, initial-scale=1" />
     <title>Alcohol Label Verification</title>
-    <script>
-      (() => {
-        try {
-          const storedTheme = localStorage.getItem("alcohol-label-theme");
-          const prefersDark = window.matchMedia("(prefers-color-scheme: dark)").matches;
-          document.documentElement.dataset.theme = storedTheme || (prefersDark ? "dark" : "light");
-        } catch {
-          document.documentElement.dataset.theme = "light";
-        }
-      })();
-    </script>
+    <script src="/static/theme-init.js"></script>
     <link rel="stylesheet" href="/static/styles.css" />
   </head>
   <body>
@@ -184,10 +174,21 @@
         <section class="panel results-panel" aria-labelledby="results-title">
           <div class="section-heading">
             <h2 id="results-title">Results</h2>
-            <p id="statusText" class="status-text">Ready</p>
+            <div class="status-line">
+              <span id="busySpinner" class="spinner" hidden aria-hidden="true"></span>
+              <p id="statusText" class="status-text" role="status" aria-live="polite">Ready</p>
+            </div>
           </div>
 
-          <div id="errorBox" class="error-box" hidden></div>
+          <div class="results-toolbar">
+            <p id="resultsSummary" class="results-summary" aria-live="polite"></p>
+            <div class="results-actions">
+              <button id="exportButton" class="small-button" type="button">Export CSV</button>
+              <button id="printButton" class="small-button" type="button">Print</button>
+            </div>
+          </div>
+
+          <div id="errorBox" class="error-box" role="alert" hidden></div>
 
           <div class="table-wrap">
             <table>
@@ -206,6 +207,8 @@
               </tbody>
             </table>
           </div>
+
+          <div id="complianceChecks" class="compliance-checks" aria-live="polite"></div>
         </section>
       </main>
     </div>
