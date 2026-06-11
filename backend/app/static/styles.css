@@ -50,9 +50,9 @@
 }
 
 /* ---------------------------------------------------------------------------
-   Brand-inspired palettes (visual only — colors/shadows, no layout changes).
-   Each redefines the same custom properties as the light/dark themes. The
-   accent (--primary) is the brand color; --green stays the success/PASS color.
+   Brand-inspired palette (visual only — colors/shadows, no layout changes).
+   Redefines the same custom properties as the light/dark themes. The accent
+   (--primary) is the brand color; --green stays the success/PASS color.
    --------------------------------------------------------------------------- */
 :root[data-theme="airbnb"] {
   color-scheme: light;
@@ -77,79 +77,10 @@
   --shadow: 0 6px 16px rgba(0, 0, 0, 0.12);
 }
 
-:root[data-theme="vimeo"] {
-  color-scheme: light;
-  --bg: #ffffff;
-  --surface: #ffffff;
-  --control-bg: #ffffff;
-  --subtle-bg: #f4f8fb;
-  --text: #11212f;
-  --muted: #5b6b7b;
-  --line: #d6e0e8;
-  --green: #1f9d55;
-  --green-soft: #e6f5ec;
-  --primary: #1ab7ea;
-  --primary-soft: #e2f6fd;
-  --red: #d83a34;
-  --red-soft: #fbe9e8;
-  --red-line: #f3c2bf;
-  --amber: #b06f00;
-  --amber-soft: #fff2d8;
-  --blue: #1166cc;
-  --blue-soft: #e6f0fc;
-  --shadow: 0 8px 24px rgba(17, 34, 51, 0.1);
-}
-
-:root[data-theme="grammarly"] {
-  color-scheme: light;
-  --bg: #ffffff;
-  --surface: #ffffff;
-  --control-bg: #ffffff;
-  --subtle-bg: #f4f9f7;
-  --text: #20302b;
-  --muted: #6a7a72;
-  --line: #dde7e2;
-  --green: #11a683;
-  --green-soft: #e3f6f0;
-  --primary: #15c39a;
-  --primary-soft: #e3f8f2;
-  --red: #d8443c;
-  --red-soft: #fbe9e8;
-  --red-line: #f3c3bf;
-  --amber: #a06800;
-  --amber-soft: #fff2d6;
-  --blue: #2f7be0;
-  --blue-soft: #e9f1fd;
-  --shadow: 0 8px 24px rgba(32, 48, 43, 0.1);
-}
-
-:root[data-theme="eventbrite"] {
-  color-scheme: light;
-  --bg: #ffffff;
-  --surface: #ffffff;
-  --control-bg: #ffffff;
-  --subtle-bg: #f8f7fa;
-  --text: #1e0a3c;
-  --muted: #6f7287;
-  --line: #e6e4ee;
-  --green: #1c8a4e;
-  --green-soft: #e7f4ec;
-  --primary: #d1410c;
-  --primary-soft: #fdeae1;
-  --red: #b3271a;
-  --red-soft: #fbe6e3;
-  --red-line: #f0bdb6;
-  --amber: #8a5a00;
-  --amber-soft: #fdf0d6;
-  --blue: #3659e3;
-  --blue-soft: #eceffd;
-  --shadow: 0 8px 24px rgba(30, 10, 60, 0.1);
-}
-
 /* ---------------------------------------------------------------------------
-   Style "skins" — these change more than color: font family, corner radius and
-   shadow are tokenized, so a theme can read as a federal/government site or a
-   conservative corporate/bank site. Still no layout/markup changes.
+   Style "skin" — changes more than color: font family, corner radius and shadow
+   are tokenized, so the theme reads as a federal/government site rather than a
+   modern app. Still no layout/markup changes.
    --------------------------------------------------------------------------- */
 :root[data-theme="government"] {
   color-scheme: light;
@@ -187,33 +118,6 @@
   color: #ffffff;
   font-size: 12px;
   font-weight: 600;
-}
-
-:root[data-theme="corporate"] {
-  color-scheme: light;
-  --bg: #f4f6f9;
-  --surface: #ffffff;
-  --control-bg: #ffffff;
-  --subtle-bg: #f7f9fb;
-  --text: #1a2230;
-  --muted: #5a6473;
-  --line: #d8dde4;
-  --green: #1f7a44;
-  --green-soft: #e8f3ec;
-  --primary: #14315c;
-  --primary-soft: #e6ecf4;
-  --red: #9c2a2a;
-  --red-soft: #f6e9e9;
-  --red-line: #e0b7b7;
-  --amber: #8a6d1f;
-  --amber-soft: #f7efd6;
-  --blue: #2a4d8f;
-  --blue-soft: #e9eefa;
-  --shadow: 0 1px 3px rgba(20, 30, 50, 0.08);
-  --font: "Helvetica Neue", Helvetica, Arial, system-ui, sans-serif;
-  --font-heading: Georgia, "Times New Roman", "Times", serif;
-  --radius: 3px;
-  --radius-lg: 4px;
 }
 
 * {
