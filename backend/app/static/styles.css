@@ -498,7 +498,12 @@ textarea {
   background: none;
   color: var(--text);
   cursor: pointer;
-  font-size: 13px;
+  /* Always render the native control in self-hosted Public Sans (like the
+     government layout) so it has a consistent, narrow width across themes —
+     other fonts (e.g. installed Inter) render the "Choose File | No file chosen"
+     string wider and overflow narrow columns. */
+  font-family: "Public Sans", system-ui, -apple-system, "Segoe UI", Roboto, Helvetica, Arial, sans-serif;
+  font-size: 12.5px;
 }
 
 .file-native::-webkit-file-upload-button {
