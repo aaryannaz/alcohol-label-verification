@@ -107,8 +107,6 @@ const errorBox = document.querySelector("#errorBox");
 const resultsBody = document.querySelector("#resultsBody");
 const resultsSummary = document.getElementById("resultsSummary");
 const busySpinner = document.getElementById("busySpinner");
-const exportButton = document.getElementById("exportButton");
-const printButton = document.getElementById("printButton");
 const modeChooseFile = document.getElementById("modeChooseFile");
 const modeDragDrop = document.getElementById("modeDragDrop");
 const modeBatch = document.getElementById("modeBatch");
@@ -424,66 +422,6 @@ function setBusy(busy) {
   if (busySpinner) busySpinner.hidden = !busy;
   const workspace = document.querySelector(".workspace");
   if (workspace) workspace.setAttribute("aria-busy", busy ? "true" : "false");
-}
-
-function csvEscape(value) {
-  const text = value == null ? "" : String(value);
-  return /[",\n\r]/.test(text) ? '"' + text.replace(/"/g, '""') + '"' : text;
-}
-
-function buildResultsCsv(result) {
-  const rows = [];
-  rows.push(["Product category", result.product_category || ""]);
-  rows.push(["Origin", result.origin_type || ""]);
-  if (result.wine_path) rows.push(["Wine path", result.wine_path]);
-  rows.push([]);
-  rows.push(["Field", "Status", "Expected", "Reviewed"]);
-  const expected = result.expected || {};
-  const reviewed = result.reviewed || {};
-  const validation = result.validation || {};
-  const requirements = result.field_requirements || {};
-  const keys = [].concat(requirements.required || [], requirements.conditional || [], requirements.optional || []);
-  for (const key of (keys.length ? keys : Object.keys(validation))) {
-    const config = FIELD_LOOKUP[key];
-    rows.push([config ? config.label : key, validation[key] || "", expected[key] || "", reviewed[key] || ""]);
-  }
-  const checks = result.compliance_checks || [];
-  if (checks.length) {
-    rows.push([]);
-    rows.push(["Label compliance check", "Status", "Detail"]);
-    for (const check of checks) rows.push([check.label, check.status, check.detail]);
-  }
-  return rows.map((row) => row.map(csvEscape).join(",")).join("\r\n");
-}
-
-function downloadTextFile(filename, text, mimeType) {
-  const blob = new Blob([text], { type: mimeType });
-  const url = URL.createObjectURL(blob);
-  const link = document.createElement("a");
-  link.href = url;
-  link.download = filename;
-  document.body.appendChild(link);
-  link.click();
-  document.body.removeChild(link);
-  setTimeout(() => URL.revokeObjectURL(url), 0);
-}
-
-function exportResults() {
-  if (!state.lastResult) {
-    showError("Run a verification first, then export.");
-    return;
-  }
-  clearError();
-  downloadTextFile("label-verification.csv", buildResultsCsv(state.lastResult), "text/csv;charset=utf-8");
-}
-
-function printResults() {
-  if (!state.lastResult) {
-    showError("Run a verification first, then print.");
-    return;
-  }
-  clearError();
-  window.print();
 }
 
 function renderEmptyResults(message) {
@@ -1423,8 +1361,6 @@ if (colaRemove) colaRemove.addEventListener("click", clearCola);
 if (modeColaWorkflow) modeColaWorkflow.addEventListener("click", function() { setWorkflowMode("cola"); });
 if (modeLabelWorkflow) modeLabelWorkflow.addEventListener("click", function() { setWorkflowMode("label"); });
 setWorkflowMode(state.workflowMode);
-if (exportButton) exportButton.addEventListener("click", exportResults);
-if (printButton) printButton.addEventListener("click", printResults);
 
 loadFieldConfig().then(refreshRequirements).catch(function(error) {
   showError(error.message);

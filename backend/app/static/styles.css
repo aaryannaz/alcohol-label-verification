@@ -140,8 +140,7 @@
    shows in the government theme — it restyles the existing topbar as the navy
    bar and reveals the otherwise-hidden nav/breadcrumb. This is a federal visual
    STYLE; it does not claim to be an actual government site. */
-.gov-nav,
-.gov-breadcrumb {
+.gov-nav {
   display: none;
 }
 
@@ -211,37 +210,6 @@
 :root[data-layout="government"] .gov-nav-link.active {
   background: #1a4480;
   border-bottom-color: #ffffff;
-}
-
-:root[data-layout="government"] .gov-breadcrumb {
-  display: flex;
-  align-items: center;
-  flex-wrap: wrap;
-  gap: 8px;
-  padding: 10px 32px;
-  background: var(--subtle-bg);
-  border-bottom: 1px solid var(--line);
-  font-size: 12px;
-  font-weight: 700;
-  letter-spacing: 0.03em;
-  text-transform: uppercase;
-}
-
-:root[data-layout="government"] .gov-breadcrumb a {
-  color: var(--primary);
-  text-decoration: none;
-}
-
-:root[data-layout="government"] .gov-breadcrumb a:hover {
-  text-decoration: underline;
-}
-
-:root[data-layout="government"] .gov-breadcrumb .current {
-  color: var(--muted);
-}
-
-:root[data-layout="government"] .gov-breadcrumb .sep {
-  color: var(--line);
 }
 
 /* ---------------------------------------------------------------------------
@@ -841,11 +809,6 @@ button:disabled {
   font-weight: 650;
 }
 
-.results-actions {
-  display: flex;
-  gap: 8px;
-}
-
 .error-box {
   margin-bottom: 14px;
   border: 1px solid var(--red-line);
@@ -1089,12 +1052,6 @@ tr.is-flagged td:first-child {
   font-weight: 600;
 }
 
-.cola-help {
-  margin: 0;
-  font-size: 12px;
-  line-height: 1.45;
-  color: var(--muted);
-}
 
 .cola-drop-zone {
   min-height: 60px;
@@ -1375,7 +1332,6 @@ tr.is-flagged td:first-child {
   .setup-panel,
   .fields-panel,
   .batch-panel,
-  .results-actions,
   #busySpinner {
     display: none !important;
   }
