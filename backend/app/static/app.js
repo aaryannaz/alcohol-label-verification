@@ -293,7 +293,7 @@ function clearSelectedFile(slot) {
   syncInputFiles(slot, null);
   renderFileState(slot);
   clearError();
-  setStatus("Ready");
+  setStatus("");
 }
 
 function draggedFiles(event) {
@@ -345,14 +345,13 @@ function createField(prefix, key) {
     sr.textContent = " required";
     name.appendChild(sr);
   }
-  label.appendChild(name);
-
   if (requirement === "conditional") {
-    const note = document.createElement("span");
-    note.className = "field-note conditional";
-    note.textContent = "if applicable";
-    label.appendChild(note);
+    const hint = document.createElement("span");
+    hint.className = "field-hint";
+    hint.textContent = "if applicable";
+    name.appendChild(hint);
   }
+  label.appendChild(name);
 
   const control = document.createElement(field.type === "textarea" ? "textarea" : "input");
   control.id = inputName(prefix, key);
@@ -610,7 +609,7 @@ async function refreshRequirements() {
   state.requirements = body.field_requirements;
   renderFieldStack(expectedFields, "expected");
   setExpectedValues(state.expectedValues);
-  setStatus("Ready");
+  setStatus("");
 }
 
 function renderColaSummary() {
