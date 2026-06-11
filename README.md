@@ -17,7 +17,7 @@ This eliminates manual data entry for the common case where the label artwork cl
 ## Tools
 
 - **FastAPI** — API and static file serving
-- **Gemini Vision (gemini-2.5-flash-lite)** — label field extraction from images (set in `backend/app/clients.py`; override with the `GEMINI_MODEL` env var)
+- **Gemini Vision (gemini-2.5-flash, "thinking" disabled)** — label field extraction from images (set in `backend/app/clients.py`; override with the `GEMINI_MODEL` env var). Thinking is turned off because reading a label is a perception task, not a reasoning one — this keeps extraction at ~2s (under the ~5s stakeholder bar) while remaining accurate.
 - **Vercel** — deployment
 - **Python 3.12**
 

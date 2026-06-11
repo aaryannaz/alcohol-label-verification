@@ -14,7 +14,10 @@ BACKEND_DIR = Path(__file__).resolve().parents[1]
 load_dotenv(dotenv_path=BACKEND_DIR / ".env")
 
 # Single source of truth for the model id. Override per environment with GEMINI_MODEL.
-GEMINI_MODEL = os.getenv("GEMINI_MODEL", "gemini-2.5-flash-lite")
+# Default is gemini-2.5-flash with "thinking" disabled (see extraction.py): it is
+# noticeably more accurate than flash-lite on judgment-heavy fields (e.g. fanciful
+# names) while still returning in ~2s, under the ~5s stakeholder bar.
+GEMINI_MODEL = os.getenv("GEMINI_MODEL", "gemini-2.5-flash")
 
 # Per-request timeout (milliseconds) so a hung Gemini call fails fast instead of
 # pinning a worker for the whole retry budget. Override with GEMINI_TIMEOUT_MS.
