@@ -14,6 +14,7 @@ and full results are written to evals/last_results.json.
 import argparse
 import asyncio
 import json
+import time
 from pathlib import Path
 
 import app.extraction as extraction
@@ -22,6 +23,9 @@ from app.extraction import _generation_config, build_contents, run_extraction
 
 from .render import render_label
 from .score import FIELDS, aggregate, score_case
+
+# The stakeholder bar: a label should extract in about this many seconds.
+LATENCY_BAR_SECONDS = 5.0
 
 EVAL_DIR = Path(__file__).resolve().parent
 CASES_PATH = EVAL_DIR / "cases.json"
@@ -54,26 +58,44 @@ def _pct(ok, total):
     return f"{(100.0 * ok / total):5.1f}%" if total else "  n/a"
 
 
+def _percentile(values, pct):
+    """Nearest-rank percentile over a list of seconds (no numpy dependency)."""
+    if not values:
+        return 0.0
+    ordered = sorted(values)
+    k = int(round((pct / 100.0) * (len(ordered) - 1)))
+    return ordered[max(0, min(len(ordered) - 1, k))]
+
+
 async def main_async(limit, only):
     cases = _load_cases(limit, only)
     case_scores = []
     failures = []
     errors = []
+    latencies = []
 
     print(f"Running {len(cases)} case(s)...\n")
     for index, case in enumerate(cases, 1):
         name = case["name"]
+        # Wall-clock the whole extraction path, the same one the API serves. The
+        # tiny render step is included but is negligible (~ms) next to the call.
+        start = time.monotonic()
         try:
             extracted = await _extract_for_case(case)
         except AppError as exc:
-            errors.append({"case": name, "code": exc.code})
-            print(f"[{index}/{len(cases)}] {name}: EXTRACTION ERROR {exc.code}")
+            elapsed = time.monotonic() - start
+            latencies.append(elapsed)
+            errors.append({"case": name, "code": exc.code, "seconds": round(elapsed, 2)})
+            print(f"[{index}/{len(cases)}] {name}: EXTRACTION ERROR {exc.code} ({elapsed:.1f}s)")
             continue
+        elapsed = time.monotonic() - start
+        latencies.append(elapsed)
 
         result = score_case(case["product_category"], case["expected"], extracted)
         case_scores.append((name, result))
         n_ok = sum(1 for info in result.values() if info["ok"])
-        print(f"[{index}/{len(cases)}] {name}: {n_ok}/{len(result)} fields correct")
+        flag = "  ⚠ over bar" if elapsed > LATENCY_BAR_SECONDS else ""
+        print(f"[{index}/{len(cases)}] {name}: {n_ok}/{len(result)} fields correct ({elapsed:.1f}s){flag}")
         for field, info in result.items():
             if not info["ok"]:
                 failures.append({"case": name, "field": field, "expected": info["expected"], "got": info["got"]})
@@ -95,6 +117,31 @@ async def main_async(limit, only):
     if errors:
         print(f"  Extraction errors: {len(errors)}")
 
+    latency_stats = None
+    if latencies:
+        over_bar = sum(1 for s in latencies if s > LATENCY_BAR_SECONDS)
+        latency_stats = {
+            "count": len(latencies),
+            "p50": round(_percentile(latencies, 50), 2),
+            "p95": round(_percentile(latencies, 95), 2),
+            "max": round(max(latencies), 2),
+            "mean": round(sum(latencies) / len(latencies), 2),
+            "over_bar": over_bar,
+            "bar_seconds": LATENCY_BAR_SECONDS,
+        }
+        print("\n" + "=" * 60)
+        print(f"LATENCY (bar: {LATENCY_BAR_SECONDS:.0f}s per label)")
+        print("=" * 60)
+        print(f"  p50:  {latency_stats['p50']:6.2f}s")
+        print(f"  p95:  {latency_stats['p95']:6.2f}s")
+        print(f"  max:  {latency_stats['max']:6.2f}s")
+        print(f"  mean: {latency_stats['mean']:6.2f}s")
+        print(f"  over {LATENCY_BAR_SECONDS:.0f}s: {over_bar}/{len(latencies)}")
+        if latency_stats["p95"] > LATENCY_BAR_SECONDS:
+            print(f"  ⚠ p95 ({latency_stats['p95']:.2f}s) EXCEEDS the {LATENCY_BAR_SECONDS:.0f}s bar")
+        else:
+            print(f"  ✓ p95 within the {LATENCY_BAR_SECONDS:.0f}s bar")
+
     if failures:
         print("\n" + "=" * 60)
         print(f"FIELD MISSES ({len(failures)})")
@@ -105,7 +152,7 @@ async def main_async(limit, only):
             print(f"      got:      {miss['got']!r}")
 
     RESULTS_PATH.write_text(json.dumps(
-        {"summary": summary, "failures": failures, "errors": errors},
+        {"summary": summary, "latency": latency_stats, "failures": failures, "errors": errors},
         indent=2,
     ))
     print(f"\nFull results written to {RESULTS_PATH}")
