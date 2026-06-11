@@ -104,20 +104,103 @@
   --blue-soft: #e1f3f8;
   --shadow: none;
   --font: "Source Sans 3", "Source Sans Pro", system-ui, -apple-system, "Segoe UI", Roboto, Helvetica, Arial, sans-serif;
-  --font-heading: var(--font);
+  --font-heading: Georgia, "Times New Roman", "Times", serif;
   --radius: 2px;
   --radius-lg: 2px;
 }
 
-/* Federal "official website" banner — CSS-only, only in the government skin. */
-:root[data-theme="government"] .app-shell::before {
-  content: "An official website of the United States government";
-  display: block;
-  padding: 7px 32px;
+/* Government / TTB-style layout. The federal-looking shell (navy utility bar,
+   blue primary nav, breadcrumb) is markup that lives in the DOM always but only
+   shows in the government theme — it restyles the existing topbar as the navy
+   bar and reveals the otherwise-hidden nav/breadcrumb. This is a federal visual
+   STYLE; it does not claim to be an actual government site. */
+.gov-nav,
+.gov-breadcrumb {
+  display: none;
+}
+
+:root[data-theme="government"] .topbar {
   background: #162e51;
+  border-bottom: none;
+  padding: 14px 32px;
+}
+
+:root[data-theme="government"] .topbar h1 {
   color: #ffffff;
+  font-size: 22px;
+}
+
+:root[data-theme="government"] .topbar .theme-select,
+:root[data-theme="government"] .topbar .theme-select span {
+  color: #ffffff;
+}
+
+:root[data-theme="government"] .topbar .docs-link {
+  background: transparent;
+  color: #ffffff;
+  border-color: rgba(255, 255, 255, 0.45);
+}
+
+:root[data-theme="government"] .gov-nav {
+  display: block;
+  background: #005ea2;
+}
+
+:root[data-theme="government"] .gov-nav-inner {
+  display: flex;
+  align-items: stretch;
+  flex-wrap: wrap;
+  padding: 0 20px;
+}
+
+:root[data-theme="government"] .gov-nav-link {
+  display: inline-flex;
+  align-items: center;
+  padding: 13px 16px;
+  color: #ffffff;
+  text-decoration: none;
+  font-size: 13px;
+  font-weight: 700;
+  letter-spacing: 0.04em;
+  text-transform: uppercase;
+  border-bottom: 4px solid transparent;
+}
+
+:root[data-theme="government"] .gov-nav-link:hover,
+:root[data-theme="government"] .gov-nav-link.active {
+  background: #1a4480;
+  border-bottom-color: #ffffff;
+}
+
+:root[data-theme="government"] .gov-breadcrumb {
+  display: flex;
+  align-items: center;
+  flex-wrap: wrap;
+  gap: 8px;
+  padding: 10px 32px;
+  background: #f0f0f0;
+  border-bottom: 1px solid #dfe1e2;
   font-size: 12px;
-  font-weight: 600;
+  font-weight: 700;
+  letter-spacing: 0.03em;
+  text-transform: uppercase;
+}
+
+:root[data-theme="government"] .gov-breadcrumb a {
+  color: #005ea2;
+  text-decoration: none;
+}
+
+:root[data-theme="government"] .gov-breadcrumb a:hover {
+  text-decoration: underline;
+}
+
+:root[data-theme="government"] .gov-breadcrumb .current {
+  color: #565c65;
+}
+
+:root[data-theme="government"] .gov-breadcrumb .sep {
+  color: #a9aeb1;
 }
 
 * {
