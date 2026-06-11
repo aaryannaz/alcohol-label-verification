@@ -15,12 +15,16 @@
         </div>
         <div class="topbar-actions">
           <label class="theme-select">
-            <span>Theme</span>
-            <select id="themeSelect" aria-label="Color theme">
-              <option value="light">Light</option>
-              <option value="dark">Dark</option>
+            <span>Layout</span>
+            <select id="layoutSelect" aria-label="Site layout">
+              <option value="standard">Standard</option>
               <option value="government">Government</option>
             </select>
+          </label>
+          <label class="theme-toggle" for="themeToggle">
+            <span>Dark mode</span>
+            <input id="themeToggle" type="checkbox" aria-label="Use dark mode" />
+            <span class="theme-switch" aria-hidden="true"></span>
           </label>
           <a class="docs-link" href="/how-to">How To</a>
         </div>

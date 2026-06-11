@@ -69,11 +69,12 @@
 }
 
 /* ---------------------------------------------------------------------------
-   Style "skin" — changes more than color: font family, corner radius and shadow
-   are tokenized, so the theme reads as a federal/government site rather than a
-   modern app. Still no layout/markup changes.
+   Government LAYOUT — chosen independently of light/dark mode. Changes color,
+   typography (Public Sans / Merriweather), corner radius and shadow, and reveals
+   the federal shell (navy bar, blue nav, breadcrumb). This is the light palette;
+   the dark palette is the [data-layout][data-theme="dark"] block right below.
    --------------------------------------------------------------------------- */
-:root[data-theme="government"] {
+:root[data-layout="government"] {
   color-scheme: light;
   --bg: #f0f0f0;
   --surface: #ffffff;
@@ -100,6 +101,31 @@
   --radius-lg: 2px;
 }
 
+/* Government layout, dark mode. Only colors differ — font/radius/shadow are
+   inherited from the [data-layout="government"] block above. */
+:root[data-layout="government"][data-theme="dark"] {
+  color-scheme: dark;
+  --bg: #11171f;
+  --surface: #1b232e;
+  --control-bg: #11171f;
+  --subtle-bg: #222d3a;
+  --text: #eef2f6;
+  --muted: #aab4c0;
+  --line: #3a4654;
+  --green: #5fd38d;
+  --green-soft: #15331f;
+  --primary: #4d9fda;
+  --primary-soft: #15304a;
+  --red: #ff9a8c;
+  --red-soft: #3a1a16;
+  --red-line: #7a3a32;
+  --amber: #f0c674;
+  --amber-soft: #352a10;
+  --blue: #4d9fda;
+  --blue-soft: #152840;
+  --shadow: none;
+}
+
 /* Government / TTB-style layout. The federal-looking shell (navy utility bar,
    blue primary nav, breadcrumb) is markup that lives in the DOM always but only
    shows in the government theme — it restyles the existing topbar as the navy
@@ -110,41 +136,56 @@
   display: none;
 }
 
-:root[data-theme="government"] .topbar {
+:root[data-layout="government"] .topbar {
   background: #162e51;
   border-bottom: none;
   padding: 14px 32px;
 }
 
-:root[data-theme="government"] .topbar h1 {
+:root[data-layout="government"] .topbar h1 {
   color: #ffffff;
   font-size: 22px;
 }
 
-:root[data-theme="government"] .topbar .theme-select,
-:root[data-theme="government"] .topbar .theme-select span {
+:root[data-layout="government"] .topbar .theme-select,
+:root[data-layout="government"] .topbar .theme-select span,
+:root[data-layout="government"] .topbar .theme-toggle,
+:root[data-layout="government"] .topbar .theme-toggle span {
   color: #ffffff;
 }
 
-:root[data-theme="government"] .topbar .docs-link {
+/* Dark-mode switch sits on the navy bar in the government layout. */
+:root[data-layout="government"] .topbar .theme-switch {
+  background: rgba(255, 255, 255, 0.18);
+  border-color: rgba(255, 255, 255, 0.55);
+}
+:root[data-layout="government"] .topbar .theme-switch::after {
+  background: #ffffff;
+}
+:root[data-layout="government"] .topbar .theme-toggle input:checked + .theme-switch {
+  background: rgba(255, 255, 255, 0.4);
+  border-color: #ffffff;
+}
+
+:root[data-layout="government"] .topbar .docs-link {
   background: transparent;
   color: #ffffff;
   border-color: rgba(255, 255, 255, 0.45);
 }
 
-:root[data-theme="government"] .gov-nav {
+:root[data-layout="government"] .gov-nav {
   display: block;
   background: #005ea2;
 }
 
-:root[data-theme="government"] .gov-nav-inner {
+:root[data-layout="government"] .gov-nav-inner {
   display: flex;
   align-items: stretch;
   flex-wrap: wrap;
   padding: 0 20px;
 }
 
-:root[data-theme="government"] .gov-nav-link {
+:root[data-layout="government"] .gov-nav-link {
   display: inline-flex;
   align-items: center;
   padding: 13px 16px;
@@ -157,41 +198,41 @@
   border-bottom: 4px solid transparent;
 }
 
-:root[data-theme="government"] .gov-nav-link:hover,
-:root[data-theme="government"] .gov-nav-link.active {
+:root[data-layout="government"] .gov-nav-link:hover,
+:root[data-layout="government"] .gov-nav-link.active {
   background: #1a4480;
   border-bottom-color: #ffffff;
 }
 
-:root[data-theme="government"] .gov-breadcrumb {
+:root[data-layout="government"] .gov-breadcrumb {
   display: flex;
   align-items: center;
   flex-wrap: wrap;
   gap: 8px;
   padding: 10px 32px;
-  background: #f0f0f0;
-  border-bottom: 1px solid #dfe1e2;
+  background: var(--subtle-bg);
+  border-bottom: 1px solid var(--line);
   font-size: 12px;
   font-weight: 700;
   letter-spacing: 0.03em;
   text-transform: uppercase;
 }
 
-:root[data-theme="government"] .gov-breadcrumb a {
-  color: #005ea2;
+:root[data-layout="government"] .gov-breadcrumb a {
+  color: var(--primary);
   text-decoration: none;
 }
 
-:root[data-theme="government"] .gov-breadcrumb a:hover {
+:root[data-layout="government"] .gov-breadcrumb a:hover {
   text-decoration: underline;
 }
 
-:root[data-theme="government"] .gov-breadcrumb .current {
-  color: #565c65;
+:root[data-layout="government"] .gov-breadcrumb .current {
+  color: var(--muted);
 }
 
-:root[data-theme="government"] .gov-breadcrumb .sep {
-  color: #a9aeb1;
+:root[data-layout="government"] .gov-breadcrumb .sep {
+  color: var(--line);
 }
 
 * {
@@ -350,13 +391,13 @@ h3 {
 }
 
 .theme-toggle input:checked + .theme-switch {
-  border-color: var(--green);
-  background: var(--green-soft);
+  border-color: var(--primary);
+  background: var(--primary-soft);
 }
 
 .theme-toggle input:checked + .theme-switch::after {
   transform: translateX(20px);
-  background: var(--green);
+  background: var(--primary);
 }
 
 .theme-toggle input:focus-visible + .theme-switch {

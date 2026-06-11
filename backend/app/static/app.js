@@ -77,8 +77,11 @@ const state = {
 };
 
 const THEME_STORAGE_KEY = "alcohol-label-theme";
-const THEMES = ["light", "dark", "government"];
-const themeSelect = document.querySelector("#themeSelect");
+const LAYOUT_STORAGE_KEY = "alcohol-label-layout";
+const THEMES = ["light", "dark"];
+const LAYOUTS = ["standard", "government"];
+const themeToggle = document.querySelector("#themeToggle");
+const layoutSelect = document.querySelector("#layoutSelect");
 const productCategory = document.querySelector("#productCategory");
 const originType = document.querySelector("#originType");
 const frontImage = document.querySelector("#frontImage");
@@ -128,9 +131,25 @@ function currentTheme() {
 function setTheme(theme) {
   const normalizedTheme = THEMES.includes(theme) ? theme : "light";
   document.documentElement.dataset.theme = normalizedTheme;
-  if (themeSelect) themeSelect.value = normalizedTheme;
+  if (themeToggle) themeToggle.checked = normalizedTheme === "dark";
   try {
     localStorage.setItem(THEME_STORAGE_KEY, normalizedTheme);
+  } catch {
+    return;
+  }
+}
+
+function currentLayout() {
+  const layout = document.documentElement.dataset.layout;
+  return LAYOUTS.includes(layout) ? layout : "standard";
+}
+
+function setLayout(layout) {
+  const normalizedLayout = LAYOUTS.includes(layout) ? layout : "standard";
+  document.documentElement.dataset.layout = normalizedLayout;
+  if (layoutSelect) layoutSelect.value = normalizedLayout;
+  try {
+    localStorage.setItem(LAYOUT_STORAGE_KEY, normalizedLayout);
   } catch {
     return;
   }
@@ -395,7 +414,7 @@ function setBusy(busy) {
   // origin) and the action buttons while a request is in flight, and show a
   // spinner / announce busy state to assistive tech.
   state.inFlight = busy;
-  const controls = [productCategory, originType, extractButton, verifyButton, modeChooseFile, modeDragDrop, modeBatch, colaFile, colaRemove, modeColaWorkflow, modeLabelWorkflow];
+  const controls = [productCategory, originType, extractButton, verifyButton, modeChooseFile, modeDragDrop, modeBatch, colaFile, colaRemove, modeColaWorkflow, modeLabelWorkflow, themeToggle, layoutSelect];
   for (const control of controls) {
     if (control) control.disabled = busy;
   }
@@ -1341,10 +1360,16 @@ document.addEventListener("drop", function(event) {
   }
 });
 
-if (themeSelect) {
-  themeSelect.value = currentTheme();
-  themeSelect.addEventListener("change", function() {
-    setTheme(themeSelect.value);
+if (themeToggle) {
+  themeToggle.checked = currentTheme() === "dark";
+  themeToggle.addEventListener("change", function() {
+    setTheme(themeToggle.checked ? "dark" : "light");
+  });
+}
+if (layoutSelect) {
+  layoutSelect.value = currentLayout();
+  layoutSelect.addEventListener("change", function() {
+    setLayout(layoutSelect.value);
   });
 }
 
