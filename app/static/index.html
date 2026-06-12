@@ -97,7 +97,7 @@
           <div class="section-heading batch-heading">
             <div>
               <h2 id="batch-title">Batch</h2>
-              <p class="batch-note">Each file is one review item; files are processed in parallel.</p>
+              <p class="batch-note">Each product is processed in parallel. Name a label's two panels alike — <code>airlie_front.jpg</code> and <code>airlie_back.jpg</code> — and they're read together as one product.</p>
             </div>
             <div class="batch-actions">
               <input id="batchFiles" type="file" multiple hidden accept=".pdf,.png,.jpg,.jpeg,.webp,application/pdf,image/png,image/jpeg,image/webp" />
@@ -109,11 +109,16 @@
             <span class="drop-hint" id="batchDropHint">Drop multiple files here or <button type="button" class="link-button" id="batchBrowse">browse</button></span>
           </div>
 
+          <label class="batch-group-toggle">
+            <input type="checkbox" id="batchGroupToggle" checked />
+            <span>Group front/back images of one product by filename</span>
+          </label>
+
           <div class="table-wrap batch-table-wrap">
             <table class="batch-table">
               <thead>
                 <tr>
-                  <th>Case</th>
+                  <th>Product</th>
                   <th>File</th>
                   <th>Category</th>
                   <th>Origin</th>

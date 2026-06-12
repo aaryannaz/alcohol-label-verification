@@ -1743,6 +1743,37 @@ tr.is-flagged td:first-child {
   font-size: 15.6px;
 }
 
+.batch-group-toggle {
+  display: flex;
+  align-items: center;
+  gap: 9px;
+  margin-top: 12px;
+  font-size: 16.8px;
+  color: var(--text);
+  cursor: pointer;
+}
+
+.batch-group-toggle input {
+  width: 17px;
+  height: 17px;
+  min-height: 0;
+  flex: none;
+  accent-color: var(--primary);
+}
+
+.batch-product-name {
+  display: block;
+  overflow: hidden;
+  font-weight: 700;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+}
+
+.batch-file-back {
+  color: var(--muted);
+  font-weight: 600;
+}
+
 .batch-file-name {
   display: block;
   max-width: 280px;

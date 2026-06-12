@@ -115,6 +115,7 @@ const singleUploadPanel = document.getElementById("singleUploadPanel");
 const batchPanel = document.getElementById("batchPanel");
 const batchFiles = document.getElementById("batchFiles");
 const batchBrowse = document.getElementById("batchBrowse");
+const batchGroupToggle = document.getElementById("batchGroupToggle");
 const batchDropZone = document.getElementById("batchDropZone");
 const batchBody = document.getElementById("batchBody");
 const processBatchButton = document.getElementById("processBatchButton");
@@ -1174,16 +1175,28 @@ function renderBatchQueue() {
     const row = document.createElement("tr");
 
     const caseCell = document.createElement("td");
-    caseCell.textContent = "#" + item.id;
+    const productName = document.createElement("span");
+    productName.className = "batch-product-name";
+    productName.textContent = item.productName || ("#" + item.id);
+    productName.title = item.productName || "";
+    caseCell.appendChild(productName);
 
     const fileCell = document.createElement("td");
     const fileName = document.createElement("span");
     const fileMeta = document.createElement("span");
     fileName.className = "batch-file-name";
     fileName.textContent = item.file.name;
+    fileName.title = item.file.name;
     fileMeta.className = "batch-file-meta";
-    fileMeta.textContent = formatBytes(item.file.size);
+    fileMeta.textContent = formatBytes(item.file.size) + (item.backFile ? " · 2 images" : "");
     fileCell.appendChild(fileName);
+    if (item.backFile) {
+      const backName = document.createElement("span");
+      backName.className = "batch-file-name batch-file-back";
+      backName.textContent = "+ " + item.backFile.name;
+      backName.title = item.backFile.name;
+      fileCell.appendChild(backName);
+    }
     fileCell.appendChild(fileMeta);
     if (item.message) {
       const message = document.createElement("span");
@@ -1265,34 +1278,82 @@ function updateBatchControls() {
   processBatchButton.disabled = state.batch.processing || !hasProcessableItems;
 }
 
+function batchGroupingEnabled() {
+  return !batchGroupToggle || batchGroupToggle.checked;
+}
+
+// Split a trailing front/back marker off a filename: "airlie_front.jpg" ->
+// {base:"airlie", side:"front"}; "IMG_1234.jpg" -> {base:"IMG_1234", side:null}.
+function parseBatchFileName(name) {
+  const noExt = (name || "").replace(/\.[^.]+$/, "");
+  const match = noExt.match(/^(.+?)[ _-]+(front|back)$/i);
+  if (match) return { base: match[1], side: match[2].toLowerCase() };
+  return { base: noExt, side: null };
+}
+
+// Pair files that share a base name with _front/_back markers into one product;
+// unmarked files (and any extra duplicates) become their own single product.
+function groupBatchFiles(files) {
+  const groups = new Map();
+  const order = [];
+  const singles = [];
+  for (const file of files) {
+    const { base, side } = parseBatchFileName(file.name);
+    if (!side) { singles.push({ file, name: base }); continue; }
+    const key = base.toLowerCase();
+    if (!groups.has(key)) { groups.set(key, { name: base, front: null, back: null }); order.push(key); }
+    const group = groups.get(key);
+    if (side === "front" && !group.front) { group.front = file; continue; }
+    if (side === "back" && !group.back) { group.back = file; continue; }
+    singles.push({ file, name: base });  // duplicate marker → standalone
+  }
+  const result = [];
+  for (const key of order) {
+    const group = groups.get(key);
+    result.push({ front: group.front || group.back, back: (group.front && group.back) ? group.back : null, name: group.name });
+  }
+  for (const single of singles) result.push({ front: single.file, back: null, name: single.name });
+  return result;
+}
+
+function makeBatchItem(frontFile, backFile, productName) {
+  const clientError = validateClientFile(frontFile) || (backFile ? validateClientFile(backFile) : "");
+  const item = {
+    id: state.batch.nextId,
+    file: frontFile,
+    backFile: backFile || null,
+    productName: productName || frontFile.name,
+    productCategory: radioValue("productCategory"),
+    originType: radioValue("originType"),
+    status: clientError ? "Error" : "Ready",
+    message: clientError || "Ready to process",
+    clientError,
+    extracted: null,
+    verification: null,
+    expanded: false,
+  };
+  state.batch.nextId += 1;
+  return item;
+}
+
 function addBatchFiles(files) {
   const incomingFiles = Array.from(files || []);
   if (!incomingFiles.length) return;
 
   clearError();
+  const groups = batchGroupingEnabled()
+    ? groupBatchFiles(incomingFiles)
+    : incomingFiles.map((file) => ({ front: file, back: null, name: file.name }));
+
   let invalidCount = 0;
-
-  for (const file of incomingFiles) {
-    const clientError = validateClientFile(file);
-    if (clientError) invalidCount += 1;
-
-    state.batch.items.push({
-      id: state.batch.nextId,
-      file,
-      productCategory: radioValue("productCategory"),
-      originType: radioValue("originType"),
-      status: clientError ? "Error" : "Ready",
-      message: clientError || "Ready to process",
-      clientError,
-      backFile: null,
-      extracted: null,
-      verification: null,
-    });
-    state.batch.nextId += 1;
+  for (const group of groups) {
+    const item = makeBatchItem(group.front, group.back, group.name);
+    if (item.clientError) invalidCount += 1;
+    state.batch.items.push(item);
   }
 
   renderBatchQueue();
-  setStatus(incomingFiles.length === 1 ? "Batch file added" : incomingFiles.length + " batch files added");
+  setStatus(groups.length === 1 ? "1 product added" : groups.length + " products added");
 
   if (invalidCount) {
     showError(invalidCount + " batch file" + (invalidCount === 1 ? " needs" : "s need") + " attention before processing.");
