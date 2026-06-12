@@ -688,6 +688,56 @@ textarea[name="importer_name_address"] {
   margin-top: 18px;
 }
 
+/* --- Google-Form-style field cards (the left sidebar is unchanged) ---------- */
+/* The fields area is a transparent container so each field reads as its own card
+   sitting on the page, the way questions do in a Google Form. */
+.fields-panel {
+  background: transparent;
+  border: none;
+  box-shadow: none;
+  padding: 0;
+}
+
+/* One field per row; each row is its own card with the label above the input. */
+#expectedFields.field-grid {
+  grid-template-columns: 1fr;
+  gap: 12px;
+}
+
+#expectedFields .field-row {
+  grid-template-columns: 1fr;
+  gap: 8px;
+  align-items: stretch;
+  background: var(--surface);
+  border: 1px solid var(--line);
+  border-radius: var(--radius-lg);
+  padding: 14px 16px;
+  box-shadow: 0 1px 2px rgba(32, 36, 33, 0.05);
+}
+
+#expectedFields .field-name {
+  font-size: 14px;
+  font-weight: 600;
+}
+
+/* Roomier controls inside the cards — the global 19px height is too thin here. */
+#expectedFields input,
+#expectedFields select {
+  height: auto;
+  min-height: 36px;
+  padding: 7px 10px;
+}
+
+#expectedFields textarea {
+  height: auto;
+  min-height: 40px;
+  padding: 8px 10px;
+}
+
+#expectedFields textarea[name="government_warning"] {
+  min-height: 96px;
+}
+
 button {
   min-height: 42px;
   border: 1px solid transparent;
