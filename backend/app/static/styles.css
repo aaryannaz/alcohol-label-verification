@@ -640,14 +640,6 @@ textarea[name="importer_name_address"] {
   gap: 4px 10px;
 }
 
-.optional-divider {
-  margin: 4px 0 0;
-  color: var(--muted);
-  font-size: 12px;
-  font-weight: 700;
-  text-transform: uppercase;
-}
-
 .action-row {
   display: flex;
   justify-content: flex-end;

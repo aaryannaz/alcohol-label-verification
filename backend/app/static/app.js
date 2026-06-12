@@ -366,15 +366,9 @@ function renderFieldStack(container, prefix) {
   const headingEl = container.querySelector("h3");
   container.innerHTML = headingEl ? headingEl.outerHTML : "";
 
-  let optionalHeaderAdded = false;
+  // Fields render in COLA-form order (see fields.py); required fields are marked
+  // with an asterisk rather than grouped, so there is no requirement divider.
   for (const key of orderedVisibleFields()) {
-    if (fieldRequirement(key) === "optional" && !optionalHeaderAdded) {
-      const divider = document.createElement("p");
-      divider.className = "optional-divider";
-      divider.textContent = "Additional fields";
-      container.appendChild(divider);
-      optionalHeaderAdded = true;
-    }
     container.appendChild(createField(prefix, key));
   }
 }
