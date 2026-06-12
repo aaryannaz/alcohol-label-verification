@@ -1160,6 +1160,7 @@ th {
   align-items: center;
   font-size: 16.8px;
   font-weight: 800;
+  white-space: nowrap;
 }
 
 .status-pass {
@@ -1189,6 +1190,25 @@ th {
   margin-top: 5px;
   color: var(--muted);
   white-space: pre-wrap;
+}
+
+/* Results rows are one line each — field, status, and values truncate with an
+   ellipsis. The government warning is the exception: its value cell uses
+   .cell-value (pre-wrap), so it still wraps to multiple lines. */
+.results-panel table {
+  table-layout: fixed;
+}
+
+.results-panel th:nth-child(1), .results-panel td:nth-child(1) { width: 23%; }
+.results-panel th:nth-child(2), .results-panel td:nth-child(2) { width: 18%; }
+.results-panel th:nth-child(3), .results-panel td:nth-child(3) { width: 29.5%; }
+.results-panel th:nth-child(4), .results-panel td:nth-child(4) { width: 29.5%; }
+
+.results-panel td,
+.results-panel th {
+  white-space: nowrap;
+  overflow: hidden;
+  text-overflow: ellipsis;
 }
 
 tr.is-flagged td {

@@ -620,7 +620,7 @@ const STATUS_LABELS = {
   "FAIL_HEADING_FORMAT": "Heading format",
   "FAIL_TEXT_MISMATCH": "Wording mismatch",
   "PRESENT_ON_LABEL_CONFIRM_APPLICABILITY": "On label — confirm",
-  "DEEMED_FROM_BOTTLER": "Brand = bottler — confirm",
+  "DEEMED_FROM_BOTTLER": "Brand = bottler",
   "EXEMPT_TABLE_WINE": "Exempt (table wine)",
   "FAIL_APPELLATION_REQUIRED_BY_TRIGGER": "Appellation required",
   "FAIL_NOT_ALLCAPS": "Not all-caps",
@@ -789,8 +789,12 @@ function renderResults(response) {
       } else {
         expectedCell.textContent = expected[key] || "";
         reviewedCell.textContent = reviewed[key] || "";
+        // Rows are one line and truncate, so expose the full value on hover.
+        expectedCell.title = expected[key] || "";
+        reviewedCell.title = reviewed[key] || "";
       }
     }
+    fieldCell.title = config.label;
 
     row.appendChild(fieldCell);
     row.appendChild(statusCell);
