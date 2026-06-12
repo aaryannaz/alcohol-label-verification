@@ -1726,7 +1726,8 @@ tr.is-flagged td:first-child {
 .batch-drop-zone {
   display: grid;
   gap: 8px;
-  min-height: 92px;
+  align-content: center;
+  min-height: 184px;
   border: 2px dashed var(--line);
   border-radius: var(--radius);
   padding: 14px;
