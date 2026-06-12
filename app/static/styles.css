@@ -1071,6 +1071,44 @@ button:disabled {
   font-weight: 650;
 }
 
+/* Inline edit affordance on flagged results rows. */
+.recheck-bar {
+  display: flex;
+  align-items: center;
+  gap: 12px;
+  flex-wrap: wrap;
+  margin-top: 8px;
+}
+
+.recheck-bar[hidden] {
+  display: none;
+}
+
+.recheck-hint {
+  color: var(--muted);
+  font-size: 16.8px;
+  font-weight: 600;
+}
+
+.cell-edit {
+  width: 100%;
+  min-width: 0;
+  height: auto;
+  min-height: 36px;
+  padding: 6px 9px;
+  font-size: 16.8px;
+  border: 1px solid color-mix(in srgb, var(--primary) 55%, var(--line));
+  border-radius: var(--radius);
+  background: var(--control-bg);
+  color: var(--text);
+}
+
+.cell-edit:focus-visible {
+  outline: none;
+  border-color: var(--primary);
+  box-shadow: 0 0 0 3px color-mix(in srgb, var(--primary) 22%, transparent);
+}
+
 .table-wrap {
   overflow-x: auto;
   max-width: 100%;

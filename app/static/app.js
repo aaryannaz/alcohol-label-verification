@@ -108,6 +108,8 @@ const errorBox = document.querySelector("#errorBox");
 const resultsBody = document.querySelector("#resultsBody");
 const resultsSummary = document.getElementById("resultsSummary");
 const resultsThumb = document.getElementById("resultsThumb");
+const recheckBar = document.getElementById("recheckBar");
+const recheckButton = document.getElementById("recheckButton");
 const busySpinner = document.getElementById("busySpinner");
 const chooseFileInputs = document.getElementById("chooseFileInputs");
 const dropZoneInputs = document.getElementById("dropZoneInputs");
@@ -664,6 +666,65 @@ function isFlaggedStatus(status) {
   return cls === "status-fail" || cls === "status-missing";
 }
 
+// An editable cell on a flagged results row. side is "expected" (application) or
+// "reviewed" (label). Enter triggers a re-check.
+function makeEditInput(key, side, value) {
+  const input = document.createElement("input");
+  input.type = "text";
+  input.className = "cell-edit";
+  input.value = value || "";
+  input.setAttribute("data-edit-field", key);
+  input.setAttribute("data-edit-side", side);
+  input.setAttribute("autocomplete", "off");
+  input.setAttribute("aria-label", (side === "expected" ? "Application" : "Label") + " value for this field");
+  input.addEventListener("keydown", function(event) {
+    if (event.key === "Enter") {
+      event.preventDefault();
+      recheckFromResults();
+    }
+  });
+  return input;
+}
+
+// Re-validate after inline edits: start from the last snapshot, override only the
+// cells the reviewer changed, keep the form + stored extraction in sync, and
+// re-run validation server-side (no Gemini call).
+async function recheckFromResults() {
+  const expected = Object.assign({}, state.lastExpected || {});
+  const reviewed = Object.assign({}, state.lastReviewed || {});
+  for (const input of document.querySelectorAll("#resultsBody .cell-edit")) {
+    const key = input.getAttribute("data-edit-field");
+    const value = input.value.trim();
+    if (input.getAttribute("data-edit-side") === "expected") expected[key] = value;
+    else reviewed[key] = value;
+  }
+  setExpectedValues(expected);
+  state.extracted = reviewed;
+  clearError();
+  setBusy(true);
+  try {
+    setStatus("Re-checking");
+    const response = await fetchWithTimeout("/verify-reviewed", {
+      method: "POST",
+      headers: { "Content-Type": "application/json" },
+      body: JSON.stringify({
+        product_category: radioValue("productCategory"),
+        origin_type: radioValue("originType"),
+        expected: expected,
+        reviewed: reviewed,
+      }),
+    });
+    const body = await parseApiResponse(response);
+    renderResults(body);
+    setStatus("Verification complete");
+  } catch (error) {
+    showError(error.message);
+    setStatus("Re-check failed");
+  } finally {
+    setBusy(false);
+  }
+}
+
 function renderResults(response) {
   state.lastResult = response;
   updateStepHighlight();
@@ -672,6 +733,10 @@ function renderResults(response) {
   const reviewed = response.reviewed || response.extracted || state.extracted || {};
   const validation = response.validation || {};
   const requirements = response.field_requirements || {};
+  // Keep the full snapshots so an inline Re-check can start from them and only
+  // override the cells the reviewer corrected.
+  state.lastExpected = expected;
+  state.lastReviewed = reviewed;
   resultsBody.innerHTML = "";
 
   // Show only the fields applicable to this product category, in requirement
@@ -685,6 +750,7 @@ function renderResults(response) {
 
   let passed = 0;
   let attention = 0;
+  let editableFlagged = 0;
 
   for (const key of keys) {
     const config = FIELD_LOOKUP[key];
@@ -719,9 +785,17 @@ function renderResults(response) {
       if (status === "PASS" || status === "EXEMPT_TABLE_WINE") passed += 1;
       else if (isFlaggedStatus(status)) attention += 1;
       statusCell.appendChild(makeBadge(status));
-      expectedCell.textContent = expected[key] || "";
-      reviewedCell.textContent = reviewed[key] || "";
-      if (isFlaggedStatus(status)) row.className = "is-flagged";
+      if (isFlaggedStatus(status)) {
+        // Flagged row: let the reviewer correct either side (an AI misread of
+        // the label, or a typo on the application side) and re-check inline.
+        row.className = "is-flagged";
+        expectedCell.appendChild(makeEditInput(key, "expected", expected[key]));
+        reviewedCell.appendChild(makeEditInput(key, "reviewed", reviewed[key]));
+        editableFlagged += 1;
+      } else {
+        expectedCell.textContent = expected[key] || "";
+        reviewedCell.textContent = reviewed[key] || "";
+      }
     }
 
     row.appendChild(fieldCell);
@@ -735,6 +809,7 @@ function renderResults(response) {
   if (resultsSummary) {
     resultsSummary.textContent = `${checked} fields checked · ${passed} passed · ${attention} need attention`;
   }
+  if (recheckBar) recheckBar.hidden = editableFlagged === 0;
 
   const complianceFails = (response.compliance_checks || []).filter((c) => c.status === "FAIL").length;
   renderVerdict(checked, attention + complianceFails);
@@ -1562,6 +1637,7 @@ async function onCategoryOrOriginChange() {
 categoryGroup.addEventListener("change", onCategoryOrOriginChange);
 originGroup.addEventListener("change", onCategoryOrOriginChange);
 verifyButton.addEventListener("click", verifyReviewedFields);
+if (recheckButton) recheckButton.addEventListener("click", recheckFromResults);
 
 loadFieldConfig().then(refreshRequirements).catch(function(error) {
   showError(error.message);
