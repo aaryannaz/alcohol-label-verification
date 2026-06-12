@@ -97,7 +97,7 @@
           <div class="section-heading batch-heading">
             <div>
               <h2 id="batch-title">Multiple labels</h2>
-              <p class="batch-note">Products are verified in parallel. Name two panels alike (<code>airlie_front</code>, <code>airlie_back</code>) to read them as one; an unlabeled image is its own product.</p>
+              <p class="batch-note">Drop several labels at once — each file is one product, and they're all checked together.</p>
             </div>
             <div class="batch-actions">
               <input id="batchFiles" type="file" multiple hidden accept=".pdf,.png,.jpg,.jpeg,.webp,application/pdf,image/png,image/jpeg,image/webp" />
@@ -109,10 +109,13 @@
             <span class="drop-hint" id="batchDropHint">Drop multiple files here or <button type="button" class="link-button" id="batchBrowse">browse</button></span>
           </div>
 
-          <label class="batch-group-toggle">
-            <input type="checkbox" id="batchGroupToggle" checked />
-            <span>Group front/back images of one product by filename</span>
-          </label>
+          <div class="batch-grouping">
+            <label class="batch-group-toggle">
+              <input type="checkbox" id="batchGroupToggle" checked />
+              <span>Pair a front &amp; back photo by filename</span>
+            </label>
+            <p class="batch-group-hint">Have separate front and back images? Name them alike, ending in <code>_front</code> and <code>_back</code> — e.g. <code>airlie_front.jpg</code> and <code>airlie_back.jpg</code> — and they'll be checked as one product. Any other file is its own.</p>
+          </div>
 
           <div class="table-wrap batch-table-wrap">
             <table class="batch-table">

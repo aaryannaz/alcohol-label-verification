@@ -1732,14 +1732,38 @@ tr.is-flagged td:first-child {
   font-size: 15.6px;
 }
 
+.batch-grouping {
+  margin-top: 14px;
+}
+
 .batch-group-toggle {
   display: flex;
   align-items: center;
   gap: 9px;
-  margin-top: 12px;
   font-size: 16.8px;
+  font-weight: 650;
   color: var(--text);
   cursor: pointer;
+}
+
+.batch-group-hint {
+  margin: 6px 0 0 26px;
+  max-width: 760px;
+  color: var(--muted);
+  font-size: 15.6px;
+  line-height: 1.45;
+}
+
+.batch-group-hint code,
+.batch-note code {
+  padding: 1px 5px;
+  border-radius: 5px;
+  background: var(--subtle-bg);
+  border: 1px solid var(--line);
+  font-family: ui-monospace, SFMono-Regular, Menlo, Consolas, monospace;
+  font-size: 0.9em;
+  font-weight: 600;
+  white-space: nowrap;
 }
 
 .batch-group-toggle input {
