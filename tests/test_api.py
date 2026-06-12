@@ -2,10 +2,11 @@ import json
 import unittest
 from unittest.mock import patch
 
+from fastapi.testclient import TestClient
+
 import app.security as security
 from app.main import app
 from app.schemas import LabelFields
-from fastapi.testclient import TestClient
 
 
 class GeminiResponse:

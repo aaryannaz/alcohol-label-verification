@@ -5,7 +5,7 @@ Measures whether Gemini, via the production prompt and extraction path, pulls th
 
 ## Run
 
-From `backend/` with `GEMINI_API_KEY` set (each case is one live Gemini call):
+From the repository root with `GEMINI_API_KEY` set (each case is one live Gemini call):
 
 ```bash
 venv/bin/python -m evals.run_eval              # all cases

@@ -10,8 +10,8 @@ from google.genai import types
 
 from .errors import AppError
 
-BACKEND_DIR = Path(__file__).resolve().parents[1]
-load_dotenv(dotenv_path=BACKEND_DIR / ".env")
+PROJECT_ROOT = Path(__file__).resolve().parents[1]
+load_dotenv(dotenv_path=PROJECT_ROOT / ".env")
 
 # Single source of truth for the model id. Override per environment with GEMINI_MODEL.
 # Default is gemini-2.5-flash with "thinking" disabled (see extraction.py): it is
@@ -35,7 +35,7 @@ def _require_api_key() -> str:
             status_code=500,
             code="MISSING_GEMINI_API_KEY",
             message="GEMINI_API_KEY is not configured.",
-            details={"hint": "Add GEMINI_API_KEY to backend/.env or the deployment environment."},
+            details={"hint": "Add GEMINI_API_KEY to .env or the deployment environment."},
         )
     return api_key
 

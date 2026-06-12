@@ -18,7 +18,7 @@ dev = ["ruff==0.14.4"]
 [tool.ruff]
 line-length = 120
 target-version = "py312"
-extend-exclude = ["backend/venv", "**/venv", "**/__pycache__"]
+extend-exclude = ["**/venv", "**/__pycache__"]
 
 [tool.ruff.lint]
 select = ["E", "F", "I", "W", "B", "UP"]

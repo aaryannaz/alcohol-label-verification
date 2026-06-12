@@ -1,6 +1,6 @@
 """Run the extraction-accuracy eval.
 
-Usage (from the backend/ directory, with GEMINI_API_KEY set):
+Usage (from the repository root, with GEMINI_API_KEY set):
 
     venv/bin/python -m evals.run_eval            # run all cases
     venv/bin/python -m evals.run_eval --limit 5  # cheap partial run

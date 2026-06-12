@@ -16,7 +16,7 @@ If no COLA is uploaded, the same fields are pre-filled from the label extraction
 ## Tools
 
 - **FastAPI** — API and static file serving
-- **Gemini Vision (gemini-2.5-flash, "thinking" disabled)** — label field extraction from images (set in `backend/app/clients.py`; override with the `GEMINI_MODEL` env var). Thinking is turned off because reading a label is a perception task, not a reasoning one — this keeps extraction at ~2s (under the ~5s stakeholder bar) while remaining accurate.
+- **Gemini Vision (gemini-2.5-flash, "thinking" disabled)** — label field extraction from images (set in `app/clients.py`; override with the `GEMINI_MODEL` env var). Thinking is turned off because reading a label is a perception task, not a reasoning one — this keeps extraction at ~2s (under the ~5s stakeholder bar) while remaining accurate.
 - **Vercel** — deployment
 - **Python 3.12**
 
@@ -65,9 +65,9 @@ reviewer's visual judgment — the tool does not assert them:
 
 ## Extraction accuracy
 
-An eval harness (`backend/evals/`) measures field-extraction accuracy against a
+An eval harness (`evals/`) measures field-extraction accuracy against a
 labeled set of synthetic label cases. Run it with
-`cd backend && venv/bin/python -m evals.run_eval`. Extraction is **category-aware**:
+`venv/bin/python -m evals.run_eval`. Extraction is **category-aware**:
 the response schema is scoped to the fields applicable to the selected product
 category, which keeps the model focused and avoids the accuracy loss of asking
 for every field at once.
@@ -79,26 +79,24 @@ requirements.txt     Runtime dependencies (the file Vercel installs)
 pyproject.toml       Packaging metadata + ruff (lint) config
 vercel.json          Vercel build / routing config
 .python-version      Python version (3.12)
+.env.example         Copy to .env and set GEMINI_API_KEY
 .github/workflows/   CI: ruff + tests on every push / PR
-backend/
-  app/
-    main.py          FastAPI app: routes, exception handlers, middleware
-    fields.py        Canonical regulated-field list (single source of truth)
-    schemas.py       Pydantic request models + product/origin enums
-    clients.py       Gemini client + model / timeout config
-    extraction.py    Image -> JSON field extraction (Gemini, category-aware)
-    prompts.py       The extraction prompt (most domain rules live here)
-    validation.py    Rule-based field comparison + TTB compliance logic
-    uploads.py       Upload validation (extension / content-type / signature)
-    security.py      Rate limiting, optional auth, security headers, body cap
-    observability.py Structured logging + per-request correlation IDs
-    errors.py        AppError + one JSON error envelope for all failures
-    static/          Browser UI (vanilla HTML/CSS/JS) served by FastAPI
-  evals/             Extraction-accuracy eval harness (render, score, cases)
-  tests/             Unit + API tests (test_validation.py, test_api.py)
-  scripts/           gemini_smoke_test.py (Gemini connectivity check)
-  main_gemini.py     Compatibility entrypoint (re-exports the app)
-  requirements.txt   Mirror of the root file (for the backend/ workflow)
+app/
+  main.py            FastAPI app: routes, exception handlers, middleware
+  fields.py          Canonical regulated-field list (single source of truth)
+  schemas.py         Pydantic request models + product/origin enums
+  clients.py         Gemini client + model / timeout config
+  extraction.py      Image -> JSON field extraction (Gemini, category-aware)
+  prompts.py         The extraction prompt (most domain rules live here)
+  validation.py      Rule-based field comparison + TTB compliance logic
+  uploads.py         Upload validation (extension / content-type / signature)
+  security.py        Rate limiting, optional auth, security headers, body cap
+  observability.py   Structured logging + per-request correlation IDs
+  errors.py          AppError + one JSON error envelope for all failures
+  static/            Browser UI (vanilla HTML/CSS/JS) served by FastAPI
+evals/               Extraction-accuracy eval harness (render, score, cases)
+tests/               Unit + API tests (test_validation.py, test_api.py)
+scripts/             gemini_smoke_test.py (Gemini connectivity check)
 ```
 
 ## Setup
@@ -106,10 +104,10 @@ backend/
 Create a local environment file:
 
 ```bash
-cp backend/.env.example backend/.env
+cp .env.example .env
 ```
 
-Then edit `backend/.env` and set `GEMINI_API_KEY` — get a free key from
+Then edit `.env` and set `GEMINI_API_KEY` — get a free key from
 [Google AI Studio](https://aistudio.google.com/apikey). (The app starts without
 one, but extraction will return a `MISSING_GEMINI_API_KEY` error and `/readyz`
 will report not-ready until a key is set.)
@@ -117,29 +115,16 @@ will report not-ready until a key is set.)
 Install dependencies:
 
 ```bash
-cd backend
 python -m venv venv
 venv/bin/python -m pip install -r requirements.txt
 ```
 
 ## Run
 
-From the project root:
-
-```bash
-backend/venv/bin/python -m uvicorn backend.app.main:app --reload
-```
-
-From `backend/`:
+From the repository root:
 
 ```bash
 venv/bin/python -m uvicorn app.main:app --reload
-```
-
-The older entrypoint still works:
-
-```bash
-backend/venv/bin/python -m uvicorn backend.main_gemini:app --reload
 ```
 
 Open the prototype UI at:
@@ -157,7 +142,6 @@ http://localhost:8000/docs
 ## Test
 
 ```bash
-cd backend
 venv/bin/python -m unittest discover tests
 ```
 
@@ -166,13 +150,13 @@ venv/bin/python -m unittest discover tests
 Lint with [ruff](https://docs.astral.sh/ruff/) (a `dev` extra in `pyproject.toml`):
 
 ```bash
-backend/venv/bin/python -m pip install -e ".[dev]"   # or: pip install ruff
-ruff check backend/app backend/tests backend/scripts backend/evals
+venv/bin/python -m pip install -e ".[dev]"   # or: pip install ruff
+ruff check app tests scripts evals
 ```
 
-`.github/workflows/ci.yml` runs ruff and the test suite on every push/PR, and
-checks that the root and `backend/` `requirements.txt` stay in sync (the root one
-is what Vercel installs; keep `pyproject.toml` aligned too).
+`.github/workflows/ci.yml` runs ruff and the test suite on every push/PR. The
+repository-root `requirements.txt` is what Vercel installs; keep `pyproject.toml`
+aligned with it.
 
 ## Logging & observability
 
@@ -185,7 +169,7 @@ a server log line.
 
 ## UI
 
-The minimal UI is served by FastAPI from `backend/app/static/`. It supports:
+The minimal UI is served by FastAPI from `app/static/`. It supports:
 
 - Product category and origin toggles.
 - Front/back label uploads.
@@ -226,7 +210,7 @@ The browser client wraps `/extract`, `/extract-cola`, and `/verify-reviewed` in 
 ## Security
 
 The API is open by default for the demo but ships the controls to lock it down
-(all configurable via environment variables — see `backend/.env.example`):
+(all configurable via environment variables — see `.env.example`):
 
 - **Rate limiting:** the cost-bearing endpoints (`/extract`, `/extract-cola`, `/verify-reviewed`) are rate-limited per client IP (`RATE_LIMIT_REQUESTS` / `RATE_LIMIT_WINDOW_SECONDS`) to blunt cost-amplification abuse. The limiter is in-memory and single-instance; back it with a shared store (e.g. Redis) for a multi-instance deployment.
 - **Optional bearer auth:** set `APP_API_TOKEN` to require `Authorization: Bearer <token>` on the cost-bearing endpoints.
@@ -241,8 +225,8 @@ Accepted residual risks (low, given uploaded bytes are only forwarded to Gemini 
 
 The repo is prepared for Vercel with:
 
-- `vercel.json` using the `@vercel/python` builder against `backend/app/main.py`, with `config.includeFiles` so the `static/` UI assets ship in the function bundle.
-- A repository-root `requirements.txt` — the location the `@vercel/python` builder reads to install runtime dependencies. (`pyproject.toml` is for local/editable installs; `backend/requirements.txt` is for the local `backend/` workflow. Keep the three in sync.)
+- `vercel.json` using the `@vercel/python` builder against `app/main.py`, with `config.includeFiles` so the `static/` UI assets ship in the function bundle.
+- A repository-root `requirements.txt` — the location the `@vercel/python` builder reads to install runtime dependencies. (`pyproject.toml` is for local/editable installs; keep it in sync.)
 - `.python-version` set to Python 3.12.
 - `.vercelignore` to keep local environments, caches, tests, and scripts out of the deployment bundle.
 
