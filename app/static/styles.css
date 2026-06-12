@@ -368,7 +368,7 @@ h3 {
   /* Centered and capped so it doesn't spread across an ultrawide screen: the
      category/origin/upload controls stay in a left column, and the narrower main
      column makes the fields flow fewer-across (taller) than full width. */
-  max-width: 1080px;
+  max-width: 1280px;
   margin: 0 auto;
   align-items: start;
 }
@@ -863,10 +863,13 @@ body.lightbox-open {
   padding: 0;
 }
 
-/* One field per row; each row is its own card with the label above the input. */
+/* One field per row; each row is its own card with the label above the input.
+   Capped so the form stays a tidy form width even when the panel widens to fit
+   the results table. */
 #expectedFields.field-grid {
   grid-template-columns: 1fr;
   gap: 12px;
+  max-width: 620px;
 }
 
 #expectedFields .field-row {
