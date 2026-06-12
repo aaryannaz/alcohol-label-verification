@@ -1019,37 +1019,29 @@ th {
 .status-badge {
   display: inline-flex;
   align-items: center;
-  min-height: 26px;
-  padding: 0 8px;
-  border-radius: 999px;
   font-size: 14px;
   font-weight: 800;
 }
 
 .status-pass {
   color: var(--green);
-  background: var(--green-soft);
 }
 
 .status-fail,
 .status-missing {
   color: var(--red);
-  background: var(--red-soft);
 }
 
 .status-neutral {
   color: var(--blue);
-  background: var(--blue-soft);
 }
 
 .status-ready {
   color: var(--muted);
-  background: var(--subtle-bg);
 }
 
 .status-processing {
   color: var(--amber);
-  background: var(--amber-soft);
 }
 
 /* The compared text shown under a per-side status badge (government warning). */
