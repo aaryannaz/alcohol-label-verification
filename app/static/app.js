@@ -3,16 +3,27 @@
 // that request fails. The backend (fields.py) is the single source of truth.
 let FIELD_CONFIG = [
   { key: "brand_name", label: "Brand name", type: "input" },
+  { key: "fanciful_name", label: "Fanciful name", type: "input" },
   { key: "class_type", label: "Class/type designation", type: "input" },
-  { key: "alcohol_content", label: "Alcohol content", type: "input" },
-  { key: "net_contents", label: "Net contents", type: "input" },
-  { key: "government_warning", label: "Government warning", type: "textarea" },
   { key: "domestic_name_address", label: "Domestic name/address", type: "textarea" },
   { key: "importer_name_address", label: "Importer name/address", type: "textarea" },
   { key: "country_of_origin", label: "Country of origin", type: "input" },
-  { key: "sulfite_declaration", label: "Sulfite declaration", type: "input" },
+  { key: "grape_varietal", label: "Grape varietal", type: "input" },
   { key: "appellation_of_origin", label: "Appellation of origin", type: "input" },
-  { key: "fanciful_name", label: "Fanciful name", type: "input" },
+  { key: "net_contents", label: "Net contents", type: "input" },
+  { key: "alcohol_content", label: "Alcohol content", type: "input" },
+  { key: "government_warning", label: "Government warning", type: "textarea" },
+  { key: "sulfite_declaration", label: "Sulfite declaration", type: "input" },
+  { key: "vintage_date", label: "Vintage date", type: "input" },
+  { key: "percentage_of_foreign_wine", label: "Percentage of foreign wine", type: "input" },
+  { key: "fdc_yellow_5_declaration", label: "FD&C Yellow #5 declaration", type: "input" },
+  { key: "cochineal_carmine_declaration", label: "Cochineal/Carmine declaration", type: "input" },
+  { key: "aspartame_declaration", label: "Aspartame declaration", type: "input" },
+  { key: "statement_of_age", label: "Statement of age", type: "input" },
+  { key: "commodity_statement", label: "Commodity statement", type: "input" },
+  { key: "coloring_materials", label: "Coloring materials", type: "input" },
+  { key: "wood_treatment", label: "Wood treatment", type: "input" },
+  { key: "state_of_distillation", label: "State of distillation", type: "input" },
 ];
 
 let FIELD_LOOKUP = Object.fromEntries(FIELD_CONFIG.map((field) => [field.key, field]));
@@ -37,10 +48,11 @@ async function loadFieldConfig() {
   }
 }
 const MAX_UPLOAD_BYTES = 10 * 1024 * 1024;
-// Process up to this many batch files at once. The expected batch is ~10 files,
-// so a pool of 10 clears a full batch in a single parallel wave (~2-3s, one
-// extraction's time). Kept at/below the per-IP rate limit (see security.py) so a
-// single batch never throttles itself.
+// Process up to this many batch files at once. A pool of 10 clears a typical
+// batch in a single parallel wave (~2-3s, one extraction's time) and sits well
+// under the server's per-IP rate limit (see security.py, default 120/min); when
+// a big batch does hit 429, runBatchConcurrently pauses on the server's
+// Retry-After instead of failing rows.
 const BATCH_CONCURRENCY = 10;
 const ACCEPTED_EXTENSIONS = new Set(["pdf", "png", "jpg", "jpeg", "webp"]);
 const ACCEPTED_MIME_TYPES = new Set(["application/pdf", "image/png", "image/jpeg", "image/webp"]);
@@ -57,6 +69,8 @@ const ORIGIN_OPTIONS = [
   { value: "domestic", label: "Domestic" },
   { value: "imported", label: "Imported" },
 ];
+const PRODUCT_CATEGORY_LABELS = Object.fromEntries(PRODUCT_CATEGORY_OPTIONS.map((o) => [o.value, o.label]));
+const ORIGIN_LABELS = Object.fromEntries(ORIGIN_OPTIONS.map((o) => [o.value, o.label]));
 // Batch rows default to "Auto": the server reads the label and detects the
 // category/origin at processing time; the dropdown then shows the detection.
 const AUTO_OPTION = { value: "auto", label: "Auto" };
@@ -67,6 +81,13 @@ const state = {
   requirements: { required: [], conditional: [], optional: [] },
   extracted: {},
   extractedKey: null,
+  // The file key whose extraction last seeded the Expected side wholesale; a
+  // re-read of the same label (category/origin change) must not clobber the
+  // reviewer's typed corrections.
+  seededKey: null,
+  // True right after a wholesale re-seed: the form still shows the previous
+  // label, so refreshRequirements must not fold it back into expectedValues.
+  expectedValuesReseeded: false,
   detectedCategory: null,
   detectedOrigin: null,
   expectedValues: {},
@@ -115,6 +136,38 @@ function currentCategory() {
 function currentOrigin() {
   const v = singleOrigin ? singleOrigin.value : "auto";
   return v !== "auto" ? v : (state.detectedOrigin || "domestic");
+}
+
+// Detection never moves the Category/Origin dropdowns off "Auto" — a concrete
+// value there reads as a manual pick and would be posted back as a hard
+// constraint on the next label. The Auto option's own text shows what was
+// detected instead, and the hint under the dropdowns flips once a detection
+// exists.
+function setAutoOptionText(select, detectedLabel) {
+  if (!select) return;
+  const auto = select.querySelector('option[value="auto"]');
+  if (auto) auto.textContent = detectedLabel ? "Auto — detected: " + detectedLabel : "Auto";
+}
+
+function updateDetectionUI() {
+  setAutoOptionText(singleCategory, state.detectedCategory ? PRODUCT_CATEGORY_LABELS[state.detectedCategory] : "");
+  setAutoOptionText(singleOrigin, state.detectedOrigin ? ORIGIN_LABELS[state.detectedOrigin] : "");
+  const hint = document.getElementById("productBarHint");
+  if (hint) {
+    hint.textContent = state.detectedCategory || state.detectedOrigin
+      ? "Detected from the label — change to override."
+      : "Auto — detected after you upload a label.";
+  }
+}
+
+// A new label means a new product: any earlier detection or pick no longer
+// applies, so every file change in single mode puts both dropdowns back on Auto.
+function resetDetection() {
+  state.detectedCategory = null;
+  state.detectedOrigin = null;
+  if (singleCategory) singleCategory.value = "auto";
+  if (singleOrigin) singleOrigin.value = "auto";
+  updateDetectionUI();
 }
 
 const frontImage = document.querySelector("#frontImage");
@@ -394,6 +447,16 @@ function onLightboxKey(event) {
   if (event.key === "Escape") {
     event.preventDefault();
     closeLightbox();
+    return;
+  }
+  // Focus trap: the dialog's only focusable control is the Close button, so
+  // Tab must stay on it instead of escaping into the obscured page behind.
+  // (If more controls are ever added, cycle between them here.)
+  if (event.key === "Tab") {
+    event.preventDefault();
+    const box = document.getElementById("lightbox");
+    const close = box && box.querySelector(".lightbox-close");
+    if (close) close.focus();
   }
 }
 
@@ -465,6 +528,7 @@ function setSelectedFile(slot, file) {
   state.files[slot] = file;
   syncInputFiles(slot, file);
   renderFileState(slot);
+  resetDetection();
   setStatus(FILE_LABELS[slot] + " selected");
   maybeAutoExtractLabel();
   updateStepHighlight();
@@ -475,6 +539,7 @@ function clearSelectedFile(slot) {
   state.files[slot] = null;
   syncInputFiles(slot, null);
   renderFileState(slot);
+  resetDetection();
   clearError();
   setStatus("");
   updateStepHighlight();
@@ -574,21 +639,27 @@ function setStatus(message) {
   statusText.textContent = message;
 }
 
+let busyDepth = 0;
+
 function setBusy(busy) {
   // Lock the inputs that would race a rebuild of the field stacks (category /
   // origin) and the action buttons while a request is in flight, and show a
-  // spinner / announce busy state to assistive tech.
-  state.inFlight = busy;
-  const controls = [singleCategory, singleOrigin, uploadModeGroup, verifyButton, themeToggle, layoutSelect];
+  // spinner / announce busy state to assistive tech. Counter-based so two
+  // overlapping requests (a fast re-check finishing under a slow extraction)
+  // can't unlock the UI while one is still pending.
+  busyDepth = Math.max(0, busyDepth + (busy ? 1 : -1));
+  const active = busyDepth > 0;
+  state.inFlight = active;
+  const controls = [singleCategory, singleOrigin, uploadModeGroup, verifyButton, recheckButton, themeToggle, layoutSelect];
   for (const control of controls) {
-    if (control) control.disabled = busy;
+    if (control) control.disabled = active;
   }
   for (const input of uploadInputs) {
-    input.disabled = busy;
+    input.disabled = active;
   }
-  if (busySpinner) busySpinner.hidden = !busy;
+  if (busySpinner) busySpinner.hidden = !active;
   const workspace = document.querySelector(".workspace");
-  if (workspace) workspace.setAttribute("aria-busy", busy ? "true" : "false");
+  if (workspace) workspace.setAttribute("aria-busy", active ? "true" : "false");
 }
 
 function renderEmptyResults(message) {
@@ -711,6 +782,10 @@ function makeEditInput(key, side, value) {
 // cells the reviewer changed, keep the form + stored extraction in sync, and
 // re-run validation server-side (no Gemini call).
 async function recheckFromResults() {
+  if (state.inFlight) {
+    setStatus("Still working — please wait a moment");
+    return;
+  }
   const expected = Object.assign({}, state.lastExpected || {});
   const reviewed = Object.assign({}, state.lastReviewed || {});
   for (const input of document.querySelectorAll("#resultsBody .cell-edit")) {
@@ -910,20 +985,53 @@ async function parseApiResponse(response) {
   const body = await response.json().catch(() => ({}));
   if (!response.ok) {
     const error = body.error || body.detail || {};
-    throw new Error(error.message || error.code || "Request failed");
+    const err = new Error(error.message || error.code || "Request failed");
+    // Carry the machine-readable parts so callers can react to specific
+    // failures — the batch runner pauses on 429 + Retry-After instead of
+    // failing the row.
+    err.status = response.status;
+    err.code = error.code || "";
+    const retryAfter = Number(response.headers.get("Retry-After"));
+    if (Number.isFinite(retryAfter) && retryAfter > 0) err.retryAfterSeconds = retryAfter;
+    throw err;
   }
   return body;
 }
 
+// Fold the live Expected form back into state so a field-stack rebuild keeps
+// what the reviewer typed. Only rendered fields are read; values for fields
+// hidden under the current category keep their stored value.
+function captureExpectedForm() {
+  if (!expectedFields) return;
+  const live = {};
+  for (const control of expectedFields.querySelectorAll("[name]")) {
+    live[control.name] = control.value.trim();
+  }
+  if (Object.keys(live).length) {
+    state.expectedValues = Object.assign({}, state.expectedValues, live);
+  }
+}
+
+let requirementsToken = 0;
+
 async function refreshRequirements() {
+  // Carry the reviewer's typed corrections through the rebuild — unless the
+  // values were just re-seeded from a new label, in which case the form on
+  // screen still belongs to the previous label and must not leak into it.
+  if (!state.expectedValuesReseeded) captureExpectedForm();
+  state.expectedValuesReseeded = false;
   clearError();
   setStatus("Loading requirements");
+  // Two quick category/origin changes can answer out of order; only the
+  // newest request may repaint the form.
+  const token = ++requirementsToken;
   const params = new URLSearchParams({
     product_category: currentCategory(),
     origin_type: currentOrigin(),
   });
   const response = await fetch("/field-requirements?" + params.toString());
   const body = await parseApiResponse(response);
+  if (token !== requirementsToken) return;
   state.requirements = body.field_requirements;
   renderFieldStack(expectedFields, "expected");
   setExpectedValues(state.expectedValues);
@@ -942,22 +1050,37 @@ async function runLabelExtraction() {
   // Order-agnostic: send whichever label slot(s) have a file, first one as the
   // primary image — so it doesn't matter which slot the reviewer used.
   const files = [state.files.front, state.files.back].filter(Boolean);
+  // Snapshot the file set now: if the reviewer swaps files while this request
+  // is in flight, the result belongs to the old files and must not be stamped
+  // as "already read" for the new ones.
+  const key = labelFileKey();
+  const postedCategory = singleCategory ? singleCategory.value : "auto";
+  const postedOrigin = singleOrigin ? singleOrigin.value : "auto";
   const formData = new FormData();
   // "auto" lets the server detect the category/origin from the label itself;
   // a manual pick in the dropdowns sends the chosen value instead.
-  formData.append("product_category", singleCategory ? singleCategory.value : "auto");
-  formData.append("origin_type", singleOrigin ? singleOrigin.value : "auto");
+  formData.append("product_category", postedCategory);
+  formData.append("origin_type", postedOrigin);
   formData.append("front_image", files[0]);
   if (files[1]) formData.append("back_image", files[1]);
   const response = await fetchWithTimeout("/extract", { method: "POST", body: formData });
   const body = await parseApiResponse(response);
+  const stale = labelFileKey() !== key;
   state.extracted = body.extracted || {};
-  state.extractedKey = labelFileKey();
-  // Reflect the detection back into the dropdowns (like batch rows do).
-  state.detectedCategory = body.detected_category || body.product_category || state.detectedCategory;
-  state.detectedOrigin = body.detected_origin || body.origin_type || state.detectedOrigin;
-  if (singleCategory && singleCategory.value === "auto" && state.detectedCategory) singleCategory.value = state.detectedCategory;
-  if (singleOrigin && singleOrigin.value === "auto" && state.detectedOrigin) singleOrigin.value = state.detectedOrigin;
+  state.extractedKey = stale ? null : key;
+  if (!stale) {
+    // Record the server's resolution as detection only for the sides we asked
+    // it to detect — the dropdowns themselves stay on "Auto" so the next label
+    // is detected too (see updateDetectionUI).
+    if (postedCategory === "auto") {
+      state.detectedCategory = body.product_category || body.detected_category || state.detectedCategory;
+    }
+    if (postedOrigin === "auto") {
+      state.detectedOrigin = body.origin_type || body.detected_origin || state.detectedOrigin;
+    }
+    updateDetectionUI();
+  }
+  return { key: key, stale: stale };
 }
 
 function maybeAutoExtractLabel() {
@@ -972,6 +1095,10 @@ function maybeAutoExtractLabel() {
 }
 
 async function extractFields() {
+  if (state.inFlight) {
+    setStatus("Still working — please wait a moment");
+    return;
+  }
   clearError();
 
   if (!state.files.front && !state.files.back) {
@@ -980,22 +1107,39 @@ async function extractFields() {
     return;
   }
 
+  const keyAtStart = labelFileKey();
   setBusy(true);
   if (labelProgress) labelProgress.hidden = false;
   setStatus("Extracting fields");
   try {
-    await runLabelExtraction();
-    state.expectedValues = state.extracted;
+    const read = await runLabelExtraction();
+    // Re-seed the Expected side wholesale only for a genuinely new label; a
+    // re-read of the same label (category/origin change) keeps the reviewer's
+    // typed corrections.
+    if (!read.stale && state.seededKey !== read.key) {
+      state.expectedValues = Object.assign({}, state.extracted);
+      state.seededKey = read.key;
+      state.expectedValuesReseeded = true;
+    }
     // The detected category/origin decide which fields apply, so re-render the
     // field list (refreshRequirements re-applies state.expectedValues).
     await refreshRequirements();
-    setStatus("Fields extracted from the label — edit each field to match the approved application, then Verify");
+    const detected = [
+      state.detectedCategory ? PRODUCT_CATEGORY_LABELS[state.detectedCategory] : "",
+      state.detectedOrigin ? ORIGIN_LABELS[state.detectedOrigin] : "",
+    ].filter(Boolean).join(", ");
+    setStatus(
+      (detected ? "Detected " + detected + ". " : "") +
+      "Fields extracted from the label — edit each field to match the approved application, then Verify"
+    );
   } catch (error) {
     showError(friendlyExtractionError(error));
     setStatus("Extraction failed");
   } finally {
     if (labelProgress) labelProgress.hidden = true;
     setBusy(false);
+    // Files swapped while the request was in flight: read the new set now.
+    if (labelFileKey() !== keyAtStart) maybeAutoExtractLabel();
   }
 }
 
@@ -1008,22 +1152,31 @@ function friendlyExtractionError(error) {
 }
 
 async function verifyReviewedFields() {
+  if (state.inFlight) {
+    setStatus("Still working — please wait a moment");
+    return;
+  }
   clearError();
   if (!state.files.front && !state.files.back) {
     showError("Add at least one label to verify against.");
     setStatus("File selection needs attention");
     return;
   }
+  const keyAtStart = labelFileKey();
   setBusy(true);
   try {
     // Read the label if these exact files haven't been read yet, so Verify works
     // on its own; re-verifying after editing fields stays instant (no extra call).
     if (state.extractedKey !== labelFileKey()) {
       setStatus("Reading the label");
-      await runLabelExtraction();
+      const read = await runLabelExtraction();
       // First read on this file: seed the form and render the field set for the
       // detected category/origin before validating.
-      state.expectedValues = state.extracted;
+      if (!read.stale && state.seededKey !== read.key) {
+        state.expectedValues = Object.assign({}, state.extracted);
+        state.seededKey = read.key;
+        state.expectedValuesReseeded = true;
+      }
       await refreshRequirements();
     }
     setStatus("Verifying fields");
@@ -1045,6 +1198,8 @@ async function verifyReviewedFields() {
     setStatus("Verification failed");
   } finally {
     setBusy(false);
+    // Files swapped while the request was in flight: read the new set now.
+    if (labelFileKey() !== keyAtStart) maybeAutoExtractLabel();
   }
 }
 
@@ -1087,6 +1242,9 @@ function computeBatchVerdict(body) {
   let checked = 0;
 
   for (const key of checkKeys) {
+    // Skip keys the UI doesn't know (same filter as buildBatchDetail), so the
+    // row verdict can never disagree with its own detail view.
+    if (!FIELD_LOOKUP[key]) continue;
     const raw = validation[key];
     if (raw === undefined) continue;
     checked += 1;
@@ -1110,6 +1268,12 @@ function createBatchSelect(item, key, options) {
   const select = document.createElement("select");
   select.dataset[key === "productCategory" ? "batchCategory" : "batchOrigin"] = String(item.id);
   select.disabled = state.batch.processing || item.status === "Processing";
+  // Every row's selects read identically to a screen reader without the file
+  // name in the accessible name.
+  select.setAttribute(
+    "aria-label",
+    (key === "productCategory" ? "Category for " : "Origin for ") + item.file.name
+  );
 
   for (const option of options) {
     const optionElement = document.createElement("option");
@@ -1214,6 +1378,113 @@ function buildBatchDetail(item) {
   return wrap;
 }
 
+function buildBatchRow(item) {
+  const row = document.createElement("tr");
+  row.dataset.itemId = String(item.id);
+
+  const caseCell = document.createElement("td");
+  const productName = document.createElement("span");
+  productName.className = "batch-product-name";
+  productName.textContent = item.productName || ("#" + item.id);
+  productName.title = item.productName || "";
+  caseCell.appendChild(productName);
+
+  const fileCell = document.createElement("td");
+  const fileName = document.createElement("span");
+  const fileMeta = document.createElement("span");
+  fileName.className = "batch-file-name";
+  fileName.textContent = item.file.name;
+  fileName.title = item.file.name;
+  fileMeta.className = "batch-file-meta";
+  fileMeta.textContent = formatBytes(item.file.size) + (item.backFile ? " · 2 images" : "");
+  fileCell.appendChild(fileName);
+  if (item.backFile) {
+    const backName = document.createElement("span");
+    backName.className = "batch-file-name batch-file-back";
+    backName.textContent = "+ " + item.backFile.name;
+    backName.title = item.backFile.name;
+    fileCell.appendChild(backName);
+  }
+  fileCell.appendChild(fileMeta);
+  if (item.message) {
+    const message = document.createElement("span");
+    message.className = "batch-row-message" + (item.status === "Error" ? " error" : "");
+    message.textContent = item.message;
+    fileCell.appendChild(message);
+  }
+
+  const categoryCell = document.createElement("td");
+  categoryCell.appendChild(createBatchSelect(item, "productCategory", BATCH_CATEGORY_OPTIONS));
+
+  const originCell = document.createElement("td");
+  originCell.appendChild(createBatchSelect(item, "originType", BATCH_ORIGIN_OPTIONS));
+
+  const statusCell = document.createElement("td");
+  const badge = document.createElement("span");
+  badge.className = "status-badge " + batchStatusClass(item.status);
+  badge.textContent = batchStatusText(item);
+  statusCell.appendChild(badge);
+
+  const actionCell = document.createElement("td");
+  const actions = document.createElement("div");
+  actions.className = "batch-row-actions";
+
+  // The visible button text is identical on every row; the accessible names
+  // carry the file name so a screen-reader user knows which row each acts on.
+  // updateBatchRow rebuilds the whole row through here, so they stay in sync.
+  if (isBatchItemVerified(item)) {
+    const toggle = document.createElement("button");
+    toggle.className = "small-button";
+    toggle.dataset.toggleBatch = String(item.id);
+    toggle.disabled = state.batch.processing;
+    toggle.type = "button";
+    toggle.textContent = item.expanded ? "Hide details" : "Details";
+    toggle.setAttribute("aria-label", (item.expanded ? "Hide details for " : "Show details for ") + item.file.name);
+    actions.appendChild(toggle);
+  }
+
+  if (item.status === "Error" && !item.clientError) {
+    const retryButton = document.createElement("button");
+    retryButton.className = "small-button";
+    retryButton.dataset.retryBatch = String(item.id);
+    retryButton.disabled = state.batch.processing;
+    retryButton.type = "button";
+    retryButton.textContent = "Retry";
+    retryButton.setAttribute("aria-label", "Retry " + item.file.name);
+    actions.appendChild(retryButton);
+  }
+
+  const removeButton = document.createElement("button");
+  removeButton.className = "small-button danger";
+  removeButton.dataset.removeBatch = String(item.id);
+  removeButton.disabled = state.batch.processing;
+  removeButton.type = "button";
+  removeButton.textContent = "Remove";
+  removeButton.setAttribute("aria-label", "Remove " + item.file.name + " from the list");
+  actions.appendChild(removeButton);
+
+  actionCell.appendChild(actions);
+
+  row.appendChild(caseCell);
+  row.appendChild(fileCell);
+  row.appendChild(categoryCell);
+  row.appendChild(originCell);
+  row.appendChild(statusCell);
+  row.appendChild(actionCell);
+  return row;
+}
+
+function buildBatchDetailRow(item) {
+  const detailRow = document.createElement("tr");
+  detailRow.className = "batch-detail-row";
+  detailRow.dataset.detailFor = String(item.id);
+  const detailCell = document.createElement("td");
+  detailCell.colSpan = 6;
+  detailCell.appendChild(buildBatchDetail(item));
+  detailRow.appendChild(detailCell);
+  return detailRow;
+}
+
 function renderBatchQueue() {
   batchBody.innerHTML = "";
 
@@ -1230,104 +1501,45 @@ function renderBatchQueue() {
   }
 
   for (const item of state.batch.items) {
-    const row = document.createElement("tr");
-
-    const caseCell = document.createElement("td");
-    const productName = document.createElement("span");
-    productName.className = "batch-product-name";
-    productName.textContent = item.productName || ("#" + item.id);
-    productName.title = item.productName || "";
-    caseCell.appendChild(productName);
-
-    const fileCell = document.createElement("td");
-    const fileName = document.createElement("span");
-    const fileMeta = document.createElement("span");
-    fileName.className = "batch-file-name";
-    fileName.textContent = item.file.name;
-    fileName.title = item.file.name;
-    fileMeta.className = "batch-file-meta";
-    fileMeta.textContent = formatBytes(item.file.size) + (item.backFile ? " · 2 images" : "");
-    fileCell.appendChild(fileName);
-    if (item.backFile) {
-      const backName = document.createElement("span");
-      backName.className = "batch-file-name batch-file-back";
-      backName.textContent = "+ " + item.backFile.name;
-      backName.title = item.backFile.name;
-      fileCell.appendChild(backName);
-    }
-    fileCell.appendChild(fileMeta);
-    if (item.message) {
-      const message = document.createElement("span");
-      message.className = "batch-row-message" + (item.status === "Error" ? " error" : "");
-      message.textContent = item.message;
-      fileCell.appendChild(message);
-    }
-
-    const categoryCell = document.createElement("td");
-    categoryCell.appendChild(createBatchSelect(item, "productCategory", BATCH_CATEGORY_OPTIONS));
-
-    const originCell = document.createElement("td");
-    originCell.appendChild(createBatchSelect(item, "originType", BATCH_ORIGIN_OPTIONS));
-
-    const statusCell = document.createElement("td");
-    const badge = document.createElement("span");
-    badge.className = "status-badge " + batchStatusClass(item.status);
-    badge.textContent = batchStatusText(item);
-    statusCell.appendChild(badge);
-
-    const actionCell = document.createElement("td");
-    const actions = document.createElement("div");
-    actions.className = "batch-row-actions";
-
-    if (isBatchItemVerified(item)) {
-      const toggle = document.createElement("button");
-      toggle.className = "small-button";
-      toggle.dataset.toggleBatch = String(item.id);
-      toggle.disabled = state.batch.processing;
-      toggle.type = "button";
-      toggle.textContent = item.expanded ? "Hide details" : "Details";
-      actions.appendChild(toggle);
-    }
-
-    if (item.status === "Error" && !item.clientError) {
-      const retryButton = document.createElement("button");
-      retryButton.className = "small-button";
-      retryButton.dataset.retryBatch = String(item.id);
-      retryButton.disabled = state.batch.processing;
-      retryButton.type = "button";
-      retryButton.textContent = "Retry";
-      actions.appendChild(retryButton);
-    }
-
-    const removeButton = document.createElement("button");
-    removeButton.className = "small-button danger";
-    removeButton.dataset.removeBatch = String(item.id);
-    removeButton.disabled = state.batch.processing;
-    removeButton.type = "button";
-    removeButton.textContent = "Remove";
-    actions.appendChild(removeButton);
-
-    actionCell.appendChild(actions);
-
-    row.appendChild(caseCell);
-    row.appendChild(fileCell);
-    row.appendChild(categoryCell);
-    row.appendChild(originCell);
-    row.appendChild(statusCell);
-    row.appendChild(actionCell);
-    batchBody.appendChild(row);
-
+    batchBody.appendChild(buildBatchRow(item));
     if (item.expanded && isBatchItemVerified(item)) {
-      const detailRow = document.createElement("tr");
-      detailRow.className = "batch-detail-row";
-      const detailCell = document.createElement("td");
-      detailCell.colSpan = 6;
-      detailCell.appendChild(buildBatchDetail(item));
-      detailRow.appendChild(detailCell);
-      batchBody.appendChild(detailRow);
+      batchBody.appendChild(buildBatchDetailRow(item));
     }
   }
 
+  updateBatchControls();
+}
+
+// Patch one row in place. A full renderBatchQueue per status change is O(n^2)
+// DOM work across a 300-file run and yanks focus from a select the reviewer is
+// using in another row — so per-row status updates go through here; the full
+// rebuild stays for add/remove/clear/pairing changes.
+function updateBatchRow(item) {
+  const existing = batchBody.querySelector('tr[data-item-id="' + item.id + '"]');
+  if (!existing) {
+    renderBatchQueue();
+    return;
+  }
+  // If focus is inside this row (its select or Details button), put it back on
+  // the equivalent control after the patch.
+  const focused = document.activeElement;
+  let refocus = "";
+  if (focused && existing.contains(focused) && focused.dataset) {
+    if (focused.dataset.batchCategory) refocus = "[data-batch-category]";
+    else if (focused.dataset.batchOrigin) refocus = "[data-batch-origin]";
+    else if (focused.dataset.toggleBatch) refocus = "[data-toggle-batch]";
+  }
+  const fresh = buildBatchRow(item);
+  existing.replaceWith(fresh);
+  const oldDetail = batchBody.querySelector('tr[data-detail-for="' + item.id + '"]');
+  if (oldDetail) oldDetail.remove();
+  if (item.expanded && isBatchItemVerified(item)) {
+    fresh.after(buildBatchDetailRow(item));
+  }
+  if (refocus) {
+    const control = fresh.querySelector(refocus);
+    if (control && !control.disabled) control.focus();
+  }
   updateBatchControls();
 }
 
@@ -1420,6 +1632,9 @@ function addBatchFiles(files) {
   }
 }
 
+// Returns null when the row landed on a verdict or a real error, or
+// { rateLimited: true, retryAfterSeconds } when the server answered 429 — the
+// batch runner re-queues those instead of failing the row.
 async function processBatchItem(item) {
   const clientError = validateClientFile(item.file);
   if (clientError) {
@@ -1428,8 +1643,8 @@ async function processBatchItem(item) {
     item.message = clientError;
     item.extracted = null;
     item.verification = null;
-    renderBatchQueue();
-    return;
+    updateBatchRow(item);
+    return null;
   }
 
   const backError = item.backFile ? validateClientFile(item.backFile) : "";
@@ -1439,8 +1654,8 @@ async function processBatchItem(item) {
     item.message = "Second image: " + backError;
     item.extracted = null;
     item.verification = null;
-    renderBatchQueue();
-    return;
+    updateBatchRow(item);
+    return null;
   }
 
   item.clientError = "";
@@ -1448,7 +1663,7 @@ async function processBatchItem(item) {
   item.message = "Extracting and verifying";
   item.extracted = null;
   item.verification = null;
-  renderBatchQueue();
+  updateBatchRow(item);
 
   const formData = new FormData();
   // "auto" tells the server to read the label and infer the category/origin
@@ -1465,15 +1680,25 @@ async function processBatchItem(item) {
     const body = await parseApiResponse(response);
     item.extracted = body.reviewed || body.extracted || {};
     item.verification = body;
-    // Reflect the detected category/origin back into the row's dropdowns.
-    if (item.productCategory === "auto" && body.detected_category) item.productCategory = body.detected_category;
-    if (item.originType === "auto" && body.detected_origin) item.originType = body.detected_origin;
+    // Reflect the resolved (detected or chosen) category/origin back into the
+    // row's dropdowns.
+    if (item.productCategory === "auto" && body.product_category) item.productCategory = body.product_category;
+    if (item.originType === "auto" && body.origin_type) item.originType = body.origin_type;
     const { verdict, flagged, checked } = computeBatchVerdict(body);
     item.status = verdict;
     item.message = verdict === "Pass"
       ? checked + " field" + (checked === 1 ? "" : "s") + " checked, all clear"
       : flagged + " item" + (flagged === 1 ? "" : "s") + " need attention";
   } catch (error) {
+    if (error.status === 429 || error.code === "RATE_LIMITED") {
+      // Not this row's fault — the server asked us to slow down. Hand it back
+      // to the batch runner, which pauses every worker for Retry-After.
+      item.status = "Ready";
+      item.message = "Waiting — the server asked us to slow down";
+      item.verification = null;
+      updateBatchRow(item);
+      return { rateLimited: true, retryAfterSeconds: error.retryAfterSeconds || 0 };
+    }
     item.status = "Error";
     // Gemini failures are almost always a temporary busy spike — say so, and
     // point at the Retry button instead of leaving a bare error.
@@ -1483,18 +1708,59 @@ async function processBatchItem(item) {
     item.verification = null;
   }
 
-  renderBatchQueue();
+  updateBatchRow(item);
+  return null;
 }
 
+// A rate-limited row goes back in the queue this many times before it lands on
+// Error; genuine (non-429) failures still get the one-shot second pass in
+// processBatchQueue.
+const RATE_LIMIT_MAX_ATTEMPTS = 5;
+
 // Run the batch items through a small pool of parallel workers so a full batch
-// of 10 finishes in ~10s instead of ~20s sequentially.
+// of 10 finishes in ~10s instead of ~20s sequentially. When the server answers
+// 429 (rate limited, default 120 requests/min — see security.py), the row is
+// re-queued and every worker waits on ONE shared gate for the server's
+// Retry-After, so a 200-300 file batch paces itself instead of mass-failing.
 async function runBatchConcurrently(items, limit) {
   const pending = items.slice();
+  const total = items.length;
+  let done = 0;
+  let pauseUntil = 0;
+  for (const item of items) item.rateLimitAttempts = 0;
+
+  async function waitForGate() {
+    if (Date.now() >= pauseUntil) return;
+    while (Date.now() < pauseUntil) {
+      const remaining = pauseUntil - Date.now();
+      setStatus("Pausing " + Math.ceil(remaining / 1000) + " s so the server can catch up — " + done + " of " + total + " checked");
+      await new Promise((resolve) => setTimeout(resolve, Math.min(1000, remaining)));
+    }
+    setStatus("Resuming — " + done + " of " + total + " checked");
+  }
+
   async function worker() {
     while (pending.length) {
-      await processBatchItem(pending.shift());
+      await waitForGate();
+      const item = pending.shift();
+      if (!item) break;
+      const outcome = await processBatchItem(item);
+      if (outcome && outcome.rateLimited) {
+        item.rateLimitAttempts += 1;
+        if (item.rateLimitAttempts < RATE_LIMIT_MAX_ATTEMPTS) {
+          pending.push(item);
+          const waitMs = Math.max(outcome.retryAfterSeconds || 5, 1) * 1000;
+          pauseUntil = Math.max(pauseUntil, Date.now() + waitMs);
+          continue;
+        }
+        item.status = "Error";
+        item.message = "The server stayed busy — wait a minute, then click Retry.";
+        updateBatchRow(item);
+      }
+      done += 1;
     }
   }
+
   const workers = [];
   for (let i = 0; i < Math.min(limit, items.length); i += 1) {
     workers.push(worker());
@@ -1507,7 +1773,7 @@ async function processBatchQueue() {
   const queue = state.batch.items.filter(canProcessBatchItem);
 
   if (!queue.length) {
-    showError("Add valid batch files before processing.");
+    showError("Add valid files in Multiple labels before processing.");
     setStatus("Batch needs files");
     return;
   }
@@ -1547,7 +1813,10 @@ async function retryBatchItem(id) {
   state.batch.processing = true;
   clearError();
   setStatus("Retrying batch item");
-  await processBatchItem(item);
+  renderBatchQueue();
+  // Route through the batch runner so a 429 on the retry waits for the
+  // server's Retry-After instead of failing the row again.
+  await runBatchConcurrently([item], 1);
   state.batch.processing = false;
   renderBatchQueue();
   const retryMessage = {
@@ -1567,37 +1836,56 @@ async function reviewBatchItem(id) {
   }
 
   clearError();
-  // The row's dropdown may read "auto"; the verification response carries the
-  // resolved (detected or chosen) category/origin — load those into the
-  // single-label dropdowns so the editor opens on the right field set.
-  const v = item.verification || {};
-  const category = v.product_category || item.productCategory;
-  const origin = v.origin_type || item.originType;
-  if (singleCategory && category !== "auto") { singleCategory.value = category; state.detectedCategory = category; }
-  if (singleOrigin && origin !== "auto") { singleOrigin.value = origin; state.detectedOrigin = origin; }
-  state.extracted = item.extracted;
-  state.expectedValues = item.extracted;
-  state.files.front = item.file;
-  state.files.back = item.backFile || null;
-  // The batch item is already extracted; mark the label as read so Verify
-  // doesn't needlessly re-extract it.
-  state.extractedKey = labelFileKey();
-  syncInputFiles("front", item.file);
-  syncInputFiles("back", item.backFile || null);
-  renderFileState("front");
-  renderFileState("back");
-  setUploadMode("single");
-  await refreshRequirements();
-  setExpectedValues(item.extracted);
-  // Show the auto-verdict immediately so the reviewer lands on the flagged
-  // fields; they can correct the COLA side and re-Verify from here.
-  if (item.verification) {
-    renderResults(item.verification);
-  } else {
-    renderEmptyResults("No verification results for this batch item yet.");
+  try {
+    // The verification response carries the resolved (detected or chosen)
+    // category/origin — load those as the DETECTION for the single-label
+    // editor. The dropdowns stay on "Auto" (with the detection shown in the
+    // Auto option's text) so the next fresh upload is still auto-detected.
+    const v = item.verification || {};
+    const category = v.product_category || (item.productCategory !== "auto" ? item.productCategory : null);
+    const origin = v.origin_type || (item.originType !== "auto" ? item.originType : null);
+    if (singleCategory) singleCategory.value = "auto";
+    if (singleOrigin) singleOrigin.value = "auto";
+    state.detectedCategory = category || null;
+    state.detectedOrigin = origin || null;
+    updateDetectionUI();
+    state.extracted = item.extracted;
+    state.expectedValues = item.extracted;
+    state.files.front = item.file;
+    state.files.back = item.backFile || null;
+    // The batch item is already extracted; mark the label as read (and the form
+    // as seeded from it) so Verify doesn't needlessly re-extract or re-seed.
+    state.extractedKey = labelFileKey();
+    state.seededKey = state.extractedKey;
+    // The form on screen still shows the previous label — don't fold it back in.
+    state.expectedValuesReseeded = true;
+    syncInputFiles("front", item.file);
+    syncInputFiles("back", item.backFile || null);
+    renderFileState("front");
+    renderFileState("back");
+    setUploadMode("single");
+    await refreshRequirements();
+    setExpectedValues(item.extracted);
+    // Show the auto-verdict immediately so the reviewer lands on the flagged
+    // fields; they can correct the COLA side and re-Verify from here.
+    if (item.verification) {
+      renderResults(item.verification);
+    } else {
+      renderEmptyResults("No verification results for this batch item yet.");
+    }
+    setStatus("Loaded batch item #" + item.id + " — edit fields to match the approved application, then Verify");
+    // The batch panel — including the button that was just clicked — is now
+    // hidden, so move focus to the editor's heading (tabindex="-1" in the
+    // markup) or a keyboard user is stranded on a hidden element.
+    const fieldsTitle = document.querySelector("#fields-title");
+    fieldsTitle.scrollIntoView({ block: "start" });
+    fieldsTitle.focus({ preventScroll: true });
+  } catch (error) {
+    // A failed /field-requirements load must not strand the UI on "Loading
+    // requirements" forever.
+    showError(error.message);
+    setStatus("");
   }
-  setStatus("Loaded batch item #" + item.id + " — edit fields to match the approved application, then Verify");
-  document.querySelector("#fields-title").scrollIntoView({ block: "start" });
 }
 
 function removeBatchItem(id) {
@@ -1673,6 +1961,18 @@ function initDropZone(zone) {
     if (input) input.click();
   });
 
+  // The zone is a div acting as a button (role="button" + tabindex in the
+  // markup), so Enter/Space must open the same file picker the click does.
+  // The inner Remove button is a real button — its own Enter must not also
+  // open the picker.
+  zone.addEventListener("keydown", function(event) {
+    if (event.key !== "Enter" && event.key !== " ") return;
+    if (event.target.closest(".remove-file-button")) return;
+    event.preventDefault();
+    const input = slot === "back" ? backImage : frontImage;
+    if (input) input.click();
+  });
+
   zone.addEventListener("dragenter", function(event) {
     if (!draggedFiles(event)) return;
     event.preventDefault();
@@ -1698,7 +1998,7 @@ function initDropZone(zone) {
     const files = Array.from(event.dataTransfer.files || []);
 
     if (files.length > 1) {
-      showError("Drop one file per label slot. Use Batch for multiple files.");
+      showError("Drop one file per label slot. Switch to Multiple labels for several files.");
       setStatus("File selection needs attention");
       return;
     }
@@ -1744,7 +2044,7 @@ document.addEventListener("drop", function(event) {
   if (!draggedFiles(event)) return;
   event.preventDefault();
   if (!event.target.closest("[data-drop-slot]") && !event.target.closest("[data-batch-drop-zone]")) {
-    showError("Drop files into a label slot or the Batch area.");
+    showError("Drop files into a label slot or the Multiple labels area.");
     setStatus("File selection needs attention");
   }
 });
@@ -1781,15 +2081,21 @@ processBatchButton.addEventListener("click", processBatchQueue);
 batchBody.addEventListener("change", function(event) {
   const categoryControl = event.target.closest("[data-batch-category]");
   const originControl = event.target.closest("[data-batch-origin]");
+  const control = categoryControl || originControl;
+  if (!control) return;
 
-  if (categoryControl) {
-    const item = state.batch.items.find((candidate) => candidate.id === Number(categoryControl.dataset.batchCategory));
-    if (item) item.productCategory = categoryControl.value;  // picking "Auto" re-enables detection
-  }
+  const id = Number(categoryControl ? categoryControl.dataset.batchCategory : originControl.dataset.batchOrigin);
+  const item = state.batch.items.find((candidate) => candidate.id === id);
+  if (!item) return;
 
-  if (originControl) {
-    const item = state.batch.items.find((candidate) => candidate.id === Number(originControl.dataset.batchOrigin));
-    if (item) item.originType = originControl.value;
+  if (categoryControl) item.productCategory = categoryControl.value;  // picking "Auto" re-enables detection
+  if (originControl) item.originType = originControl.value;
+
+  // A different category/origin makes the row's verdict stale — send it back
+  // to Ready so "Process all" picks it up again (it skips verified rows).
+  if (isBatchItemVerified(item)) {
+    resetBatchItemVerdict(item);
+    updateBatchRow(item);
   }
 });
 
@@ -1804,7 +2110,7 @@ batchBody.addEventListener("click", function(event) {
   if (removeButton) removeBatchItem(Number(removeButton.dataset.removeBatch));
   if (toggleButton) {
     const item = state.batch.items.find((candidate) => candidate.id === Number(toggleButton.dataset.toggleBatch));
-    if (item) { item.expanded = !item.expanded; renderBatchQueue(); }
+    if (item) { item.expanded = !item.expanded; updateBatchRow(item); }
   }
 });
 
@@ -1812,9 +2118,16 @@ batchBody.addEventListener("click", function(event) {
 // loaded label, since extraction is scoped to the product category. Invalidating
 // extractedKey forces maybeAutoExtractLabel to re-run (it no-ops with no label).
 async function onCategoryOrOriginChange() {
-  await refreshRequirements();
-  state.extractedKey = null;
-  maybeAutoExtractLabel();
+  try {
+    await refreshRequirements();
+    state.extractedKey = null;
+    maybeAutoExtractLabel();
+  } catch (error) {
+    // A failed /field-requirements load must not strand the UI on "Loading
+    // requirements" forever.
+    showError(error.message);
+    setStatus("");
+  }
 }
 if (singleCategory) singleCategory.addEventListener("change", onCategoryOrOriginChange);
 if (singleOrigin) singleOrigin.addEventListener("change", onCategoryOrOriginChange);

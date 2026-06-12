@@ -11,11 +11,21 @@ From the repository root with `GEMINI_API_KEY` set (each case is one live Gemini
 venv/bin/python -m evals.run_eval              # all cases
 venv/bin/python -m evals.run_eval --limit 5    # cheap partial run
 venv/bin/python -m evals.run_eval --case domestic-ipa-series
+venv/bin/python -m evals.run_eval --schema focused   # legacy category-scoped schema
 ```
 
+By default (`--schema unified`) each case is extracted with the all-fields schema
+— the same path production takes when category/origin are on Auto — and the
+deterministic classifier (`app/classify.py`) is scored against the case's known
+category and origin. `--schema focused` keeps the old category-scoped extraction
+for apples-to-apples comparison with pre-unified baselines.
+
 Output: per-field accuracy, overall field accuracy, count of fully-correct cases,
-and every field-level miss (expected vs got). Full results land in
-`evals/last_results.json`; rendered artwork in `evals/images/`.
+every field-level miss (expected vs got), classification accuracy (unified mode),
+and any **spurious fields** — non-empty extractions in fields the ground truth
+says should be absent (these fail the case but don't change the headline
+field-accuracy denominator). Full results land in `evals/last_results.json`;
+rendered artwork in `evals/images/`.
 
 ## How it works
 

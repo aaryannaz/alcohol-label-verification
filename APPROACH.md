@@ -23,9 +23,11 @@ application, and flag anything that doesn't match — fast enough to actually us
    wine appellation triggers, etc.). Because it's pure, it's deterministic,
    auditable, and the most heavily tested part of the system.
 
-**One clean flow.** The reviewer uploads the label artwork; Gemini reads it and
-pre-fills a single editable column of **COLA application fields**, turning
-transcription into confirmation. The reviewer corrects any field so it reflects
+**One clean flow.** The reviewer uploads the label artwork; Gemini reads it,
+the product category and origin are detected automatically (dropdowns default
+to Auto and override a wrong guess), and a single editable column of
+**COLA application fields** is pre-filled, turning transcription into
+confirmation. The reviewer corrects any field so it reflects
 the approved COLA application, then Verify compares application-says vs.
 label-shows field-by-field — **without another AI call**, since validation is
 pure. Re-verifying after an edit is instant. (Auto-reading the COLA application
@@ -33,8 +35,12 @@ form itself to pre-fill those expected values is a documented future improvement
 — see below — left out because the brief calls for a standalone proof-of-concept,
 not a COLA-system integration.)
 
-**Category-aware extraction.** The response schema is scoped to the fields that
-apply to the selected product category (malt beverage / wine / distilled
+**Category-aware extraction, auto-detected category.** The reviewer never picks
+the product category or origin by hand: in auto mode the label is read with the
+all-fields schema and both are inferred from the extracted text
+(`app/classify.py` — deterministic and rule-based, no extra model call). When
+the category is known (an override, or an eval case), the response schema is
+scoped to the fields that apply to it (malt beverage / wine / distilled
 spirits), which both improves accuracy and cuts latency versus asking for every
 field at once.
 
@@ -46,7 +52,10 @@ currently ~99.5% accuracy. Prompt and model changes are gated on it.
 "thinking" phase disabled — reading a label is perception, not reasoning, so
 thinking only added latency. Batch mode processes files **in parallel** (a small
 worker pool), so a realistic batch (around 10 files) finishes within the ~10s
-budget instead of ~20s sequentially.
+budget instead of ~20s sequentially. Each batch row gets an automatic
+**Pass / Needs-attention** verdict from a single extract-and-validate call
+(`POST /verify`), and separate front/back photos named alike with
+`_front`/`_back` suffixes pair into one review item.
 
 ## Tools used
 

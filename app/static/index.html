@@ -73,12 +73,12 @@
                 <option value="imported">Imported</option>
               </select>
             </label>
-            <span class="product-bar-hint">Detected from the label — change to override.</span>
+            <span class="product-bar-hint" id="productBarHint">Auto — detected after you upload a label.</span>
           </div>
           <div id="dropZoneInputs" class="upload-pane">
             <input id="frontImage" data-file-slot="front" type="file" hidden accept=".pdf,.png,.jpg,.jpeg,.webp,application/pdf,image/png,image/jpeg,image/webp" />
             <input id="backImage" data-file-slot="back" type="file" hidden accept=".pdf,.png,.jpg,.jpeg,.webp,application/pdf,image/png,image/jpeg,image/webp" />
-            <div class="drop-zone" id="frontDropZone" data-drop-slot="front" aria-describedby="frontDropSummary">
+            <div class="drop-zone" id="frontDropZone" data-drop-slot="front" tabindex="0" role="button" aria-label="First label file — browse" aria-describedby="frontDropSummary">
               <span class="drop-label">First file</span>
               <div class="file-summary" id="frontDropSummary" data-file-summary="front" aria-live="polite">
                 <span class="file-empty">Drop a label here or <span class="link-text">browse</span></span>
@@ -88,7 +88,7 @@
                 <button class="remove-file-button" data-remove-file="front" type="button" hidden>Remove</button>
               </div>
             </div>
-            <div class="drop-zone" id="backDropZone" data-drop-slot="back" aria-describedby="backDropSummary">
+            <div class="drop-zone" id="backDropZone" data-drop-slot="back" tabindex="0" role="button" aria-label="Second label file (optional) — browse" aria-describedby="backDropSummary">
               <span class="drop-label">Second file (optional)</span>
               <div class="file-summary" id="backDropSummary" data-file-summary="back" aria-live="polite">
                 <span class="file-empty">Drop a label here or <span class="link-text">browse</span></span>
@@ -154,7 +154,9 @@
 
         <section class="panel fields-panel" aria-labelledby="fields-title">
           <div class="section-heading">
-            <h2 id="fields-title">Label application fields</h2>
+            <!-- tabindex="-1": focus lands here when a batch item opens in the editor
+                 (the batch panel — and the button that was clicked — gets hidden). -->
+            <h2 id="fields-title" tabindex="-1">Label application fields</h2>
           </div>
 
           <form id="expectedFields" class="field-stack field-grid" aria-label="Label application fields"></form>

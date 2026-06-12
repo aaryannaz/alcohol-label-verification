@@ -15,23 +15,35 @@ logger = logging.getLogger(__name__)
 
 
 class AppError(Exception):
-    def __init__(self, status_code: int, code: str, message: str, details: dict | None = None):
+    def __init__(
+        self,
+        status_code: int,
+        code: str,
+        message: str,
+        details: dict | None = None,
+        headers: dict[str, str] | None = None,
+    ):
         self.status_code = status_code
         self.code = code
         self.message = message
         self.details = details or {}
+        # Extra response headers (e.g. Retry-After on a 429) — well-behaved
+        # clients key off headers, not the JSON body.
+        self.headers = headers
 
 
-def _envelope(status_code: int, code: str, message: str, details: dict | None = None) -> JSONResponse:
+def _envelope(
+    status_code: int, code: str, message: str, details: dict | None = None, headers: dict[str, str] | None = None
+) -> JSONResponse:
     error = {"code": code, "message": message, "details": details or {}}
     request_id = current_request_id()
     if request_id and request_id != "-":
         error["request_id"] = request_id  # correlate the client error with server logs
-    return JSONResponse(status_code=status_code, content={"error": error})
+    return JSONResponse(status_code=status_code, content={"error": error}, headers=headers)
 
 
 async def app_error_handler(request: Request, exc: AppError):
-    return _envelope(exc.status_code, exc.code, exc.message, exc.details)
+    return _envelope(exc.status_code, exc.code, exc.message, exc.details, exc.headers)
 
 
 async def validation_error_handler(request: Request, exc: RequestValidationError):

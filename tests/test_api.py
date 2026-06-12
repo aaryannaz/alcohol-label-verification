@@ -79,7 +79,8 @@ class ApiTests(unittest.TestCase):
         self.assertIn("javascript", response.headers["content-type"])
         self.assertIn("field-requirements", response.text)
         self.assertIn("radioValue(\"uploadMode\")", response.text)
-        self.assertIn("Use Batch for multiple files", response.text)
+        # Error copy names the visible mode label, not internal jargon.
+        self.assertIn("Switch to Multiple labels for several files", response.text)
         self.assertIn("processBatchQueue", response.text)
 
     def test_verify_reviewed_includes_field_requirements(self):
@@ -326,6 +327,131 @@ class ApiTests(unittest.TestCase):
 
         self.assertEqual(response.status_code, 200)
         self.assertEqual(response.json()["reviewed"]["brand_name"], "Example")
+
+    def test_extract_auto_detects_category_and_origin(self):
+        # "auto" resolves both pickers from the extraction itself; the response
+        # carries the resolved values in product_category / origin_type (the
+        # redundant detected_* aliases are gone from the contract).
+        model_output = {
+            "brand_name": "Chateau Example",
+            "class_type": "Chardonnay",
+            "importer_name_address": "Example Imports, New York NY",
+        }
+
+        with patch(
+            "app.extraction._generate_content",
+            return_value=GeminiResponse(json.dumps(model_output)),
+        ):
+            response = self.client.post(
+                "/extract",
+                data={"product_category": "auto", "origin_type": "auto"},
+                files={"front_image": ("label.png", PNG_BYTES, "image/png")},
+            )
+
+        self.assertEqual(response.status_code, 200)
+        body = response.json()
+        self.assertEqual(body["product_category"], "wine")
+        self.assertEqual(body["origin_type"], "imported")
+        self.assertNotIn("detected_category", body)
+        self.assertNotIn("detected_origin", body)
+
+    def test_verify_response_omits_detected_aliases(self):
+        with patch(
+            "app.extraction._generate_content",
+            return_value=GeminiResponse(json.dumps({"brand_name": "Example", "class_type": "Stout"})),
+        ):
+            response = self.client.post(
+                "/verify",
+                data={"product_category": "auto", "origin_type": "auto"},
+                files={"front_image": ("label.png", PNG_BYTES, "image/png")},
+            )
+
+        self.assertEqual(response.status_code, 200)
+        body = response.json()
+        self.assertEqual(body["product_category"], "malt_beverage")
+        self.assertEqual(body["origin_type"], "domestic")
+        self.assertNotIn("detected_category", body)
+        self.assertNotIn("detected_origin", body)
+
+    def test_extract_rejects_unknown_product_category(self):
+        # A typo must surface as a 422, not silently degrade into auto-detect —
+        # and must be rejected before any Gemini spend.
+        with patch("app.extraction._generate_content") as generate:
+            response = self.client.post(
+                "/extract",
+                data={"product_category": "banana", "origin_type": "domestic"},
+                files={"front_image": ("label.png", PNG_BYTES, "image/png")},
+            )
+
+        self.assertEqual(response.status_code, 422)
+        error = response.json()["error"]
+        self.assertEqual(error["code"], "VALIDATION_ERROR")
+        self.assertEqual(error["details"]["field"], "product_category")
+        self.assertIn("auto", error["details"]["allowed"])
+        self.assertIn("wine", error["details"]["allowed"])
+        generate.assert_not_called()
+
+    def test_verify_rejects_unknown_category_and_origin(self):
+        with patch("app.extraction._generate_content") as generate:
+            bad_category = self.client.post(
+                "/verify",
+                data={"product_category": "banana", "origin_type": "domestic"},
+                files={"front_image": ("label.png", PNG_BYTES, "image/png")},
+            )
+            bad_origin = self.client.post(
+                "/verify",
+                data={"product_category": "wine", "origin_type": "bananas"},
+                files={"front_image": ("label.png", PNG_BYTES, "image/png")},
+            )
+
+        self.assertEqual(bad_category.status_code, 422)
+        self.assertEqual(bad_category.json()["error"]["code"], "VALIDATION_ERROR")
+        self.assertEqual(bad_origin.status_code, 422)
+        self.assertEqual(bad_origin.json()["error"]["details"]["field"], "origin_type")
+        generate.assert_not_called()
+
+    def test_verify_reviewed_rejects_unknown_field_key(self):
+        # LabelFields forbids extra keys: a misspelled field must 422 instead of
+        # validating against the defaults and returning a green verdict.
+        response = self.client.post(
+            "/verify-reviewed",
+            json={
+                "product_category": "malt_beverage",
+                "origin_type": "domestic",
+                "expected": {"brand_name": "Example"},
+                "reviewed": {"brand_nmae": "Example"},
+            },
+        )
+
+        self.assertEqual(response.status_code, 422)
+        body = response.json()
+        self.assertEqual(body["error"]["code"], "VALIDATION_ERROR")
+        # The offending key is named in the validation error locations.
+        locs = [e["loc"] for e in body["error"]["details"]["errors"]]
+        self.assertIn(["body", "reviewed", "brand_nmae"], locs)
+
+    def test_verify_reviewed_response_shape_unchanged(self):
+        # Pins the response contract: adding response models must not reshape it.
+        response = self.client.post(
+            "/verify-reviewed",
+            json={
+                "product_category": "malt_beverage",
+                "origin_type": "domestic",
+                "expected": {"brand_name": "Example"},
+                "reviewed": {"brand_name": "Example"},
+            },
+        )
+
+        self.assertEqual(response.status_code, 200)
+        body = response.json()
+        self.assertEqual(
+            set(body),
+            {"product_category", "origin_type", "wine_path", "field_requirements",
+             "validation", "compliance_checks", "expected", "reviewed"},
+        )
+        self.assertEqual(set(body["expected"]), set(LabelFields.model_fields))
+        # government_warning is the per-side pair; every other status is a string.
+        self.assertEqual(set(body["validation"]["government_warning"]), {"expected", "label"})
 
     def test_extract_retries_are_bounded_by_wall_clock_budget(self):
         # With the budget spent, the retry loop must stop after the first attempt

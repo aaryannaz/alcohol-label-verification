@@ -1,3 +1,7 @@
+[build-system]
+requires = ["setuptools>=69"]
+build-backend = "setuptools.build_meta"
+
 [project]
 name = "treasury-doge-alcohol-label-verification"
 version = "0.1.0"
@@ -13,7 +17,13 @@ dependencies = [
 ]
 
 [project.optional-dependencies]
-dev = ["ruff==0.14.4"]
+# pillow renders the eval harness's synthetic labels (evals/render.py); dev-only —
+# kept out of requirements.txt so the Vercel runtime bundle stays lean.
+dev = ["pillow==12.2.0", "ruff==0.14.4"]
+
+# Only the app ships; tests/evals/scripts are repo tooling, not package code.
+[tool.setuptools]
+packages = ["app"]
 
 [tool.ruff]
 line-length = 120

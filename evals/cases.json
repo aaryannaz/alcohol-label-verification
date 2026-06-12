@@ -313,7 +313,8 @@
         "country_of_origin": "SCOTLAND",
         "sulfite_declaration": "",
         "appellation_of_origin": "",
-        "fanciful_name": ""
+        "fanciful_name": "",
+        "statement_of_age": "Aged 12 Years"
       }
     },
     {
@@ -372,7 +373,9 @@
         "country_of_origin": "",
         "sulfite_declaration": "Contains Sulfites",
         "appellation_of_origin": "Napa Valley",
-        "fanciful_name": ""
+        "fanciful_name": "",
+        "grape_varietal": "Cabernet Sauvignon",
+        "vintage_date": "2019"
       }
     },
     {
@@ -401,7 +404,8 @@
         "country_of_origin": "",
         "sulfite_declaration": "Contains Sulfites",
         "appellation_of_origin": "Sonoma County",
-        "fanciful_name": "Stormchaser White"
+        "fanciful_name": "Stormchaser White",
+        "grape_varietal": "Chardonnay"
       }
     },
     {
@@ -460,7 +464,8 @@
         "country_of_origin": "FRANCE",
         "sulfite_declaration": "Contains Sulfites",
         "appellation_of_origin": "Bordeaux",
-        "fanciful_name": ""
+        "fanciful_name": "",
+        "vintage_date": "2018"
       }
     },
     {
@@ -491,7 +496,9 @@
         "country_of_origin": "AUSTRALIA",
         "sulfite_declaration": "Contains Sulfites",
         "appellation_of_origin": "Victoria",
-        "fanciful_name": ""
+        "fanciful_name": "",
+        "grape_varietal": "Shiraz",
+        "vintage_date": "2020"
       }
     },
     {
@@ -521,7 +528,8 @@
         "country_of_origin": "FRANCE",
         "sulfite_declaration": "Contains Sulphites",
         "appellation_of_origin": "California",
-        "fanciful_name": "Sunlit Hollow"
+        "fanciful_name": "Sunlit Hollow",
+        "vintage_date": "2019"
       }
     },
     {
@@ -582,7 +590,8 @@
         "country_of_origin": "AUSTRALIA",
         "sulfite_declaration": "Contains Sulfites",
         "appellation_of_origin": "Victoria",
-        "fanciful_name": "Stormchaser White"
+        "fanciful_name": "Stormchaser White",
+        "vintage_date": "2019"
       }
     },
     {
@@ -990,7 +999,9 @@
         "importer_name_address": "",
         "country_of_origin": "",
         "sulfite_declaration": "Contains Sulfites",
-        "appellation_of_origin": "Sonoma County"
+        "appellation_of_origin": "Sonoma County",
+        "grape_varietal": "Chardonnay",
+        "vintage_date": "2021"
       }
     }
   ]

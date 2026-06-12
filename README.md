@@ -7,7 +7,7 @@
 TTB reviewers currently compare physical label artwork against approved COLA applications by eye. This prototype automates that comparison:
 
 1. The reviewer uploads the label artwork (one combined file, or separate front/back files).
-2. Gemini Vision reads the label and pre-fills a single set of editable **COLA application fields** — turning transcription into confirmation.
+2. Gemini Vision reads the label, the product category and origin are auto-detected from the extracted text (override dropdowns default to Auto), and a single set of editable **COLA application fields** is pre-filled — turning transcription into confirmation.
 3. The reviewer corrects any field so it reflects the approved COLA application.
 4. Clicking Verify compares application-says vs. label-shows field-by-field and flags mismatches — with no further AI call, since validation is pure.
 
@@ -46,7 +46,7 @@ The verification response also carries label-only **compliance checks** (shown
 under the results table): net-contents unit system (metric for wine/spirits,
 U.S. customary for malt — 27 CFR 4.37/5.70/7.70), standard of fill for wine and
 spirits (27 CFR 4.72/5.203, advisory — verify the size tables against the
-current regulation), origin coherence (populated fields vs the selected origin),
+current regulation), origin coherence (populated fields vs the resolved origin),
 and the distilled-spirits state-of-distillation vs name/address consistency.
 
 ## Limitations
@@ -70,11 +70,14 @@ reviewer's visual judgment — the tool does not assert them:
 ## Extraction accuracy
 
 An eval harness (`evals/`) measures field-extraction accuracy against a
-labeled set of synthetic label cases. Run it with
-`venv/bin/python -m evals.run_eval`. Extraction is **category-aware**:
-the response schema is scoped to the fields applicable to the selected product
-category, which keeps the model focused and avoids the accuracy loss of asking
-for every field at once.
+labeled set of synthetic label cases. The harness renders its label artwork
+with Pillow, which ships in the `dev` extra — install it first
+(`venv/bin/python -m pip install -e ".[dev]"`, or `pip install pillow`), then
+run `venv/bin/python -m evals.run_eval`. Extraction is **category-aware**:
+when the product category is known, the response schema is scoped to the
+fields applicable to it, which keeps the model focused and avoids the accuracy
+loss of asking for every field at once; in auto mode the label is read with
+the all-fields schema and the category is inferred from the result.
 
 ## Project Layout
 
@@ -151,7 +154,7 @@ venv/bin/python -m unittest discover tests
 
 ## Lint & CI
 
-Lint with [ruff](https://docs.astral.sh/ruff/) (a `dev` extra in `pyproject.toml`):
+Lint with [ruff](https://docs.astral.sh/ruff/) (the `dev` extra in `pyproject.toml`, which also installs Pillow for the eval harness):
 
 ```bash
 venv/bin/python -m pip install -e ".[dev]"   # or: pip install ruff
@@ -175,10 +178,10 @@ a server log line.
 
 The minimal UI is served by FastAPI from `app/static/`. It supports:
 
-- Product category and origin toggles.
-- Upload the label artwork; the COLA application fields auto-fill from the label extraction (and re-extract automatically if the product category or origin changes) for the reviewer to correct.
-- Upload mode selector for Choose File, Drag & Drop, and Batch; front and back panels can be uploaded as separate files.
-- Batch mode auto-extracts and verifies each file, showing a per-row **Pass / Needs-attention** verdict; a row can pair a separate front and back image into one review item.
+- Product category and origin are auto-detected from the label (`app/classify.py`); compact dropdowns default to Auto, show the detected values, and override the detection — re-scoping the field list and re-extracting — in both single and batch modes.
+- Upload the label artwork; the COLA application fields auto-fill from the label extraction (and re-extract automatically if the reviewer overrides the detected category or origin) for the reviewer to correct.
+- Single and batch upload modes (click-to-browse or drag & drop); in single mode, front and back panels can be uploaded as two separate files.
+- Batch mode auto-extracts and verifies each file via `POST /verify`, showing a per-row **Pass / Needs-attention** verdict; separate front and back images named alike with `_front`/`_back` suffixes (e.g. `airlie_front.jpg` / `airlie_back.jpg`) pair into one review item.
 - Dynamic required, conditional, and optional field lists (scoped to the product category), ordered to match the COLA application form.
 - Field-by-field verification with a results summary and per-field status badges (failing rows highlighted), plus label-only compliance checks. Re-verifying after the reviewer edits a field makes no additional Gemini call. The government warning is checked against the exact statutory text on both the expected and the label side.
 - **Accessibility:** status and errors are announced to assistive tech (`role="status"`/`aria-live`, `role="alert"`), a busy spinner shows during the Gemini call, and the category/origin and action controls are locked while a request is in flight (preventing a field-stack race). Client-side file-type/size validation before upload.
@@ -188,8 +191,8 @@ The minimal UI is served by FastAPI from `app/static/`. It supports:
 
 - `GET /fields` returns the canonical field set (key, label, control, applicable categories) — the single source of truth the UI loads.
 - `GET /field-requirements` returns required, conditional, and optional fields for a `product_category` and `origin_type` (scoped to the category).
-- `POST /extract` extracts label fields from uploaded artwork (category-aware response schema).
-- `POST /verify` extracts and validates an uploaded label in one Gemini call (used by batch mode to give each row a Pass / Needs-attention verdict).
+- `POST /extract` extracts label fields from uploaded artwork. `product_category` and `origin_type` default to `auto`: the label is read with the all-fields schema and both are inferred from the result; a known category scopes the response schema to its fields.
+- `POST /verify` extracts and validates an uploaded label in one Gemini call, with the same `auto` category/origin detection (used by batch mode to give each row a Pass / Needs-attention verdict).
 - `POST /verify-reviewed` validates reviewed/corrected fields plus the label-only compliance checks, without making another Gemini call.
 - `GET /health` liveness; `GET /readyz` readiness (verifies the API key is configured, returns the model id; 503 if not ready).
 

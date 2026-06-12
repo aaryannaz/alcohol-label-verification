@@ -7,9 +7,12 @@ a reviewer does not have to pick them by hand. Deterministic and rule-based — 
 runs on the extracted text, makes no model call.
 """
 
-# Category keywords, checked against the class/type (and fanciful name as a
-# fallback). Spirits and wine terms are more specific than the broad malt terms,
-# so they are weighted ahead of malt on ties.
+import re
+
+# Category keywords, matched on word boundaries (substring matching misfires:
+# "Porter" contains "port", "Ginger" contains "gin", "Export" contains "port").
+# Checked against the class/type first; the fanciful name is consulted only when
+# the class/type yields no match.
 _CATEGORY_KEYWORDS = {
     "distilled_spirits": (
         "whiskey", "whisky", "bourbon", "scotch", "rye", "vodka", "gin", "rum",
@@ -29,22 +32,42 @@ _CATEGORY_KEYWORDS = {
     ),
 }
 
-# Priority order for tie-breaking (most specific first).
+# Priority order for breaking exact positional ties (most specific first).
 _CATEGORY_ORDER = ("distilled_spirits", "wine", "malt_beverage")
+
+
+def _classify_text(text: str):
+    """Category of the right-most keyword match in `text`, or None.
+
+    TTB class/type designations end with the class noun — "Bourbon Barrel
+    Stout" is a stout, "Rye Ale" is an ale — so when keywords from several
+    categories appear in one string, the right-most match decides. Word
+    boundaries (\\b is Unicode-aware, so "rosé" matches whole) keep "Porter"
+    from hitting "port" and "Ginger" from hitting "gin".
+    """
+    text = text.lower()
+    # (end position, match length, category priority) — max() picks the
+    # right-most match, preferring the longer keyword and then the more
+    # specific category when positions coincide.
+    matches = []
+    for category, keywords in _CATEGORY_KEYWORDS.items():
+        priority = -_CATEGORY_ORDER.index(category)
+        for keyword in keywords:
+            for found in re.finditer(r"\b" + re.escape(keyword) + r"\b", text):
+                matches.append((found.end(), found.end() - found.start(), priority, category))
+    if not matches:
+        return None
+    return max(matches)[3]
 
 
 def classify_category(fields: dict) -> str:
     """Best-guess product category from the class/type (then fanciful name).
     Defaults to malt_beverage when nothing matches."""
-    blob = " ".join(
-        filter(None, [fields.get("class_type"), fields.get("fanciful_name")])
-    ).lower()
-    counts = {
-        category: sum(1 for kw in keywords if kw in blob)
-        for category, keywords in _CATEGORY_KEYWORDS.items()
-    }
-    best = max(_CATEGORY_ORDER, key=lambda c: (counts[c], -_CATEGORY_ORDER.index(c)))
-    return best if counts[best] else "malt_beverage"
+    for source in ("class_type", "fanciful_name"):
+        category = _classify_text(fields.get(source) or "")
+        if category:
+            return category
+    return "malt_beverage"
 
 
 def classify_origin(fields: dict) -> str:

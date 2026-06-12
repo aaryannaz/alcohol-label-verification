@@ -22,7 +22,16 @@ from .errors import (
 from .extraction import extract_label_fields
 from .fields import field_specs_payload
 from .observability import RequestIdMiddleware, configure_logging
-from .schemas import OriginType, ProductCategory, VerifyReviewedRequest
+from .schemas import (
+    ErrorEnvelope,
+    ExtractResponse,
+    FieldRequirementsResponse,
+    FieldsResponse,
+    OriginType,
+    ProductCategory,
+    VerificationResponse,
+    VerifyReviewedRequest,
+)
 from .security import (
     CORS_ALLOW_ORIGINS,
     ENABLE_DOCS,
@@ -111,12 +120,12 @@ def build_verification_response(product_category: str, origin_type: str, expecte
     }
 
 
-@app.get("/fields")
+@app.get("/fields", response_model=FieldsResponse)
 async def fields():
     return {"fields": field_specs_payload()}
 
 
-@app.get("/field-requirements")
+@app.get("/field-requirements", response_model=FieldRequirementsResponse)
 async def field_requirements(product_category: ProductCategory, origin_type: OriginType):
     return {
         "product_category": product_category.value,
@@ -125,7 +134,36 @@ async def field_requirements(product_category: ProductCategory, origin_type: Ori
     }
 
 
-@app.post("/extract", dependencies=COST_GUARDS)
+# Allowed values for the "auto"-capable form fields on /extract and /verify.
+_CATEGORY_VALUES = {c.value for c in ProductCategory}
+_ORIGIN_VALUES = {o.value for o in OriginType}
+
+# Failure contract for the cost endpoints, for OpenAPI only: at runtime every
+# failure is rendered by the exception handlers in errors.py into this envelope.
+_COST_ERROR_RESPONSES = {
+    422: {"model": ErrorEnvelope, "description": "Request validation failed."},
+    429: {"model": ErrorEnvelope, "description": "Rate limit exceeded."},
+}
+
+
+def _resolve_form_choice(value: str, allowed: set[str], field: str) -> str | None:
+    """Resolve an "auto"-capable form value: None for "auto" (detect from the
+    extraction), the value itself when it is a known enum value. Anything else is
+    rejected — a typo like "wines" must surface as a 422, not silently degrade
+    into auto-detect."""
+    if value == "auto":
+        return None
+    if value in allowed:
+        return value
+    raise AppError(
+        status_code=422,
+        code="VALIDATION_ERROR",
+        message=f"Invalid {field}: expected 'auto' or one of the supported values.",
+        details={"field": field, "value": value, "allowed": ["auto", *sorted(allowed)]},
+    )
+
+
+@app.post("/extract", response_model=ExtractResponse, dependencies=COST_GUARDS, responses=_COST_ERROR_RESPONSES)
 async def extract(
     product_category: str = Form("auto"),
     origin_type: str = Form("auto"),
@@ -135,29 +173,20 @@ async def extract(
     """Extract the label fields. Like /verify, accepts "auto" for the category
     and origin: the label is read with the all-fields schema and both are
     inferred from the result, so the single-label flow needs no manual picks."""
-    auto_category = product_category not in _CATEGORY_VALUES
-    auto_origin = origin_type not in _ORIGIN_VALUES
+    chosen_category = _resolve_form_choice(product_category, _CATEGORY_VALUES, "product_category")
+    chosen_origin = _resolve_form_choice(origin_type, _ORIGIN_VALUES, "origin_type")
 
-    extracted = await extract_label_fields(
-        front_image, back_image, None if auto_category else product_category
-    )
-    category = classify_category(extracted) if auto_category else product_category
-    origin = classify_origin(extracted) if auto_origin else origin_type
+    # A chosen category scopes the extraction to its fields; "auto" reads them all.
+    extracted = await extract_label_fields(front_image, back_image, chosen_category)
 
     return {
-        "product_category": category,
-        "origin_type": origin,
-        "detected_category": category,
-        "detected_origin": origin,
+        "product_category": chosen_category or classify_category(extracted),
+        "origin_type": chosen_origin or classify_origin(extracted),
         "extracted": extracted,
     }
 
 
-_CATEGORY_VALUES = {c.value for c in ProductCategory}
-_ORIGIN_VALUES = {o.value for o in OriginType}
-
-
-@app.post("/verify", dependencies=COST_GUARDS)
+@app.post("/verify", response_model=VerificationResponse, dependencies=COST_GUARDS, responses=_COST_ERROR_RESPONSES)
 async def verify(
     product_category: str = Form("auto"),
     origin_type: str = Form("auto"),
@@ -170,32 +199,31 @@ async def verify(
     a single Gemini call, keeping the per-file request count (and rate-limit
     footprint) the same as a bare /extract.
 
-    Auto-detect: when product_category / origin_type are "auto" (anything not a
-    known value), the label is read with the all-fields schema and its category
-    and origin are inferred from the result, so batch rows need no manual picks.
+    Auto-detect: when product_category / origin_type are "auto", the label is read
+    with the all-fields schema and its category and origin are inferred from the
+    result — the response's product_category / origin_type carry the resolved
+    values — so batch rows need no manual picks. Any other unknown value is a 422.
     """
-    auto_category = product_category not in _CATEGORY_VALUES
-    auto_origin = origin_type not in _ORIGIN_VALUES
+    chosen_category = _resolve_form_choice(product_category, _CATEGORY_VALUES, "product_category")
+    chosen_origin = _resolve_form_choice(origin_type, _ORIGIN_VALUES, "origin_type")
 
-    # A known category scopes the extraction to its fields; "auto" reads them all.
-    extracted = await extract_label_fields(
-        front_image, back_image, None if auto_category else product_category
-    )
-    category = classify_category(extracted) if auto_category else product_category
-    origin = classify_origin(extracted) if auto_origin else origin_type
+    # A chosen category scopes the extraction to its fields; "auto" reads them all.
+    extracted = await extract_label_fields(front_image, back_image, chosen_category)
 
-    response = build_verification_response(
-        product_category=category,
-        origin_type=origin,
+    return build_verification_response(
+        product_category=chosen_category or classify_category(extracted),
+        origin_type=chosen_origin or classify_origin(extracted),
         expected=extracted,
         reviewed=extracted,
     )
-    response["detected_category"] = category
-    response["detected_origin"] = origin
-    return response
 
 
-@app.post("/verify-reviewed", dependencies=COST_GUARDS)
+@app.post(
+    "/verify-reviewed",
+    response_model=VerificationResponse,
+    dependencies=COST_GUARDS,
+    responses=_COST_ERROR_RESPONSES,
+)
 async def verify_reviewed(request: VerifyReviewedRequest):
     expected = request.expected.model_dump()
     reviewed = request.reviewed.model_dump()

@@ -1,6 +1,5 @@
 import unittest
 
-from app.classify import classify_category, classify_origin
 from app.validation import (
     check_government_warning,
     compute_label_checks,
@@ -55,6 +54,12 @@ class LabelCheckTests(unittest.TestCase):
     def test_wine_wrong_unit_system_fails(self):
         checks = compute_label_checks("wine", "domestic", self._reviewed(net_contents="25 fl oz"))
         self.assertEqual(self._find(checks, "net_contents_unit_system")["status"], "FAIL")
+
+    def test_wine_dual_unit_leading_customary_passes(self):
+        # The metric requirement is satisfied by a metric measure ANYWHERE in
+        # the statement — a dual statement leading with customary is compliant.
+        checks = compute_label_checks("wine", "domestic", self._reviewed(net_contents="12 FL OZ (355 mL)"))
+        self.assertEqual(self._find(checks, "net_contents_unit_system")["status"], "PASS")
 
     def test_malt_uses_customary_and_no_fill_check(self):
         checks = compute_label_checks("malt_beverage", "domestic", self._reviewed(net_contents="12 fl oz"))
@@ -402,6 +407,45 @@ class ComparatorTests(unittest.TestCase):
             "PASS",
         )
 
+    def test_multiword_state_folds_before_contained_state(self):
+        # "Virginia" must not fire inside "West Virginia" (leaving "West VA").
+        self.assertEqual(
+            match_field("domestic_name_address", "malt_beverage",
+                        "Charleston, West Virginia", "Charleston, WV"),
+            "PASS",
+        )
+        # ...while plain Virginia still folds.
+        self.assertEqual(
+            match_field("domestic_name_address", "malt_beverage", "Richmond, Virginia", "Richmond, VA"),
+            "PASS",
+        )
+
+    def test_washington_dc_folds_without_state_mangling(self):
+        # "Washington" the city must not fold to the state "WA".
+        self.assertEqual(
+            match_field("domestic_name_address", "distilled_spirits",
+                        "Acme Distillers, Washington, D.C.", "Acme Distillers, Washington, DC"),
+            "PASS",
+        )
+
+    def test_compound_participle_lead_phrase_is_stripped(self):
+        self.assertEqual(
+            match_field("domestic_name_address", "distilled_spirits",
+                        "Distilled and Bottled by X, Louisville, Kentucky", "X, Louisville, KY"),
+            "PASS",
+        )
+
+    def test_single_participle_lead_phrase_still_stripped(self):
+        self.assertEqual(
+            match_field("domestic_name_address", "malt_beverage",
+                        "Brewed and Bottled by Acme Brewing, Reno, Nevada", "Acme Brewing, Reno NV"),
+            "PASS",
+        )
+        self.assertEqual(
+            match_field("domestic_name_address", "wine", "Bottled by Acme Cellars, Napa, CA", "Acme Cellars, Napa CA"),
+            "PASS",
+        )
+
     def test_country_synonyms_and_lead_phrase(self):
         self.assertEqual(match_field("country_of_origin", "wine", "Product of Australia", "Australia"), "PASS")
         self.assertEqual(match_field("country_of_origin", "wine", "United States", "USA"), "PASS")
@@ -441,6 +485,25 @@ class ComparatorTests(unittest.TestCase):
         self.assertEqual(parse_volume("750 ml"), 750.0)
         self.assertEqual(parse_volume("1.5 L"), 1500.0)
         self.assertAlmostEqual(parse_volume("12 fl oz"), 354.882, places=2)
+
+    def test_parse_volume_sums_chained_customary_measures(self):
+        # The standard compound statement lists one system in descending size;
+        # the measures are one volume, not alternatives.
+        self.assertAlmostEqual(parse_volume("1 PINT 0.9 FL OZ"), 499.79, places=1)
+        self.assertAlmostEqual(parse_volume("1 QUART 1 PINT"), 1419.53, places=1)
+
+    def test_parse_volume_prefers_metric_in_dual_statement(self):
+        # A dual statement repeats ONE volume in two systems — the metric
+        # measure is canonical, never summed with the customary restatement.
+        self.assertEqual(parse_volume("500 mL (1 Pint 0.9 fl oz)"), 500.0)
+        self.assertEqual(parse_volume("12 FL OZ (355 mL)"), 355.0)
+
+    def test_net_contents_compound_customary_equals_metric(self):
+        self.assertEqual(match_net_contents("500 mL", "1 PINT 0.9 FL OZ"), "PASS")
+        self.assertEqual(match_net_contents("500 mL (1 Pint 0.9 fl oz)", "1 PINT 0.9 FL OZ"), "PASS")
+
+    def test_net_contents_compound_customary_mismatch_still_fails(self):
+        self.assertEqual(match_net_contents("750 mL", "1 PINT 0.9 FL OZ"), "FAIL")
 
     # --- integration through validate_* ---
 
@@ -498,28 +561,14 @@ class BrandNameDeemedBrandTests(unittest.TestCase):
         result = validate_wine(expected, reviewed, "domestic")
         self.assertEqual(result["brand_name"], "PASS")
 
-
-class ClassifyTests(unittest.TestCase):
-    def test_category_from_class_type(self):
-        self.assertEqual(classify_category({"class_type": "Hazy India Pale Ale"}), "malt_beverage")
-        self.assertEqual(classify_category({"class_type": "Amber Lager"}), "malt_beverage")
-        self.assertEqual(classify_category({"class_type": "Tart Ale with Boysenberry"}), "malt_beverage")
-        self.assertEqual(classify_category({"class_type": "Cabernet Sauvignon"}), "wine")
-        self.assertEqual(classify_category({"class_type": "California Chablis"}), "wine")
-        self.assertEqual(classify_category({"class_type": "Red Table Wine"}), "wine")
-        self.assertEqual(classify_category({"class_type": "Kentucky Straight Bourbon Whiskey"}), "distilled_spirits")
-        self.assertEqual(classify_category({"class_type": "Reposado Tequila"}), "distilled_spirits")
-        self.assertEqual(classify_category({"class_type": "London Dry Gin"}), "distilled_spirits")
-
-    def test_category_defaults_to_malt_when_unknown(self):
-        self.assertEqual(classify_category({"class_type": ""}), "malt_beverage")
-
-    def test_origin_imported_when_importer_or_country(self):
-        self.assertEqual(classify_origin({"importer_name_address": "Acme Imports, NY"}), "imported")
-        self.assertEqual(classify_origin({"country_of_origin": "Germany"}), "imported")
-
-    def test_origin_domestic_when_only_bottler(self):
-        self.assertEqual(classify_origin({"domestic_name_address": "Bluebird, PA"}), "domestic")
+    def test_expected_brand_absent_from_label_is_missing_not_deemed(self):
+        # The deemed-brand rule applies only when the COLA has no brand either;
+        # an approved brand missing from the label is a real mismatch the
+        # bottler name must not soft-pass.
+        expected = self._fields(brand_name="Stone's Throw")
+        reviewed = self._fields(class_type="Red Wine", domestic_name_address="XYZ Winery, City, State")
+        result = validate_wine(expected, reviewed, "domestic")
+        self.assertEqual(result["brand_name"], "MISSING")
 
 
 if __name__ == "__main__":

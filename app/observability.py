@@ -9,6 +9,7 @@ with uvicorn's own access/error loggers.
 
 import logging
 import os
+import re
 import time
 import uuid
 from contextvars import ContextVar
@@ -16,6 +17,11 @@ from contextvars import ContextVar
 from starlette.middleware.base import BaseHTTPMiddleware
 
 _request_id: ContextVar[str] = ContextVar("request_id", default="-")
+
+# Inbound X-Request-ID values are echoed into log lines and error bodies, so
+# only a short, safe token is accepted; anything else (log-injection attempts,
+# oversized values) is replaced with a generated id as if the header were absent.
+_REQUEST_ID_PATTERN = re.compile(r"^[A-Za-z0-9._-]{1,64}$")
 
 
 def current_request_id() -> str:
@@ -41,7 +47,8 @@ def configure_logging():
 
 class RequestIdMiddleware(BaseHTTPMiddleware):
     async def dispatch(self, request, call_next):
-        request_id = request.headers.get("x-request-id") or uuid.uuid4().hex[:12]
+        inbound = request.headers.get("x-request-id", "")
+        request_id = inbound if _REQUEST_ID_PATTERN.fullmatch(inbound) else uuid.uuid4().hex[:12]
         token = _request_id.set(request_id)
         start = time.monotonic()
         try:

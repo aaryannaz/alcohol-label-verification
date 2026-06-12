@@ -100,6 +100,10 @@ STATE_ABBREVIATIONS = {
     "utah": "ut", "vermont": "vt", "virginia": "va", "washington": "wa",
     "west virginia": "wv", "wisconsin": "wi", "wyoming": "wy",
     "district of columbia": "dc", "puerto rico": "pr",
+    # D.C. — the city name collides with Washington state, so the full forms
+    # fold to "dc" before the bare "washington" -> "wa" rule can fire. After
+    # _normalize_basic, "Washington, D.C." reads "washington d c".
+    "washington d c": "dc", "washington dc": "dc", "d c": "dc",
 }
 
 # Country name synonyms -> a single canonical token for country_of_origin.
@@ -111,11 +115,17 @@ COUNTRY_SYNONYMS = {
 }
 
 # Lead phrases that introduce a responsible party but are not part of the
-# name/address itself (the bottler name + city/state are what matter).
-ADDRESS_LEAD_PHRASES = (
-    "brewed and bottled by", "produced and bottled by", "vinted and bottled by",
-    "bottled and packed by", "brewed by", "bottled by", "produced by",
-    "distilled by", "packed by", "imported by", "made by", "vinted by",
+# name/address itself (the bottler name + city/state are what matter). Labels
+# chain these freely ("Distilled and Bottled by", "Produced & Bottled by"), so
+# the pattern accepts any participle chain joined by and/& and ending in "by"
+# rather than enumerating every combination.
+_ADDRESS_PARTICIPLES = (
+    "bottled", "brewed", "distilled", "produced", "made", "blended",
+    "vinted", "cellared", "crafted", "imported", "packed",
+)
+_PARTICIPLE_ALT = "|".join(_ADDRESS_PARTICIPLES)
+ADDRESS_LEAD_RE = re.compile(
+    rf"\b(?:{_PARTICIPLE_ALT})(?:\s+(?:and|&)\s+(?:{_PARTICIPLE_ALT}))*\s+by\b"
 )
 
 # Lead phrases for country of origin (e.g. "Product of Australia" -> "Australia").
@@ -205,7 +215,11 @@ def _strip_lead_phrases(value, phrases):
 
 
 def _apply_map(value, mapping):
-    for source, target in mapping.items():
+    # Multi-word names fold first (longest within a word count), otherwise a
+    # contained name fires early: "West Virginia" must become "wv", not the
+    # "west va" that folding "virginia" first would leave behind.
+    ordered = sorted(mapping.items(), key=lambda item: (item[0].count(" "), len(item[0])), reverse=True)
+    for source, target in ordered:
         value = re.sub(r"\b" + re.escape(source) + r"\b", target, value)
     return re.sub(r"\s+", " ", value).strip()
 
@@ -216,7 +230,7 @@ def normalize_field(field, value):
     normalized = _normalize_basic(value)
 
     if field in ADDRESS_FIELDS:
-        normalized = _strip_lead_phrases(normalized, ADDRESS_LEAD_PHRASES)
+        normalized = re.sub(r"\s+", " ", ADDRESS_LEAD_RE.sub(" ", normalized)).strip()
         normalized = _apply_map(normalized, STATE_ABBREVIATIONS)
         normalized = _fold_company(normalized)
     elif field == "country_of_origin":
@@ -224,7 +238,7 @@ def normalize_field(field, value):
         normalized = _apply_map(normalized, COUNTRY_SYNONYMS)
     elif field == "sulfite_declaration":
         normalized = normalized.replace("sulphite", "sulfite")
-    elif field in ADDRESS_FIELDS or field in ("brand_name", "class_type", "fanciful_name"):
+    elif field in ("brand_name", "class_type", "fanciful_name"):
         normalized = _fold_company(normalized)
 
     return normalized
@@ -259,44 +273,28 @@ def parse_abv(value):
     return None
 
 
-def _match_volume(value):
-    """Return (quantity, unit_token) parsed from a net-contents statement, or None."""
+_VOLUME_MEASURE_RE = re.compile(
+    r"(\d+(?:\.\d+)?)\s*"
+    r"(fl oz|milliliters?|millilitres?|centiliters?|centilitres?|"
+    r"liters?|litres?|gallons?|quarts?|pints?|ml|cl|l|gal|qt|pt)\b"
+)
+
+
+def _volume_measures(value):
+    """All (quantity, unit_token) measures in a net-contents statement, in
+    label order. A statement may carry several: a dual-unit statement repeats
+    one volume in two systems ("500 mL (1 Pint 0.9 fl oz)"), and a customary
+    statement may chain descending units ("1 PINT 0.9 FL OZ")."""
     if not value:
-        return None
+        return []
 
     text = value.lower()
     text = re.sub(r"fl\.?\s*oz\.?", "fl oz", text)
     text = re.sub(r"fluid\s+ounces?", "fl oz", text)
-
-    match = re.search(
-        r"(\d+(?:\.\d+)?)\s*"
-        r"(fl oz|milliliters?|millilitres?|centiliters?|centilitres?|"
-        r"liters?|litres?|gallons?|quarts?|pints?|ml|cl|l|gal|qt|pt)\b",
-        text,
-    )
-    if not match:
-        return None
-    return float(match.group(1)), match.group(2)
+    return [(float(quantity), unit) for quantity, unit in _VOLUME_MEASURE_RE.findall(text)]
 
 
-def parse_volume(value):
-    """Parse a net-contents statement into millilitres, or None if unparseable."""
-    matched = _match_volume(value)
-    if matched is None:
-        return None
-    quantity, unit = matched
-    factor = UNIT_TO_ML.get(unit) or UNIT_TO_ML.get(unit.rstrip("s"))
-    if factor is None:
-        return None
-    return quantity * factor
-
-
-def net_contents_unit_system(value):
-    """Return 'metric', 'customary', or None for a net-contents statement."""
-    matched = _match_volume(value)
-    if matched is None:
-        return None
-    unit = matched[1]
+def _unit_system(unit):
     root = unit.rstrip("s")
     if unit in _METRIC_UNIT_ROOTS or root in _METRIC_UNIT_ROOTS:
         return "metric"
@@ -305,15 +303,46 @@ def net_contents_unit_system(value):
     return None
 
 
-def net_contents_has_customary(value):
-    """True if the net-contents statement includes a U.S. customary measure
-    anywhere (so a dual-unit statement like "500 mL (1 PINT 0.9 FL OZ)" counts)."""
-    if not value:
-        return False
-    text = value.lower()
-    text = re.sub(r"fl\.?\s*oz\.?", "fl oz", text)
-    text = re.sub(r"fluid\s+ounces?", "fl oz", text)
-    return re.search(r"\d+(?:\.\d+)?\s*(fl oz|gallons?|quarts?|pints?|gal|qt|pt)\b", text) is not None
+def parse_volume(value):
+    """Parse a net-contents statement into millilitres, or None if unparseable.
+
+    A metric measure is canonical when present: dual statements never chain
+    metric units, so the first metric value IS the volume. With no metric
+    measure, the customary measures are summed — a chained statement like
+    "1 PINT 0.9 FL OZ" or "1 QUART 1 PINT" lists one system in descending size.
+    """
+    customary_ml = 0.0
+    found_customary = False
+    for quantity, unit in _volume_measures(value):
+        factor = UNIT_TO_ML.get(unit) or UNIT_TO_ML.get(unit.rstrip("s"))
+        if factor is None:
+            continue
+        if _unit_system(unit) == "metric":
+            return quantity * factor
+        customary_ml += quantity * factor
+        found_customary = True
+    return customary_ml if found_customary else None
+
+
+def net_contents_unit_system(value):
+    """Return 'metric', 'customary', or None for the leading measure in a
+    net-contents statement."""
+    for _, unit in _volume_measures(value):
+        system = _unit_system(unit)
+        if system:
+            return system
+    return None
+
+
+def net_contents_unit_systems(value):
+    """The set of unit systems present anywhere in a net-contents statement,
+    so a dual-unit statement like "500 mL (1 PINT 0.9 FL OZ)" reports both."""
+    systems = set()
+    for _, unit in _volume_measures(value):
+        system = _unit_system(unit)
+        if system:
+            systems.add(system)
+    return systems
 
 
 def is_approved_standard_of_fill(product_category, milliliters):
@@ -392,10 +421,12 @@ def _deemed_brand_source(origin_type, fields):
 
 
 def check_brand_name(product_category, origin_type, expected, reviewed):
-    """Brand name, with TTB's deemed-brand rule (27 CFR 4.33 etc.): when a label
-    bears no brand name, the bottler/producer/importer name is deemed the brand,
-    so a brandless label that still names its bottler is compliant — surface that
-    as DEEMED_FROM_BOTTLER (confirm) rather than a missing-brand failure.
+    """Brand name, with TTB's deemed-brand rule (27 CFR 4.33 etc.): when neither
+    the COLA nor the label carries a brand name, the bottler/producer/importer
+    name is deemed the brand, so a brandless label that still names its bottler
+    is compliant — surface that as DEEMED_FROM_BOTTLER (confirm) rather than a
+    missing-brand failure. When the COLA *does* name a brand, a brandless label
+    is a real mismatch the deemed-brand rule must not swallow.
     """
     exp = (expected.get("brand_name") or "").strip()
     rev = (reviewed.get("brand_name") or "").strip()
@@ -405,9 +436,9 @@ def check_brand_name(product_category, origin_type, expected, reviewed):
             return "EXPECTED VALUE MISSING"
         return match_field("brand_name", product_category, exp, rev)
 
-    # Label bears no brand name: fall back to the deemed brand if a bottler/
-    # producer/importer name is present; otherwise the brand is truly missing.
-    if _deemed_brand_source(origin_type, reviewed):
+    # Label bears no brand name: the deemed brand applies only when the COLA
+    # has none either; an approved brand absent from the label is MISSING.
+    if not exp and _deemed_brand_source(origin_type, reviewed):
         return "DEEMED_FROM_BOTTLER"
     return "MISSING"
 
@@ -658,26 +689,26 @@ def compute_label_checks(product_category: str, origin_type: str, reviewed: dict
     checks = []
     net_contents = (reviewed.get("net_contents") or "").strip()
 
-    # Net-contents unit system (wine/spirits metric; malt U.S. customary).
+    # Net-contents unit system (wine/spirits metric; malt U.S. customary). The
+    # required system must be PRESENT, in any position: the other system MAY
+    # also be shown (27 CFR 7.70 for malt; metric standards for wine/spirits),
+    # so a dual-unit statement is judged by what it includes, not what leads.
     if net_contents:
-        system = net_contents_unit_system(net_contents)
+        systems = net_contents_unit_systems(net_contents)
         expected_system = "customary" if product_category == "malt_beverage" else "metric"
         readable = product_category.replace("_", " ")
-        if system is None:
+        if not systems:
             checks.append(_check("net_contents_unit_system", "Net contents unit system",
                                  "INFO", "Could not recognize the net-contents unit."))
-        elif product_category == "malt_beverage" and net_contents_has_customary(net_contents):
-            # 27 CFR 7.70 requires U.S. customary units; metric MAY also be shown,
-            # so a dual-unit statement that includes customary is compliant.
+        elif expected_system in systems:
+            wording = "U.S. customary" if expected_system == "customary" else "metric"
+            detail = f"Includes {wording} units." if len(systems) > 1 else f"Uses {expected_system} units."
             checks.append(_check("net_contents_unit_system", "Net contents unit system",
-                                 "PASS", "Includes U.S. customary units."))
-        elif system != expected_system:
+                                 "PASS", detail))
+        else:
             only = " only" if product_category == "malt_beverage" else ""
             checks.append(_check("net_contents_unit_system", "Net contents unit system",
-                                 "FAIL", f"{readable} must use {expected_system} units; the label uses {system} units{only}."))
-        else:
-            checks.append(_check("net_contents_unit_system", "Net contents unit system",
-                                 "PASS", f"Uses {expected_system} units."))
+                                 "FAIL", f"{readable} must use {expected_system} units; the label uses {next(iter(systems))} units{only}."))
 
     # Standard of fill (wine and distilled spirits only).
     if net_contents and product_category in ("wine", "distilled_spirits"):

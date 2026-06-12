@@ -57,8 +57,6 @@ FIELD_SPECS = (
 
 FIELD_KEYS = tuple(spec.key for spec in FIELD_SPECS)
 
-FIELD_CATEGORIES = {spec.key: spec.categories for spec in FIELD_SPECS}
-
 
 def fields_for_category(product_category: str) -> list[str]:
     """Field keys applicable to a product category, in canonical order."""

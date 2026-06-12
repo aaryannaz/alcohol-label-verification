@@ -30,14 +30,15 @@ except Exception:  # pragma: no cover - guard against SDK layout changes
 logger = logging.getLogger(__name__)
 
 # Retry behaviour is configurable so it can be tuned to the deployment's request
-# timeout (e.g. a short budget on serverless). Backoff is exponential.
-MAX_ATTEMPTS = int(os.getenv("GEMINI_MAX_ATTEMPTS", "3"))
+# timeout (e.g. a short budget on serverless). Backoff is exponential. Clamped
+# to >= 1 so a misconfigured 0 still makes the one attempt instead of crashing.
+MAX_ATTEMPTS = max(1, int(os.getenv("GEMINI_MAX_ATTEMPTS", "3")))
 RETRY_BACKOFF_SECONDS = float(os.getenv("GEMINI_RETRY_BACKOFF_SECONDS", "0.4"))
-# Overall wall-clock budget across all retries. A typical call returns in ~2s, so
-# this caps the retry pile-up: once the budget is spent we stop retrying instead
-# of stacking attempts into ~80s. Kept >= the per-call timeout (12s, the Gemini
-# 10s-minimum-deadline floor plus margin — see clients.py) so a single slow call
-# fits in the budget and only genuinely fast failures are retried.
+# Wall-clock budget for the retries: attempt 1 always runs (bounded only by the
+# per-call timeout — see clients.py), then retries start only while budget
+# remains and each is cut off when the budget expires mid-call. A typical call
+# returns in ~2s, so this caps the retry pile-up at ~12s total instead of
+# stacking full per-call timeouts into ~36s against the ~5s product bar.
 GEMINI_DEADLINE_SECONDS = float(os.getenv("GEMINI_DEADLINE_SECONDS", "12.0"))
 
 @lru_cache
@@ -137,7 +138,27 @@ async def _run_and_parse(contents, config) -> dict:
 
     for attempt in range(MAX_ATTEMPTS):
         try:
-            response = await asyncio.to_thread(_generate_content, contents, config)
+            if attempt == 0:
+                # The first attempt always runs, bounded only by the per-call SDK
+                # timeout — a zero/spent budget must not block the one call that
+                # usually succeeds in ~2s.
+                response = await asyncio.to_thread(_generate_content, contents, config)
+            else:
+                # Retries may not outlive the budget: cap the await at whatever
+                # remains, so an attempt started just inside the budget cannot run
+                # its full per-call timeout past the ~5s bar. wait_for cannot
+                # cancel the SDK's worker thread — it is orphaned (its result
+                # discarded) and dies with the per-call timeout in clients.py.
+                response = await asyncio.wait_for(
+                    asyncio.to_thread(_generate_content, contents, config),
+                    timeout=deadline - time.monotonic(),
+                )
+            break
+        except TimeoutError as exc:
+            # The wait_for above tripped: budget exhausted mid-retry. Same
+            # terminal path as running out of attempts.
+            last_error = exc
+            logger.warning("Gemini extraction attempt %s/%s cut off by the wall-clock budget", attempt + 1, MAX_ATTEMPTS)
             break
         except AppError:
             raise
