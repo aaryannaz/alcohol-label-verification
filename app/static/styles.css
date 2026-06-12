@@ -739,6 +739,22 @@ textarea[name="importer_name_address"] {
   outline: none;
 }
 
+/* Inline PDF preview via the browser's built-in viewer (all pages, scrollable). */
+.label-preview-pdf {
+  width: 100%;
+  height: 520px;
+  border: 1px solid var(--line);
+  border-radius: var(--radius);
+  background: var(--subtle-bg);
+}
+
+.label-preview-open {
+  justify-self: start;
+  font-size: 16.8px;
+  font-weight: 650;
+  color: var(--primary);
+}
+
 /* Quick Look–style full-size preview overlay. */
 .lightbox {
   position: fixed;

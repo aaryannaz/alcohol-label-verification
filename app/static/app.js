@@ -269,10 +269,28 @@ function renderLabelPreview() {
         }
       });
       item.appendChild(img);
+    } else if (file.type === "application/pdf" || /\.pdf$/i.test(file.name || "")) {
+      // Render PDFs in the browser's built-in viewer (scrollable, all pages).
+      const url = URL.createObjectURL(file);
+      state.previewUrls.push(url);
+      const frame = document.createElement("iframe");
+      frame.src = url;
+      frame.className = "label-preview-pdf";
+      frame.title = FILE_LABELS[slot] + " label PDF preview";
+      frame.setAttribute("loading", "lazy");
+      item.appendChild(frame);
+
+      const open = document.createElement("a");
+      open.href = url;
+      open.target = "_blank";
+      open.rel = "noopener";
+      open.className = "label-preview-open";
+      open.textContent = "Open PDF in a new tab";
+      item.appendChild(open);
     } else {
       const note = document.createElement("span");
       note.className = "label-preview-note";
-      note.textContent = file.name + " — PDF, not previewed inline";
+      note.textContent = file.name + " — preview not available";
       item.appendChild(note);
     }
 
