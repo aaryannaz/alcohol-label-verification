@@ -194,7 +194,7 @@ The minimal UI is served by FastAPI from `app/static/`. It supports:
 - Dynamic required, conditional, and optional field lists (scoped to the product category), ordered to match the COLA application form.
 - Field-by-field verification with a results summary and per-field status badges (failing rows highlighted), plus label-only compliance checks. Re-verifying after the reviewer edits a field makes no additional Gemini call. The government warning is checked against the exact statutory text on both the expected and the label side.
 - **Accessibility:** status and errors are announced to assistive tech (`role="status"`/`aria-live`, `role="alert"`), a busy spinner shows during the Gemini call, and the category/origin and action controls are locked while a request is in flight (preventing a field-stack race). Client-side file-type/size validation before upload.
-- Light/dark mode and a Standard/Government layout, with local browser preference storage.
+- Light/dark mode (government-style layout throughout), with local browser preference storage.
 
 ## API
 

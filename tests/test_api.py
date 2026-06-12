@@ -45,7 +45,8 @@ class ApiTests(unittest.TestCase):
         self.assertIn("text/html", response.headers["content-type"])
         self.assertIn("Alcohol Label Verification", response.text)
         self.assertIn("themeToggle", response.text)
-        self.assertIn("layoutSelect", response.text)
+        # The government layout is the only layout; the old selector is gone.
+        self.assertNotIn("layoutSelect", response.text)
         self.assertIn("data-file-slot=\"front\"", response.text)
         self.assertIn("data-drop-slot=\"front\"", response.text)
         # Single/multiple is a radio group; category/origin are auto-detected

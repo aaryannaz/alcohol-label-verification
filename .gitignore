@@ -221,3 +221,4 @@ __marimo__/
 
 # R session history (stray local file)
 .Rhistory
+.claude/

@@ -106,11 +106,8 @@ const state = {
 };
 
 const THEME_STORAGE_KEY = "alcohol-label-theme";
-const LAYOUT_STORAGE_KEY = "alcohol-label-layout";
 const THEMES = ["light", "dark"];
-const LAYOUTS = ["standard", "government"];
 const themeToggle = document.querySelector("#themeToggle");
-const layoutSelect = document.querySelector("#layoutSelect");
 const uploadModeGroup = document.getElementById("uploadModeGroup");
 const singleCategory = document.getElementById("singleCategory");
 const singleOrigin = document.getElementById("singleOrigin");
@@ -198,22 +195,6 @@ function setTheme(theme) {
   if (themeToggle) themeToggle.checked = normalizedTheme === "dark";
   try {
     localStorage.setItem(THEME_STORAGE_KEY, normalizedTheme);
-  } catch {
-    return;
-  }
-}
-
-function currentLayout() {
-  const layout = document.documentElement.dataset.layout;
-  return LAYOUTS.includes(layout) ? layout : "standard";
-}
-
-function setLayout(layout) {
-  const normalizedLayout = LAYOUTS.includes(layout) ? layout : "standard";
-  document.documentElement.dataset.layout = normalizedLayout;
-  if (layoutSelect) layoutSelect.value = normalizedLayout;
-  try {
-    localStorage.setItem(LAYOUT_STORAGE_KEY, normalizedLayout);
   } catch {
     return;
   }
@@ -713,7 +694,7 @@ function setBusy(busy) {
   busyDepth = Math.max(0, busyDepth + (busy ? 1 : -1));
   const active = busyDepth > 0;
   state.inFlight = active;
-  const controls = [singleCategory, singleOrigin, uploadModeGroup, verifyButton, recheckButton, themeToggle, layoutSelect];
+  const controls = [singleCategory, singleOrigin, uploadModeGroup, verifyButton, recheckButton, themeToggle];
   for (const control of controls) {
     if (control) control.disabled = active;
   }
@@ -2218,13 +2199,6 @@ if (themeToggle) {
     setTheme(themeToggle.checked ? "dark" : "light");
   });
 }
-if (layoutSelect) {
-  layoutSelect.value = currentLayout();
-  layoutSelect.addEventListener("change", function() {
-    setLayout(layoutSelect.value);
-  });
-}
-
 uploadModeGroup.addEventListener("change", function() { setUploadMode(radioValue("uploadMode")); });
 
 batchFiles.addEventListener("change", function() {
