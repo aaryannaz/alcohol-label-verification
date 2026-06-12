@@ -172,21 +172,20 @@ a server log line.
 The minimal UI is served by FastAPI from `app/static/`. It supports:
 
 - Product category and origin toggles.
-- Front/back label uploads.
-- Upload mode selector for Choose File, Drag & Drop, and Batch workflows.
-- Batch upload queue for multiple one-file review items.
-- Dynamic required, conditional, and optional field lists (scoped to the product category).
-- Reviewed-field verification without re-running extraction, with a results summary and per-field status badges (failing rows highlighted; the government warning is read-only on the Expected side since it is checked against the statutory text).
-- **Export to CSV and print** of a verification result (with a print stylesheet) so the review can be attached to a case file; label compliance checks are included.
-- **Accessibility/feedback:** status and errors are announced to assistive tech (`role="status"`/`aria-live`, `role="alert"`), a busy spinner shows during the slow Gemini call, and the category/origin and action controls are locked while a request is in flight (preventing a field-stack race). Client-side file-type/size validation before upload.
-- Light/dark mode with local browser preference storage.
-- Feedback link that opens a GitHub issue for tester notes.
+- Two workflow modes: upload the approved COLA application form (auto-fills the expected fields and detects category/origin), or extract the expected fields from the label itself, then upload the label artwork to check against.
+- Upload mode selector for Choose File, Drag & Drop, and Batch; front and back panels can be uploaded as separate files.
+- Batch mode auto-extracts and verifies each file, showing a per-row **Pass / Needs-attention** verdict; a row can pair a separate front and back image into one review item.
+- Dynamic required, conditional, and optional field lists (scoped to the product category), ordered to match the COLA application form.
+- Field-by-field verification with a results summary and per-field status badges (failing rows highlighted), plus label-only compliance checks. Re-verifying after the reviewer edits a field makes no additional Gemini call. The government warning is checked against the exact statutory text on both the expected and the label side.
+- **Accessibility:** status and errors are announced to assistive tech (`role="status"`/`aria-live`, `role="alert"`), a busy spinner shows during the Gemini call, and the category/origin and action controls are locked while a request is in flight (preventing a field-stack race). Client-side file-type/size validation before upload.
+- Light/dark mode and a Standard/Government layout, with local browser preference storage.
 
 ## API
 
 - `GET /fields` returns the canonical field set (key, label, control, applicable categories) — the single source of truth the UI loads.
 - `GET /field-requirements` returns required, conditional, and optional fields for a `product_category` and `origin_type` (scoped to the category).
 - `POST /extract` extracts label fields from uploaded artwork (category-aware response schema).
+- `POST /verify` extracts and validates an uploaded label in one Gemini call (used by batch mode to give each row a Pass / Needs-attention verdict).
 - `POST /extract-cola` reads an uploaded COLA application form (TTB Form 5100.31) and returns the application's stated field values plus the product category and origin detected from the form.
 - `POST /verify-reviewed` validates reviewed/corrected fields plus the label-only compliance checks, without making another Gemini call.
 - `GET /health` liveness; `GET /readyz` readiness (verifies the API key is configured, returns the model id; 503 if not ready).
@@ -205,14 +204,14 @@ Upload endpoints accept PDF, PNG, JPEG, and WebP files up to 10 MB each. Upload 
 }
 ```
 
-The browser client wraps `/extract`, `/extract-cola`, and `/verify-reviewed` in an abort-on-timeout so the UI surfaces a clean "request timed out" message instead of hanging.
+The browser client wraps `/extract`, `/verify`, `/extract-cola`, and `/verify-reviewed` in an abort-on-timeout so the UI surfaces a clean "request timed out" message instead of hanging.
 
 ## Security
 
 The API is open by default for the demo but ships the controls to lock it down
 (all configurable via environment variables — see `.env.example`):
 
-- **Rate limiting:** the cost-bearing endpoints (`/extract`, `/extract-cola`, `/verify-reviewed`) are rate-limited per client IP (`RATE_LIMIT_REQUESTS` / `RATE_LIMIT_WINDOW_SECONDS`) to blunt cost-amplification abuse. The limiter is in-memory and single-instance; back it with a shared store (e.g. Redis) for a multi-instance deployment.
+- **Rate limiting:** the cost-bearing endpoints (`/extract`, `/verify`, `/extract-cola`, `/verify-reviewed`) are rate-limited per client IP (`RATE_LIMIT_REQUESTS` / `RATE_LIMIT_WINDOW_SECONDS`) to blunt cost-amplification abuse. The limiter is in-memory and single-instance; back it with a shared store (e.g. Redis) for a multi-instance deployment.
 - **Optional bearer auth:** set `APP_API_TOKEN` to require `Authorization: Bearer <token>` on the cost-bearing endpoints.
 - **Security headers:** every response carries a Content-Security-Policy (`default-src 'self'`, no inline scripts — the theme bootstrap is an external file), `X-Frame-Options: DENY`, `X-Content-Type-Options: nosniff`, and `Referrer-Policy: no-referrer`.
 - **Docs gating:** set `ENABLE_DOCS=false` to disable Swagger/OpenAPI in production.
