@@ -20,11 +20,12 @@ load_dotenv(dotenv_path=BACKEND_DIR / ".env")
 GEMINI_MODEL = os.getenv("GEMINI_MODEL", "gemini-2.5-flash")
 
 # Per-request timeout (milliseconds) so a hung Gemini call fails fast instead of
-# pinning a worker for the whole retry budget. Kept close to the overall
-# wall-clock budget (GEMINI_DEADLINE_SECONDS in extraction.py) since a typical
-# extraction returns in ~2s — well under the ~5s stakeholder bar. Override with
-# GEMINI_TIMEOUT_MS.
-GEMINI_TIMEOUT_MS = int(os.getenv("GEMINI_TIMEOUT_MS", "9000"))
+# pinning a worker for the whole retry budget. MUST be >= 10000: the Gemini API
+# rejects any client deadline under 10s with 400 INVALID_ARGUMENT ("Manually set
+# deadline ... is too short. Minimum allowed deadline is 10s."). A typical
+# extraction returns in ~2s, so 12s is a safety cap on a genuine hang, not the
+# expected latency. Override with GEMINI_TIMEOUT_MS (do not set below 10000).
+GEMINI_TIMEOUT_MS = int(os.getenv("GEMINI_TIMEOUT_MS", "12000"))
 
 
 def _require_api_key() -> str:

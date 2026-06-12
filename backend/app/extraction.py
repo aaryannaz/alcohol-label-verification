@@ -33,10 +33,12 @@ logger = logging.getLogger(__name__)
 # timeout (e.g. a short budget on serverless). Backoff is exponential.
 MAX_ATTEMPTS = int(os.getenv("GEMINI_MAX_ATTEMPTS", "3"))
 RETRY_BACKOFF_SECONDS = float(os.getenv("GEMINI_RETRY_BACKOFF_SECONDS", "0.4"))
-# Overall wall-clock budget across all retries. The stakeholder bar is ~5s per
-# label; a typical call returns in ~2s, so this caps the retry pile-up: once the
-# budget is spent we stop retrying instead of stacking attempts into ~80s.
-GEMINI_DEADLINE_SECONDS = float(os.getenv("GEMINI_DEADLINE_SECONDS", "6.0"))
+# Overall wall-clock budget across all retries. A typical call returns in ~2s, so
+# this caps the retry pile-up: once the budget is spent we stop retrying instead
+# of stacking attempts into ~80s. Kept >= the per-call timeout (12s, the Gemini
+# 10s-minimum-deadline floor plus margin — see clients.py) so a single slow call
+# fits in the budget and only genuinely fast failures are retried.
+GEMINI_DEADLINE_SECONDS = float(os.getenv("GEMINI_DEADLINE_SECONDS", "12.0"))
 
 @lru_cache
 def _generation_config(product_category=None):
