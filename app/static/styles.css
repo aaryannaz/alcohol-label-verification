@@ -1682,7 +1682,8 @@ tr.is-flagged td:first-child {
 
 .drop-hint {
   color: var(--muted);
-  font-size: 16.8px;
+  font-size: 18px;
+  font-weight: 650;
 }
 
 /* "browse" rendered as an inline link inside hint text. */
@@ -1759,7 +1760,9 @@ tr.is-flagged td:first-child {
 .batch-drop-zone {
   display: grid;
   gap: 8px;
+  place-items: center;
   align-content: center;
+  text-align: center;
   flex: 1;
   min-height: 184px;
   border: 2px dashed var(--line);

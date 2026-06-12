@@ -68,9 +68,9 @@ class ApiTests(unittest.TestCase):
         self.assertEqual(response.status_code, 200)
         self.assertIn("text/html", response.headers["content-type"])
         self.assertIn("Instructions", response.text)
-        self.assertIn("Each batch file is treated as one review item.", response.text)
-        self.assertIn("Switch to <strong>Multiple labels</strong> when screening several review items at once.", response.text)
-        self.assertIn("CSV or Excel import is a future enhancement.", response.text)
+        self.assertIn("Each file is checked as its own label.", response.text)
+        self.assertIn("Click <strong>Multiple labels</strong> under <strong>Upload mode</strong>", response.text)
+        self.assertIn("You can't upload a spreadsheet (CSV or Excel) yet", response.text)
         self.assertNotIn(">Swagger<", response.text)
 
     def test_static_app_script_serves(self):

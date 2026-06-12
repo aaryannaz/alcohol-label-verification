@@ -27,45 +27,36 @@
 
       <main class="info-page">
         <section class="panel info-panel" aria-labelledby="workflow-title">
-          <h2 id="workflow-title">Workflow</h2>
+          <h2 id="workflow-title">Step by step</h2>
           <ol class="how-to-list">
-            <li>The product category and origin are detected automatically from the label, and the required fields adjust to match. Use the Category/Origin dropdowns to override the detection.</li>
-            <li>Upload the label artwork — one file, or the front and back as separate files (order doesn't matter). The <strong>Label application fields</strong> auto-fill from the label, and re-fill automatically if you change the product category or origin.</li>
-            <li>Review and correct the Label application fields so they match the approved application.</li>
-            <li>Click <strong>Verify Against Label</strong>. Each field is marked against the label, and the government warning is checked separately.</li>
-            <li>Switch to <strong>Multiple labels</strong> when screening several review items at once.</li>
+            <li>Upload the label — one file, or the front and back as two separate files. Drag the file into the <strong>First file</strong> box, or click the box to pick a file from your computer. If the back of the label is its own file, put it in the <strong>Second file</strong> box.</li>
+            <li>The tool reads the label and fills in the <strong>Label application fields</strong> for you. It also works out the product type (wine, malt beverage, or distilled spirits) and whether the product is imported. If it gets either wrong, pick the right one from the <strong>Category</strong> or <strong>Origin</strong> lists at the top — the tool reads the label again and refills the fields.</li>
+            <li>Read through the filled-in fields and fix anything that doesn't match the approved application.</li>
+            <li>Click <strong>Verify Against Label</strong>. Every field gets its own result, and the government warning is checked separately.</li>
+            <li>Checking a whole stack of labels? Click <strong>Multiple labels</strong> under <strong>Upload mode</strong> on the left side of the page.</li>
           </ol>
         </section>
 
         <section class="panel info-panel" aria-labelledby="upload-title">
-          <h2 id="upload-title">Uploads</h2>
+          <h2 id="upload-title">Files you can upload</h2>
           <ul class="how-to-list">
-            <li>Accepted files: PDF, PNG, JPEG, and WebP.</li>
-            <li>Maximum file size: 10 MB per file.</li>
-            <li>A single PDF or image can contain all label panels for one review item.</li>
-            <li>Drop a label into the upload box, or click it to browse for a file.</li>
+            <li>PDF files and pictures (PNG, JPEG, or WebP).</li>
+            <li>Each file can be up to 10 MB — ordinary label photos and scans are almost always well under this.</li>
+            <li>One file can show every side of the label — for example, a PDF with the front and back on separate pages.</li>
+            <li>Drag a file into the upload box, or click the box to pick a file from your computer.</li>
           </ul>
         </section>
 
         <section class="panel info-panel" aria-labelledby="batch-title">
-          <h2 id="batch-title">Batch</h2>
+          <h2 id="batch-title">Checking many labels at once</h2>
           <ul class="how-to-list">
-            <li>Batch accepts multiple PDF or image files at once and processes them in parallel.</li>
-            <li>Each batch file is treated as one review item.</li>
-            <li>If a label's front and back are separate images, name them alike, ending in <code>_front</code> and <code>_back</code> — e.g. <code>airlie_front.jpg</code> and <code>airlie_back.jpg</code> — and they're paired as one review item. (In single-label mode, put the back image in the second file slot instead.)</li>
-            <li><strong>Category</strong> and <strong>Origin</strong> are detected automatically from each label when you process — one batch can mix wine, malt beverage, and distilled spirits, domestic and imported. Use a row's dropdowns to override the detection.</li>
-            <li>Every file is automatically extracted and verified, so each row lands on a verdict: <strong>Pass</strong> (all required fields present, the government warning compliant, and label checks passed) or <strong>Needs attention</strong>.</li>
-            <li>Open a row in the editor to see the field-by-field results and re-verify after correcting the Label application fields.</li>
-            <li>CSV or Excel import is a future enhancement.</li>
-          </ul>
-        </section>
-
-        <section class="panel info-panel" aria-labelledby="limits-title">
-          <h2 id="limits-title">Notes</h2>
-          <ul class="how-to-list">
-            <li>Government warning text is checked for exact wording, punctuation, and capitalization.</li>
-            <li>Bold type cannot be verified because extraction returns text, not typography metadata.</li>
-            <li>In batch mode the expected and label values both come from the label, so a row's verdict is a completeness and compliance check; open a row and edit the fields to compare against a different approved value.</li>
+            <li>Click <strong>Multiple labels</strong> under <strong>Upload mode</strong>, add as many files as you like, then click <strong>Process all</strong>. The tool checks them all at the same time.</li>
+            <li>Each file is checked as its own label.</li>
+            <li>If the front and back of one label are two separate pictures, give them matching names ending in <code>_front</code> and <code>_back</code> — for example <code>airlie_front.jpg</code> and <code>airlie_back.jpg</code>. The tool then checks them together as one product. (In <strong>Single label</strong> mode, put the back picture in the <strong>Second file</strong> box instead.)</li>
+            <li><strong>Category</strong> and <strong>Origin</strong> are worked out automatically for each label, so you can check wine, malt beverages, and distilled spirits — imported or not — together. If a guess is wrong, fix it with the <strong>Category</strong> and <strong>Origin</strong> lists in that label's row.</li>
+            <li>Each row ends with one of two results: <strong>Pass</strong> or <strong>Needs attention</strong>. Pass means everything required is on the label, the government warning is word-for-word correct, and the other checks passed.</li>
+            <li>Click <strong>Details</strong> on a row to see the result for every field. Inside that panel, click <strong>Edit</strong> to open that label's fields on the main page, fix anything that's wrong, and click <strong>Verify Against Label</strong> again.</li>
+            <li>You can't upload a spreadsheet (CSV or Excel) yet — that may be added later.</li>
           </ul>
         </section>
       </main>
