@@ -79,6 +79,15 @@ Distinctive/Fanciful Name: Honey Huckleberry Pie
 Class/Type/Other Designation: Ale with Honey and Huckleberry Flavor
 For this example, brand_name must be Farm To Table Series #1, not Malt & Hop
 
+A foreign-language or traditional beer STYLE name — Hefeweizen, Hefe, Weissbier, Weiss, Dunkel, Bock, Doppelbock, Kolsch, Marzen, Saison, Witbier — is a style designation exactly like "IPA", "Pilsner", or "Lager". Treat it the same way you treat IPA or Lager: it is class/type information, so leave fanciful_name empty for it. Only if such a style word is the single most prominent name on the label and there is no other brand name present does it become the brand_name.
+Examples:
+- "7220 IMPORTS" (brand) + "HEFEWEIZEN" (style) + "Imported Wheat Beer": brand_name = 7220 Imports, fanciful_name = (empty), class_type = Wheat Beer. (Hefeweizen is treated like IPA — not a fanciful name.)
+- "Hefeweizen" as the only prominent product name with no other brand: brand_name = Hefeweizen, fanciful_name = (empty).
+
+Marketing taglines and quality slogans are NOT a brand_name, fanciful_name, or class/type — ignore them entirely. Examples of such slogans: "Premium Quality", "Hand Crafted", "Craft Brewed", "Store Cold", "Drink Fresh", "Keep Refrigerated".
+Example:
+- "PREMIUM QUALITY" (slogan) + "Hefeweizen" (name): brand_name = Hefeweizen, NOT brand_name = Premium Quality.
+
 For class_type, extract the FULL official Class, Type, or Other Designation exactly as it appears on the label.
 Include ALL leading and embedded modifiers that are part of the official designation. Do not shorten it to the bare beverage category.
 Keep these as part of class_type:
