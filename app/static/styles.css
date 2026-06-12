@@ -486,20 +486,21 @@ h3 {
               0 14px 34px color-mix(in srgb, var(--primary) 20%, transparent);
 }
 
+/* Amber so the guidance stands out against the blue UI. */
 .step-callout {
   display: flex;
   align-items: center;
   gap: 9px;
   margin-bottom: 16px;
   padding: 12px 14px;
-  background: var(--primary-soft);
-  color: var(--text);
-  border-left: 4px solid var(--primary);
+  background: var(--amber-soft);
+  color: var(--amber);
+  border-left: 4px solid var(--amber);
   border-radius: var(--radius);
   font-size: 15px;
-  font-weight: 650;
+  font-weight: 700;
   line-height: 1.35;
-  box-shadow: 0 6px 18px color-mix(in srgb, var(--primary) 16%, transparent);
+  box-shadow: 0 6px 18px color-mix(in srgb, var(--amber) 20%, transparent);
 }
 
 .step-callout .step-num {
@@ -510,8 +511,8 @@ h3 {
   width: 24px;
   height: 24px;
   border-radius: 50%;
-  background: var(--primary);
-  color: #ffffff;
+  background: var(--amber);
+  color: var(--amber-soft);
   font-size: 13px;
   font-weight: 800;
 }
