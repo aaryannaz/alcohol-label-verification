@@ -162,7 +162,7 @@
 
 :root[data-layout="government"] .topbar h1 {
   color: #15324f;
-  font-size: 30px;
+  font-size: 40px;
 }
 
 :root[data-layout="government"] .topbar .theme-select,
@@ -196,7 +196,7 @@
   padding: 25px 16px;
   color: #15324f;
   text-decoration: none;
-  font-size: 18px;
+  font-size: 22px;
   font-weight: 700;
   letter-spacing: 0.04em;
   text-transform: uppercase;
@@ -516,6 +516,24 @@ h3 {
 
 .upload-panel[hidden] {
   display: none;
+}
+
+/* The batch card fills most of the viewport, with the dropzone (flex: 1)
+   soaking up the spare height — so the whole white panel reads as the big
+   drop target, not just the grey zone inside it. */
+.batch-panel {
+  display: flex;
+  flex-direction: column;
+}
+
+.batch-panel[hidden] {
+  display: none;
+}
+
+@media (min-width: 721px) {
+  .batch-panel {
+    min-height: 72vh;
+  }
 }
 
 .results-panel {
@@ -1742,7 +1760,8 @@ tr.is-flagged td:first-child {
   display: grid;
   gap: 8px;
   align-content: center;
-  min-height: 368px;
+  flex: 1;
+  min-height: 184px;
   border: 2px dashed var(--line);
   border-radius: var(--radius);
   padding: 14px;
