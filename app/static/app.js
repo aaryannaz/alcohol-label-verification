@@ -268,6 +268,23 @@ function renderLabelPreview() {
   }
 }
 
+// Progressive step highlight: spotlight the one section the reviewer is on now —
+// set up & upload (no label yet) -> review the fields (label loaded) -> results
+// (verified). Guides the eye start-to-finish without blocking. Called on every
+// state transition (file change, extraction, verify).
+function updateStepHighlight() {
+  const setup = document.querySelector(".setup-panel");
+  const fields = document.querySelector(".fields-panel");
+  const results = document.querySelector(".results-panel");
+  const hasLabel = Boolean(state.files.front || state.files.back);
+  const hasResult = Boolean(state.lastResult);
+  const step = !hasLabel ? "upload" : !hasResult ? "review" : "done";
+  if (setup) setup.classList.toggle("step-active", step === "upload");
+  if (fields) fields.classList.toggle("step-active", step === "review");
+  if (results) results.classList.toggle("step-active", step === "done");
+  if (verifyButton) verifyButton.classList.toggle("is-ready", step === "review");
+}
+
 function setSelectedFile(slot, file) {
   const error = validateClientFile(file);
   if (error) {
@@ -284,6 +301,7 @@ function setSelectedFile(slot, file) {
   renderFileState(slot);
   setStatus(FILE_LABELS[slot] + " selected");
   maybeAutoExtractLabel();
+  updateStepHighlight();
   return true;
 }
 
@@ -293,6 +311,7 @@ function clearSelectedFile(slot) {
   renderFileState(slot);
   clearError();
   setStatus("");
+  updateStepHighlight();
 }
 
 function draggedFiles(event) {
@@ -414,6 +433,7 @@ function renderEmptyResults(message) {
   if (compliance) compliance.innerHTML = "";
   state.lastResult = null;
   if (resultsSummary) resultsSummary.textContent = "";
+  updateStepHighlight();
 }
 
 function formValues(container) {
@@ -484,6 +504,7 @@ function isFlaggedStatus(status) {
 
 function renderResults(response) {
   state.lastResult = response;
+  updateStepHighlight();
   const expected = response.expected || formValues(expectedFields);
   const reviewed = response.reviewed || response.extracted || state.extracted || {};
   const validation = response.validation || {};
@@ -1276,6 +1297,7 @@ setUploadMode("choose");
 renderFileState("front");
 renderFileState("back");
 renderBatchQueue();
+updateStepHighlight();
 
 document.addEventListener("dragover", function(event) {
   if (draggedFiles(event)) event.preventDefault();
