@@ -20,17 +20,17 @@
 :root,
 :root[data-theme="light"] {
   color-scheme: light;
-  --bg: #f7f8f6;
+  --bg: #f1f4fb;
   --surface: #ffffff;
   --control-bg: #ffffff;
-  --subtle-bg: #f9faf8;
+  --subtle-bg: #f1f4fb;
   --text: #202421;
   --muted: #687169;
-  --line: #d9ded7;
+  --line: #d7dde9;
   --green: #18794e;
   --green-soft: #e8f4ee;
-  --primary: #18794e;
-  --primary-soft: #e8f4ee;
+  --primary: #2563eb;
+  --primary-soft: #e8f0fe;
   --red: #b42318;
   --red-soft: #fff0ed;
   --red-line: #ffd0c7;
@@ -56,8 +56,8 @@
   --line: #334038;
   --green: #6fd39a;
   --green-soft: #123322;
-  --primary: #6fd39a;
-  --primary-soft: #123322;
+  --primary: #74a9ff;
+  --primary-soft: #16294a;
   --red: #ff998c;
   --red-soft: #351916;
   --red-line: #74352f;
