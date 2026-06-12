@@ -501,7 +501,6 @@ h3 {
   align-items: center;
   gap: 9px;
   margin-bottom: 16px;
-  max-width: 820px;
   padding: 12px 14px;
   background: var(--amber-soft);
   color: var(--amber);
@@ -951,11 +950,10 @@ body.lightbox-open {
 }
 
 /* One field per row; each row is its own card with the label above the input.
-   Wide like a Google Form so the cards fill the center space. */
+   Fills the panel width so the cards line up with the upload pad and results. */
 #expectedFields.field-grid {
   grid-template-columns: 1fr;
   gap: 12px;
-  max-width: 820px;
 }
 
 #expectedFields .field-row {
@@ -1681,50 +1679,32 @@ tr.is-flagged td:first-child {
 .batch-detail-summary.is-pass { color: var(--green); }
 .batch-detail-summary.is-attention { color: var(--amber); }
 
-.batch-detail-grid {
-  display: grid;
-  grid-template-columns: repeat(auto-fit, minmax(330px, 1fr));
-  gap: 6px 14px;
-}
-
-/* One line per field: name · value · status, name and value both truncate. */
-.batch-detail-field {
-  display: grid;
-  grid-template-columns: minmax(0, 1.3fr) minmax(0, 1fr) auto;
-  gap: 10px;
-  align-items: baseline;
-  padding: 8px 12px;
-  border: 1px solid var(--line);
-  border-radius: var(--radius);
+/* Field table — same look as the single-label results, one line per field. */
+.batch-detail-table {
+  table-layout: fixed;
+  width: 100%;
   background: var(--surface);
+  border-radius: var(--radius);
 }
 
-.batch-detail-field.is-flagged {
-  border-color: color-mix(in srgb, var(--red) 45%, var(--line));
+.batch-detail-table th:nth-child(1), .batch-detail-table td:nth-child(1) { width: 32%; }
+.batch-detail-table th:nth-child(2), .batch-detail-table td:nth-child(2) { width: 18%; }
+.batch-detail-table th:nth-child(3), .batch-detail-table td:nth-child(3) { width: 50%; }
+
+.batch-detail-table td,
+.batch-detail-table th {
+  padding: 8px 10px;
+  white-space: nowrap;
+  overflow: hidden;
+  text-overflow: ellipsis;
+}
+
+.batch-detail-table tr.is-flagged td {
   background: var(--red-soft);
 }
 
-.batch-detail-name {
-  min-width: 0;
-  font-weight: 650;
-  font-size: 15.6px;
-  white-space: nowrap;
-  overflow: hidden;
-  text-overflow: ellipsis;
-}
-
-.batch-detail-field .status-badge {
-  justify-self: end;
-  font-size: 14px;
-}
-
-.batch-detail-value {
-  min-width: 0;
-  color: var(--muted);
-  font-size: 15.6px;
-  white-space: nowrap;
-  overflow: hidden;
-  text-overflow: ellipsis;
+.batch-detail-table tr.is-flagged td:first-child {
+  box-shadow: inset 3px 0 0 var(--red);
 }
 
 .batch-detail-checks {

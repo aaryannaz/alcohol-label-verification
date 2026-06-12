@@ -1107,8 +1107,16 @@ function buildBatchDetail(item) {
     : `No issues found · ${verdict.checked} fields checked`;
   wrap.appendChild(summary);
 
-  const grid = document.createElement("div");
-  grid.className = "batch-detail-grid";
+  // A field table, mirroring the single-label results output (Field / Status /
+  // Label), one line per field.
+  const tableWrap = document.createElement("div");
+  tableWrap.className = "table-wrap";
+  const table = document.createElement("table");
+  table.className = "batch-detail-table";
+  const thead = document.createElement("thead");
+  thead.innerHTML = "<tr><th>Field</th><th>Status</th><th>Label</th></tr>";
+  table.appendChild(thead);
+  const tbody = document.createElement("tbody");
   for (const key of keys) {
     const cfg = FIELD_LOOKUP[key];
     if (!cfg) continue;
@@ -1116,22 +1124,24 @@ function buildBatchDetail(item) {
     const status = raw && typeof raw === "object"
       ? (raw.expected === "PASS" && raw.label === "PASS" ? "PASS" : "FAIL")
       : (raw || "NOT REVIEWED");
-    const card = document.createElement("div");
-    card.className = "batch-detail-field" + (isFlaggedStatus(status) || status === "FAIL" ? " is-flagged" : "");
-    const name = document.createElement("span");
-    name.className = "batch-detail-name";
-    name.textContent = cfg.label;
-    name.title = cfg.label;
-    const value = document.createElement("span");
-    value.className = "batch-detail-value";
-    value.textContent = reviewed[key] || "—";
-    value.title = reviewed[key] || "";
-    card.appendChild(name);
-    card.appendChild(value);
-    card.appendChild(makeBadge(status));
-    grid.appendChild(card);
+    const tr = document.createElement("tr");
+    if (isFlaggedStatus(status) || status === "FAIL") tr.className = "is-flagged";
+    const fieldTd = document.createElement("td");
+    fieldTd.textContent = cfg.label;
+    fieldTd.title = cfg.label;
+    const statusTd = document.createElement("td");
+    statusTd.appendChild(makeBadge(status));
+    const valueTd = document.createElement("td");
+    valueTd.textContent = reviewed[key] || "—";
+    valueTd.title = reviewed[key] || "";
+    tr.appendChild(fieldTd);
+    tr.appendChild(statusTd);
+    tr.appendChild(valueTd);
+    tbody.appendChild(tr);
   }
-  wrap.appendChild(grid);
+  table.appendChild(tbody);
+  tableWrap.appendChild(table);
+  wrap.appendChild(tableWrap);
 
   const checks = v.compliance_checks || [];
   if (checks.length) {
