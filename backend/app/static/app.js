@@ -37,7 +37,11 @@ async function loadFieldConfig() {
   }
 }
 const MAX_UPLOAD_BYTES = 10 * 1024 * 1024;
-const BATCH_CONCURRENCY = 5;      // process batch files in parallel (~10 files in ~10s)
+// Process up to this many batch files at once. Each label extracts in ~2s, so a
+// pool of 10 clears a 20-label batch in ~2 waves (~5s) — well under the "20 in
+// ~15s, not ~100s" bar. Kept at/below the per-IP rate limit (see security.py) so
+// a single batch never throttles itself.
+const BATCH_CONCURRENCY = 10;
 const ACCEPTED_EXTENSIONS = new Set(["pdf", "png", "jpg", "jpeg", "webp"]);
 const ACCEPTED_MIME_TYPES = new Set(["application/pdf", "image/png", "image/jpeg", "image/webp"]);
 const FILE_LABELS = {

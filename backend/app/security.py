@@ -20,7 +20,10 @@ from .errors import AppError
 API_TOKEN = os.getenv("APP_API_TOKEN")
 
 # Per-IP sliding-window rate limit. Set RATE_LIMIT_REQUESTS=0 to disable.
-RATE_LIMIT_REQUESTS = int(os.getenv("RATE_LIMIT_REQUESTS", "30"))
+# Sized so a full batch (each label is one /verify call — up to ~20 per the batch
+# use case) fits in a single window with headroom for the reviewer's follow-up
+# re-verifies, without throttling mid-batch. Override with RATE_LIMIT_REQUESTS.
+RATE_LIMIT_REQUESTS = int(os.getenv("RATE_LIMIT_REQUESTS", "60"))
 RATE_LIMIT_WINDOW_SECONDS = int(os.getenv("RATE_LIMIT_WINDOW_SECONDS", "60"))
 
 # Total request-body ceiling (bytes). Default allows two 10 MB files + overhead.
