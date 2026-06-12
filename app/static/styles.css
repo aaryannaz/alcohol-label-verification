@@ -501,6 +501,29 @@ h3 {
   font-weight: 700;
   line-height: 1.35;
   box-shadow: 0 6px 18px color-mix(in srgb, var(--amber) 20%, transparent);
+  animation: callout-pulse 1.9s ease-in-out infinite;
+}
+
+/* Same gentle expanding-ring pulse as the Verify button, in amber. */
+@keyframes callout-pulse {
+  0% {
+    box-shadow: 0 6px 18px color-mix(in srgb, var(--amber) 20%, transparent),
+                0 0 0 0 color-mix(in srgb, var(--amber) 45%, transparent);
+  }
+  70% {
+    box-shadow: 0 6px 18px color-mix(in srgb, var(--amber) 20%, transparent),
+                0 0 0 11px color-mix(in srgb, var(--amber) 0%, transparent);
+  }
+  100% {
+    box-shadow: 0 6px 18px color-mix(in srgb, var(--amber) 20%, transparent),
+                0 0 0 0 color-mix(in srgb, var(--amber) 0%, transparent);
+  }
+}
+
+@media (prefers-reduced-motion: reduce) {
+  .step-callout {
+    animation: none;
+  }
 }
 
 .step-callout .step-num {
