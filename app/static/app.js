@@ -468,6 +468,11 @@ function createField(prefix, key) {
   control.name = key;
   control.autocomplete = "off";
 
+  // Textareas grow to fit their content (no scrollbar, no drag handle).
+  if (field.type === "textarea") {
+    control.addEventListener("input", function() { autosizeTextarea(control); });
+  }
+
   // The government warning is editable and checked against the statutory text on
   // both sides; it auto-fills from the label extraction.
 
@@ -543,10 +548,20 @@ function formValues(container) {
   return values;
 }
 
+// Grow a textarea to fit its content so the full text shows with no scrollbar.
+function autosizeTextarea(el) {
+  if (!el || el.tagName !== "TEXTAREA") return;
+  el.style.height = "auto";
+  el.style.height = el.scrollHeight + "px";
+}
+
 function setExpectedValues(values) {
   for (const [key, value] of Object.entries(values || {})) {
     const control = expectedFields.querySelector("[name=" + JSON.stringify(key) + "]");
-    if (control) control.value = value || "";
+    if (control) {
+      control.value = value || "";
+      autosizeTextarea(control);
+    }
   }
 }
 
