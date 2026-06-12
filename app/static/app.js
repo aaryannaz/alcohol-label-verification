@@ -57,6 +57,11 @@ const ORIGIN_OPTIONS = [
   { value: "domestic", label: "Domestic" },
   { value: "imported", label: "Imported" },
 ];
+// Batch rows default to "Auto": the server reads the label and detects the
+// category/origin at processing time; the dropdown then shows the detection.
+const AUTO_OPTION = { value: "auto", label: "Auto" };
+const BATCH_CATEGORY_OPTIONS = [AUTO_OPTION].concat(PRODUCT_CATEGORY_OPTIONS);
+const BATCH_ORIGIN_OPTIONS = [AUTO_OPTION].concat(ORIGIN_OPTIONS);
 
 const state = {
   requirements: { required: [], conditional: [], optional: [] },
@@ -1224,10 +1229,10 @@ function renderBatchQueue() {
     }
 
     const categoryCell = document.createElement("td");
-    categoryCell.appendChild(createBatchSelect(item, "productCategory", PRODUCT_CATEGORY_OPTIONS));
+    categoryCell.appendChild(createBatchSelect(item, "productCategory", BATCH_CATEGORY_OPTIONS));
 
     const originCell = document.createElement("td");
-    originCell.appendChild(createBatchSelect(item, "originType", ORIGIN_OPTIONS));
+    originCell.appendChild(createBatchSelect(item, "originType", BATCH_ORIGIN_OPTIONS));
 
     const statusCell = document.createElement("td");
     const badge = document.createElement("span");
@@ -1341,16 +1346,16 @@ function makeBatchItem(frontFile, backFile, productName) {
     file: frontFile,
     backFile: backFile || null,
     productName: productName || frontFile.name,
-    productCategory: radioValue("productCategory"),
-    originType: radioValue("originType"),
+    // "auto": the server detects these from the label when the row is processed;
+    // the dropdown then shows the detected value. A manual pick overrides.
+    productCategory: "auto",
+    originType: "auto",
     status: clientError ? "Error" : "Ready",
     message: clientError || "Ready to process",
     clientError,
     extracted: null,
     verification: null,
     expanded: true,  // show the per-product detail automatically once verified
-    autoCategory: true,  // auto-detect category/origin until the reviewer overrides
-    autoOrigin: true,
   };
   state.batch.nextId += 1;
   return item;
@@ -1412,9 +1417,9 @@ async function processBatchItem(item) {
 
   const formData = new FormData();
   // "auto" tells the server to read the label and infer the category/origin
-  // itself; a manual override sends the chosen value instead.
-  formData.append("product_category", item.autoCategory ? "auto" : item.productCategory);
-  formData.append("origin_type", item.autoOrigin ? "auto" : item.originType);
+  // itself; a manual pick sends the chosen value instead.
+  formData.append("product_category", item.productCategory);
+  formData.append("origin_type", item.originType);
   formData.append("front_image", item.file);
   if (item.backFile) formData.append("back_image", item.backFile);
 
@@ -1426,8 +1431,8 @@ async function processBatchItem(item) {
     item.extracted = body.reviewed || body.extracted || {};
     item.verification = body;
     // Reflect the detected category/origin back into the row's dropdowns.
-    if (item.autoCategory && body.detected_category) item.productCategory = body.detected_category;
-    if (item.autoOrigin && body.detected_origin) item.originType = body.detected_origin;
+    if (item.productCategory === "auto" && body.detected_category) item.productCategory = body.detected_category;
+    if (item.originType === "auto" && body.detected_origin) item.originType = body.detected_origin;
     const { verdict, flagged, checked } = computeBatchVerdict(body);
     item.status = verdict;
     item.message = verdict === "Pass"
@@ -1513,8 +1518,11 @@ async function reviewBatchItem(id) {
   }
 
   clearError();
-  setRadioValue("productCategory", item.productCategory);
-  setRadioValue("originType", item.originType);
+  // The row's dropdown may read "auto"; the verification response carries the
+  // resolved (detected or chosen) category/origin, so prefer that for the radios.
+  const v = item.verification || {};
+  setRadioValue("productCategory", v.product_category || item.productCategory);
+  setRadioValue("originType", v.origin_type || item.originType);
   state.extracted = item.extracted;
   state.expectedValues = item.extracted;
   state.files.front = item.file;
@@ -1728,12 +1736,12 @@ batchBody.addEventListener("change", function(event) {
 
   if (categoryControl) {
     const item = state.batch.items.find((candidate) => candidate.id === Number(categoryControl.dataset.batchCategory));
-    if (item) { item.productCategory = categoryControl.value; item.autoCategory = false; }  // manual override
+    if (item) item.productCategory = categoryControl.value;  // picking "Auto" re-enables detection
   }
 
   if (originControl) {
     const item = state.batch.items.find((candidate) => candidate.id === Number(originControl.dataset.batchOrigin));
-    if (item) { item.originType = originControl.value; item.autoOrigin = false; }
+    if (item) item.originType = originControl.value;
   }
 });
 

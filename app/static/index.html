@@ -40,6 +40,12 @@
       <main class="workspace">
         <section class="panel setup-panel" aria-label="Application">
           <div class="control-grid">
+            <fieldset id="uploadModeGroup" class="choice-group">
+              <legend class="section-label">Labels</legend>
+              <label class="choice"><input type="radio" name="uploadMode" value="single" checked /><span>Single label</span></label>
+              <label class="choice"><input type="radio" name="uploadMode" value="batch" /><span>Multiple labels</span></label>
+            </fieldset>
+
             <fieldset id="categoryGroup" class="choice-group">
               <legend class="section-label">Product category</legend>
               <label class="choice"><input type="radio" name="productCategory" value="malt_beverage" checked /><span>Malt beverage</span></label>
@@ -51,12 +57,6 @@
               <legend class="section-label">Origin</legend>
               <label class="choice"><input type="radio" name="originType" value="domestic" checked /><span>Domestic</span></label>
               <label class="choice"><input type="radio" name="originType" value="imported" /><span>Imported</span></label>
-            </fieldset>
-
-            <fieldset id="uploadModeGroup" class="choice-group">
-              <legend class="section-label">Labels</legend>
-              <label class="choice"><input type="radio" name="uploadMode" value="single" checked /><span>Single label</span></label>
-              <label class="choice"><input type="radio" name="uploadMode" value="batch" /><span>Multiple labels</span></label>
             </fieldset>
           </div>
 
