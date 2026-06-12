@@ -256,6 +256,18 @@ function renderLabelPreview() {
       img.src = url;
       img.alt = FILE_LABELS[slot] + " label artwork";
       img.className = "label-preview-img";
+      img.tabIndex = 0;
+      img.setAttribute("role", "button");
+      img.title = "Click to preview";
+      img.setAttribute("aria-label", "Preview " + FILE_LABELS[slot] + " label (opens a larger view)");
+      const openThis = function() { openLightbox(url, img.alt); };
+      img.addEventListener("click", openThis);
+      img.addEventListener("keydown", function(event) {
+        if (event.key === "Enter" || event.key === " ") {
+          event.preventDefault();
+          openThis();
+        }
+      });
       item.appendChild(img);
     } else {
       const note = document.createElement("span");
@@ -265,6 +277,62 @@ function renderLabelPreview() {
     }
 
     container.appendChild(item);
+  }
+}
+
+// Quick Look–style preview: click a label thumbnail to see it large on a dim
+// backdrop. Close by clicking the backdrop, the close button, or pressing Escape.
+let lightboxLastFocus = null;
+
+function getLightbox() {
+  let el = document.getElementById("lightbox");
+  if (!el) {
+    el = document.createElement("div");
+    el.id = "lightbox";
+    el.className = "lightbox";
+    el.hidden = true;
+    el.setAttribute("role", "dialog");
+    el.setAttribute("aria-modal", "true");
+    el.setAttribute("aria-label", "Label preview");
+    el.innerHTML =
+      '<button type="button" class="lightbox-close" aria-label="Close preview">&times;</button>' +
+      '<img class="lightbox-img" alt="" />';
+    el.addEventListener("click", function(event) {
+      if (event.target === el || event.target.classList.contains("lightbox-close")) {
+        closeLightbox();
+      }
+    });
+    document.body.appendChild(el);
+  }
+  return el;
+}
+
+function openLightbox(src, alt) {
+  const box = getLightbox();
+  const img = box.querySelector(".lightbox-img");
+  img.src = src;
+  img.alt = alt || "";
+  lightboxLastFocus = document.activeElement;
+  box.hidden = false;
+  document.body.classList.add("lightbox-open");
+  box.querySelector(".lightbox-close").focus();
+  document.addEventListener("keydown", onLightboxKey);
+}
+
+function closeLightbox() {
+  const box = document.getElementById("lightbox");
+  if (!box || box.hidden) return;
+  box.hidden = true;
+  document.body.classList.remove("lightbox-open");
+  document.removeEventListener("keydown", onLightboxKey);
+  if (lightboxLastFocus && lightboxLastFocus.focus) lightboxLastFocus.focus();
+  lightboxLastFocus = null;
+}
+
+function onLightboxKey(event) {
+  if (event.key === "Escape") {
+    event.preventDefault();
+    closeLightbox();
   }
 }
 
