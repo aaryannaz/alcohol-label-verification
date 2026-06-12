@@ -85,8 +85,8 @@
   --line: #a9aeb1;
   --green: #008817;
   --green-soft: #ecf3ec;
-  --primary: #005ea2;
-  --primary-soft: #d9e8f6;
+  --primary: #2563eb;
+  --primary-soft: #e8f0fe;
   --red: #b50909;
   --red-soft: #f8eeee;
   --red-line: #e3a8a8;
@@ -136,13 +136,13 @@
 }
 
 :root[data-layout="government"] .topbar {
-  background: #162e51;
+  background: #dbe7f8;
   border-bottom: none;
   padding: 36px 32px;
 }
 
 :root[data-layout="government"] .topbar h1 {
-  color: #ffffff;
+  color: #15324f;
   font-size: 25px;
 }
 
@@ -150,20 +150,7 @@
 :root[data-layout="government"] .topbar .theme-select span,
 :root[data-layout="government"] .topbar .theme-toggle,
 :root[data-layout="government"] .topbar .theme-toggle span {
-  color: #ffffff;
-}
-
-/* Dark-mode switch sits on the navy bar in the government layout. */
-:root[data-layout="government"] .topbar .theme-switch {
-  background: rgba(255, 255, 255, 0.18);
-  border-color: rgba(255, 255, 255, 0.55);
-}
-:root[data-layout="government"] .topbar .theme-switch::after {
-  background: #ffffff;
-}
-:root[data-layout="government"] .topbar .theme-toggle input:checked + .theme-switch {
-  background: rgba(255, 255, 255, 0.4);
-  border-color: #ffffff;
+  color: #15324f;
 }
 
 /* The government layout's blue nav bar already has Home / Instructions, so the
@@ -174,7 +161,7 @@
 
 :root[data-layout="government"] .gov-nav {
   display: block;
-  background: #005ea2;
+  background: #c7d9f1;
 }
 
 :root[data-layout="government"] .gov-nav-inner {
@@ -188,7 +175,7 @@
   display: inline-flex;
   align-items: center;
   padding: 25px 16px;
-  color: #ffffff;
+  color: #15324f;
   text-decoration: none;
   font-size: 15px;
   font-weight: 700;
@@ -199,8 +186,8 @@
 
 :root[data-layout="government"] .gov-nav-link:hover,
 :root[data-layout="government"] .gov-nav-link.active {
-  background: #1a4480;
-  border-bottom-color: #ffffff;
+  background: #b9cef0;
+  border-bottom-color: #2563eb;
 }
 
 * {
