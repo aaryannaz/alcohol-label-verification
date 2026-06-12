@@ -88,7 +88,6 @@ const originType = document.querySelector("#originType");
 const frontImage = document.querySelector("#frontImage");
 const backImage = document.querySelector("#backImage");
 const expectedFields = document.querySelector("#expectedFields");
-const extractButton = document.querySelector("#extractButton");
 const verifyButton = document.querySelector("#verifyButton");
 const labelProgress = document.getElementById("labelProgress");
 const statusText = document.querySelector("#statusText");
@@ -380,7 +379,7 @@ function setBusy(busy) {
   // origin) and the action buttons while a request is in flight, and show a
   // spinner / announce busy state to assistive tech.
   state.inFlight = busy;
-  const controls = [productCategory, originType, extractButton, verifyButton, modeChooseFile, modeDragDrop, modeBatch, themeToggle, layoutSelect];
+  const controls = [productCategory, originType, verifyButton, modeChooseFile, modeDragDrop, modeBatch, themeToggle, layoutSelect];
   for (const control of controls) {
     if (control) control.disabled = busy;
   }
@@ -640,9 +639,9 @@ async function runLabelExtraction() {
 }
 
 function maybeAutoExtractLabel() {
-  // Reading the label IS what fills the form, so do it automatically on upload.
-  // The "Extract from Label" button stays as an explicit re-run (e.g. after
-  // changing category or adding a second label). Skip when no label is uploaded
+  // Reading the label IS what fills the form, so do it automatically — on upload,
+  // and again on a category/origin change (the extraction is category-scoped, so
+  // that caller invalidates extractedKey first). Skip when no label is uploaded
   // yet, while a request is in flight, and when these exact files were already read.
   if (!state.files.front && !state.files.back) return;
   if (state.inFlight) return;
@@ -1363,9 +1362,16 @@ batchBody.addEventListener("click", function(event) {
   if (removeSecondButton) removeBatchSecondImage(Number(removeSecondButton.dataset.removeBatchSecond));
 });
 
-productCategory.addEventListener("change", refreshRequirements);
-originType.addEventListener("change", refreshRequirements);
-extractButton.addEventListener("click", extractFields);
+// A category/origin change rebuilds the field list AND re-extracts from the
+// loaded label, since extraction is scoped to the product category. Invalidating
+// extractedKey forces maybeAutoExtractLabel to re-run (it no-ops with no label).
+async function onCategoryOrOriginChange() {
+  await refreshRequirements();
+  state.extractedKey = null;
+  maybeAutoExtractLabel();
+}
+productCategory.addEventListener("change", onCategoryOrOriginChange);
+originType.addEventListener("change", onCategoryOrOriginChange);
 verifyButton.addEventListener("click", verifyReviewedFields);
 
 loadFieldConfig().then(refreshRequirements).catch(function(error) {

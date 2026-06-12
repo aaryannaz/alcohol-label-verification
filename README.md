@@ -176,7 +176,7 @@ a server log line.
 The minimal UI is served by FastAPI from `app/static/`. It supports:
 
 - Product category and origin toggles.
-- Upload the label artwork; the COLA application fields auto-fill from the label extraction (re-runnable via the Extract from Label button) for the reviewer to correct.
+- Upload the label artwork; the COLA application fields auto-fill from the label extraction (and re-extract automatically if the product category or origin changes) for the reviewer to correct.
 - Upload mode selector for Choose File, Drag & Drop, and Batch; front and back panels can be uploaded as separate files.
 - Batch mode auto-extracts and verifies each file, showing a per-row **Pass / Needs-attention** verdict; a row can pair a separate front and back image into one review item.
 - Dynamic required, conditional, and optional field lists (scoped to the product category), ordered to match the COLA application form.
