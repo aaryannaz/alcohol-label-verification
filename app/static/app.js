@@ -402,6 +402,13 @@ function getStepCallout() {
 }
 
 function updateStepHighlight() {
+  // The step highlight + callout belong to the single-label flow; batch has its
+  // own output, so skip them there.
+  if (radioValue("uploadMode") === "batch") {
+    const existing = document.getElementById("stepCallout");
+    if (existing) existing.remove();
+    return;
+  }
   const setup = document.querySelector(".setup-panel");
   const fields = document.querySelector(".fields-panel");
   const results = document.querySelector(".results-panel");
@@ -1114,13 +1121,14 @@ function buildBatchDetail(item) {
     const name = document.createElement("span");
     name.className = "batch-detail-name";
     name.textContent = cfg.label;
+    name.title = cfg.label;
     const value = document.createElement("span");
     value.className = "batch-detail-value";
     value.textContent = reviewed[key] || "—";
     value.title = reviewed[key] || "";
     card.appendChild(name);
-    card.appendChild(makeBadge(status));
     card.appendChild(value);
+    card.appendChild(makeBadge(status));
     grid.appendChild(card);
   }
   wrap.appendChild(grid);
@@ -1564,8 +1572,17 @@ function setUploadMode(mode) {
   // Two modes: "single" (the drop-or-browse zones) and "batch" (multiple labels).
   // Keep the radio in sync for programmatic calls (init, batch review).
   setRadioValue("uploadMode", mode);
-  singleUploadPanel.hidden = mode === "batch";
-  batchPanel.hidden = mode !== "batch";
+  const batch = mode === "batch";
+  singleUploadPanel.hidden = batch;
+  batchPanel.hidden = !batch;
+  // Batch has its own per-product output, so hide the single-label review
+  // surface (fields + results) in batch mode. Opening a batch item in the
+  // editor switches back to single mode and shows them again.
+  const fieldsPanel = document.querySelector(".fields-panel");
+  const resultsPanel = document.querySelector(".results-panel");
+  if (fieldsPanel) fieldsPanel.hidden = batch;
+  if (resultsPanel) resultsPanel.hidden = batch;
+  updateStepHighlight();
 }
 
 function initDropZone(zone) {

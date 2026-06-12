@@ -1678,16 +1678,17 @@ tr.is-flagged td:first-child {
 
 .batch-detail-grid {
   display: grid;
-  grid-template-columns: repeat(auto-fit, minmax(220px, 1fr));
-  gap: 10px;
+  grid-template-columns: repeat(auto-fit, minmax(330px, 1fr));
+  gap: 6px 14px;
 }
 
+/* One line per field: name · value · status, name and value both truncate. */
 .batch-detail-field {
   display: grid;
-  grid-template-columns: 1fr auto;
-  gap: 3px 10px;
-  align-items: center;
-  padding: 10px 12px;
+  grid-template-columns: minmax(0, 1.3fr) minmax(0, 1fr) auto;
+  gap: 10px;
+  align-items: baseline;
+  padding: 8px 12px;
   border: 1px solid var(--line);
   border-radius: var(--radius);
   background: var(--surface);
@@ -1699,8 +1700,12 @@ tr.is-flagged td:first-child {
 }
 
 .batch-detail-name {
+  min-width: 0;
   font-weight: 650;
   font-size: 15.6px;
+  white-space: nowrap;
+  overflow: hidden;
+  text-overflow: ellipsis;
 }
 
 .batch-detail-field .status-badge {
@@ -1709,7 +1714,6 @@ tr.is-flagged td:first-child {
 }
 
 .batch-detail-value {
-  grid-column: 1 / -1;
   min-width: 0;
   color: var(--muted);
   font-size: 15.6px;
