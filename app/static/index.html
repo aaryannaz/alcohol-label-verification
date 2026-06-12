@@ -40,31 +40,25 @@
       <main class="workspace">
         <section class="panel setup-panel" aria-label="Application">
           <div class="control-grid">
-            <label>
-              <span class="section-label">Product category</span>
-              <select id="productCategory">
-                <option value="malt_beverage">Malt beverage</option>
-                <option value="distilled_spirits">Distilled spirits</option>
-                <option value="wine">Wine</option>
-              </select>
-            </label>
+            <fieldset id="categoryGroup" class="choice-group">
+              <legend class="section-label">Product category</legend>
+              <label class="choice"><input type="radio" name="productCategory" value="malt_beverage" checked /><span>Malt beverage</span></label>
+              <label class="choice"><input type="radio" name="productCategory" value="distilled_spirits" /><span>Distilled spirits</span></label>
+              <label class="choice"><input type="radio" name="productCategory" value="wine" /><span>Wine</span></label>
+            </fieldset>
 
-            <label>
-              <span class="section-label">Origin</span>
-              <select id="originType">
-                <option value="domestic">Domestic</option>
-                <option value="imported">Imported</option>
-              </select>
-            </label>
+            <fieldset id="originGroup" class="choice-group">
+              <legend class="section-label">Origin</legend>
+              <label class="choice"><input type="radio" name="originType" value="domestic" checked /><span>Domestic</span></label>
+              <label class="choice"><input type="radio" name="originType" value="imported" /><span>Imported</span></label>
+            </fieldset>
 
-            <div class="upload-mode-toggle">
-              <span class="section-label">Upload mode</span>
-              <div class="upload-mode-buttons">
-                <button type="button" id="modeChooseFile" class="mode-btn active">Choose File</button>
-                <button type="button" id="modeDragDrop" class="mode-btn">Drag &amp; Drop</button>
-                <button type="button" id="modeBatch" class="mode-btn">Batch</button>
-              </div>
-            </div>
+            <fieldset id="uploadModeGroup" class="choice-group">
+              <legend class="section-label">Upload mode</legend>
+              <label class="choice"><input type="radio" name="uploadMode" value="choose" checked /><span>Choose File</span></label>
+              <label class="choice"><input type="radio" name="uploadMode" value="drop" /><span>Drag &amp; Drop</span></label>
+              <label class="choice"><input type="radio" name="uploadMode" value="batch" /><span>Batch</span></label>
+            </fieldset>
 
             <div id="chooseFileInputs" class="upload-pane">
               <div class="file-control">

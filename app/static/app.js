@@ -83,8 +83,21 @@ const THEMES = ["light", "dark"];
 const LAYOUTS = ["standard", "government"];
 const themeToggle = document.querySelector("#themeToggle");
 const layoutSelect = document.querySelector("#layoutSelect");
-const productCategory = document.querySelector("#productCategory");
-const originType = document.querySelector("#originType");
+const categoryGroup = document.getElementById("categoryGroup");
+const originGroup = document.getElementById("originGroup");
+const uploadModeGroup = document.getElementById("uploadModeGroup");
+
+// Product category, origin, and upload mode are radio groups (visible options,
+// friendlier than dropdowns). Read/write the selected value by radio name.
+function radioValue(name) {
+  const el = document.querySelector('input[name="' + name + '"]:checked');
+  return el ? el.value : "";
+}
+function setRadioValue(name, val) {
+  const el = document.querySelector('input[name="' + name + '"][value="' + val + '"]');
+  if (el) el.checked = true;
+}
+
 const frontImage = document.querySelector("#frontImage");
 const backImage = document.querySelector("#backImage");
 const expectedFields = document.querySelector("#expectedFields");
@@ -95,9 +108,6 @@ const errorBox = document.querySelector("#errorBox");
 const resultsBody = document.querySelector("#resultsBody");
 const resultsSummary = document.getElementById("resultsSummary");
 const busySpinner = document.getElementById("busySpinner");
-const modeChooseFile = document.getElementById("modeChooseFile");
-const modeDragDrop = document.getElementById("modeDragDrop");
-const modeBatch = document.getElementById("modeBatch");
 const chooseFileInputs = document.getElementById("chooseFileInputs");
 const dropZoneInputs = document.getElementById("dropZoneInputs");
 const batchPanel = document.getElementById("batchPanel");
@@ -379,7 +389,7 @@ function setBusy(busy) {
   // origin) and the action buttons while a request is in flight, and show a
   // spinner / announce busy state to assistive tech.
   state.inFlight = busy;
-  const controls = [productCategory, originType, verifyButton, modeChooseFile, modeDragDrop, modeBatch, themeToggle, layoutSelect];
+  const controls = [categoryGroup, originGroup, uploadModeGroup, verifyButton, themeToggle, layoutSelect];
   for (const control of controls) {
     if (control) control.disabled = busy;
   }
@@ -604,8 +614,8 @@ async function refreshRequirements() {
   clearError();
   setStatus("Loading requirements");
   const params = new URLSearchParams({
-    product_category: productCategory.value,
-    origin_type: originType.value,
+    product_category: radioValue("productCategory"),
+    origin_type: radioValue("originType"),
   });
   const response = await fetch("/field-requirements?" + params.toString());
   const body = await parseApiResponse(response);
@@ -628,8 +638,8 @@ async function runLabelExtraction() {
   // primary image — so it doesn't matter which slot the reviewer used.
   const files = [state.files.front, state.files.back].filter(Boolean);
   const formData = new FormData();
-  formData.append("product_category", productCategory.value);
-  formData.append("origin_type", originType.value);
+  formData.append("product_category", radioValue("productCategory"));
+  formData.append("origin_type", radioValue("originType"));
   formData.append("front_image", files[0]);
   if (files[1]) formData.append("back_image", files[1]);
   const response = await fetchWithTimeout("/extract", { method: "POST", body: formData });
@@ -695,8 +705,8 @@ async function verifyReviewedFields() {
       method: "POST",
       headers: { "Content-Type": "application/json" },
       body: JSON.stringify({
-        product_category: productCategory.value,
-        origin_type: originType.value,
+        product_category: radioValue("productCategory"),
+        origin_type: radioValue("originType"),
         expected: formValues(expectedFields),
         reviewed: state.extracted,
       }),
@@ -939,8 +949,8 @@ function addBatchFiles(files) {
     state.batch.items.push({
       id: state.batch.nextId,
       file,
-      productCategory: productCategory.value,
-      originType: originType.value,
+      productCategory: radioValue("productCategory"),
+      originType: radioValue("originType"),
       status: clientError ? "Error" : "Ready",
       message: clientError || "Ready to process",
       clientError,
@@ -1087,8 +1097,8 @@ async function reviewBatchItem(id) {
   }
 
   clearError();
-  productCategory.value = item.productCategory;
-  originType.value = item.originType;
+  setRadioValue("productCategory", item.productCategory);
+  setRadioValue("originType", item.originType);
   state.extracted = item.extracted;
   state.expectedValues = item.extracted;
   state.files.front = item.file;
@@ -1194,37 +1204,12 @@ function initBatchDropZone(zone) {
 }
 
 function setUploadMode(mode) {
-  if (mode === "choose") {
-    chooseFileInputs.hidden = false;
-    dropZoneInputs.hidden = true;
-    batchPanel.hidden = true;
-    modeChooseFile.classList.add("active");
-    modeDragDrop.classList.remove("active");
-    modeBatch.classList.remove("active");
-    modeChooseFile.setAttribute("aria-pressed", "true");
-    modeDragDrop.setAttribute("aria-pressed", "false");
-    modeBatch.setAttribute("aria-pressed", "false");
-  } else if (mode === "batch") {
-    chooseFileInputs.hidden = true;
-    dropZoneInputs.hidden = true;
-    batchPanel.hidden = false;
-    modeBatch.classList.add("active");
-    modeChooseFile.classList.remove("active");
-    modeDragDrop.classList.remove("active");
-    modeBatch.setAttribute("aria-pressed", "true");
-    modeChooseFile.setAttribute("aria-pressed", "false");
-    modeDragDrop.setAttribute("aria-pressed", "false");
-  } else {
-    chooseFileInputs.hidden = true;
-    dropZoneInputs.hidden = false;
-    batchPanel.hidden = true;
-    modeDragDrop.classList.add("active");
-    modeChooseFile.classList.remove("active");
-    modeBatch.classList.remove("active");
-    modeDragDrop.setAttribute("aria-pressed", "true");
-    modeChooseFile.setAttribute("aria-pressed", "false");
-    modeBatch.setAttribute("aria-pressed", "false");
-  }
+  // Keep the radio in sync for programmatic calls (init, batch review), then
+  // show the matching upload pane. The radio's checked state is the visual cue.
+  setRadioValue("uploadMode", mode);
+  chooseFileInputs.hidden = mode !== "choose";
+  dropZoneInputs.hidden = mode !== "drop";
+  batchPanel.hidden = mode !== "batch";
 }
 
 function initDropZone(zone) {
@@ -1318,9 +1303,7 @@ if (layoutSelect) {
   });
 }
 
-modeChooseFile.addEventListener("click", function() { setUploadMode("choose"); });
-modeDragDrop.addEventListener("click", function() { setUploadMode("drop"); });
-modeBatch.addEventListener("click", function() { setUploadMode("batch"); });
+uploadModeGroup.addEventListener("change", function() { setUploadMode(radioValue("uploadMode")); });
 
 batchFiles.addEventListener("change", function() {
   addBatchFiles(batchFiles.files);
@@ -1370,8 +1353,8 @@ async function onCategoryOrOriginChange() {
   state.extractedKey = null;
   maybeAutoExtractLabel();
 }
-productCategory.addEventListener("change", onCategoryOrOriginChange);
-originType.addEventListener("change", onCategoryOrOriginChange);
+categoryGroup.addEventListener("change", onCategoryOrOriginChange);
+originGroup.addEventListener("change", onCategoryOrOriginChange);
 verifyButton.addEventListener("click", verifyReviewedFields);
 
 loadFieldConfig().then(refreshRequirements).catch(function(error) {

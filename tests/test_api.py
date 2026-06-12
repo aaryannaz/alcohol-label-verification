@@ -48,7 +48,9 @@ class ApiTests(unittest.TestCase):
         self.assertIn("layoutSelect", response.text)
         self.assertIn("data-file-slot=\"front\"", response.text)
         self.assertIn("data-drop-slot=\"front\"", response.text)
-        self.assertIn("modeBatch", response.text)
+        # Category/origin/upload-mode are radio groups (friendlier than dropdowns).
+        self.assertIn("name=\"productCategory\"", response.text)
+        self.assertIn("name=\"uploadMode\"", response.text)
         self.assertIn("id=\"batchPanel\"", response.text)
         self.assertIn("batchDropZone", response.text)
         self.assertIn("processBatchButton", response.text)
@@ -74,7 +76,7 @@ class ApiTests(unittest.TestCase):
         self.assertEqual(response.status_code, 200)
         self.assertIn("javascript", response.headers["content-type"])
         self.assertIn("field-requirements", response.text)
-        self.assertIn("setUploadMode(\"batch\")", response.text)
+        self.assertIn("radioValue(\"uploadMode\")", response.text)
         self.assertIn("Use Batch for multiple files", response.text)
         self.assertIn("processBatchQueue", response.text)
 
