@@ -594,6 +594,14 @@ h3 {
   gap: 14px;
 }
 
+/* Pin the single column to the container width. Without this, the implicit
+   grid track sizes to the widest item's min-content (e.g. a long, unbroken
+   filename in a drop zone), which stretches every sidebar box — including the
+   category/origin/upload rectangles — past the panel's padding to its border. */
+.control-grid {
+  grid-template-columns: minmax(0, 1fr);
+}
+
 label {
   display: grid;
   gap: 7px;
