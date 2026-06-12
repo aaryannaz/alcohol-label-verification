@@ -107,7 +107,7 @@ app/
 evals/               Extraction-accuracy eval harness (render, score, cases)
 tests/               Unit + API tests (test_validation, test_classify, test_api, test_platform)
 scripts/             gemini_smoke_test.py (Gemini connectivity check)
-docs/                Submission documents (APPROACH.md, README.pdf, Design-Document.pdf)
+docs/                Submission documents (Design-Document.md + .pdf, README.pdf)
 reference/           Project brief + TTB labeling checklists (source of the compliance rules)
 tools/               make_pdfs.py (regenerates the docs/ PDFs)
 archive/             Historical eval run logs and candidate prompts
