@@ -23,18 +23,15 @@ application, and flag anything that doesn't match — fast enough to actually us
    wine appellation triggers, etc.). Because it's pure, it's deterministic,
    auditable, and the most heavily tested part of the system.
 
-**Two-document comparison (COLA vs. label).** The reviewer uploads the approved
-COLA application (TTB Form 5100.31) and the label artwork. Gemini reads the
-application's stated values straight off the COLA form to fill a single set of
-editable fields (and auto-sets product category and origin from the form's own
-type/source boxes); it separately reads the label artwork as the values being
-checked. Verify then compares COLA-says vs. label-shows — what a TTB reviewer
-actually does — **without another AI call**, since validation is pure.
-
-If no COLA is uploaded, the tool falls back to pre-filling those same fields from
-the label extraction itself; the reviewer corrects them to the COLA values and
-Verify compares against the original label snapshot. Either way the input stays
-one clean column and the field-by-field comparison shows in the results.
+**One clean flow.** The reviewer uploads the label artwork; Gemini reads it and
+pre-fills a single editable column of **COLA application fields**, turning
+transcription into confirmation. The reviewer corrects any field so it reflects
+the approved COLA application, then Verify compares application-says vs.
+label-shows field-by-field — **without another AI call**, since validation is
+pure. Re-verifying after an edit is instant. (Auto-reading the COLA application
+form itself to pre-fill those expected values is a documented future improvement
+— see below — left out because the brief calls for a standalone proof-of-concept,
+not a COLA-system integration.)
 
 **Category-aware extraction.** The response schema is scoped to the fields that
 apply to the selected product category (malt beverage / wine / distilled
@@ -66,9 +63,9 @@ app — one deployable unit, appropriate for a prototype on a short timeline.
 
 ## Key decisions & trade-offs
 
-- **Decoupled extraction and validation** — the COLA and the label are each read
-  by their own Gemini call, but the comparison itself is a separate, pure step.
-  Re-verifying after the reviewer edits a field costs no AI call.
+- **Decoupled extraction and validation** — Gemini reads the label, but the
+  comparison itself is a separate, pure step. Re-verifying after the reviewer
+  edits a field costs no AI call.
 - **No AI in the verdict** — the pass/fail comparison is pure Python, so results
   are deterministic and explainable, not a black box.
 - **Single source of truth for the field set** (`fields.py`): adding or renaming
@@ -82,13 +79,10 @@ app — one deployable unit, appropriate for a prototype on a short timeline.
 
 - Label artwork is provided as an image (PNG/JPEG/WebP) or PDF, ≤ 10 MB, and a
   single uploaded file may contain all panels for one review item.
-- The COLA can be uploaded as the TTB COLA application form (Form 5100.31, e.g.
-  exported from the COLA public registry); the expected values are read from the
-  form's typed boxes. The form carries the application metadata (brand, fanciful,
-  class/type, name/address, grape varietal, appellation, net contents) but not
-  the full label text, so fields it doesn't state (e.g. the government warning,
-  ABV) are left for the reviewer or compared as missing. When no COLA is
-  uploaded, the fields are pre-filled from the label for the reviewer to correct.
+- The reviewer has the approved COLA application on hand; the expected fields are
+  pre-filled from the label extraction and the reviewer corrects them to the
+  application's values. (Auto-reading the COLA form to fill those fields is a
+  future improvement — see below.)
 - The government warning must match the exact statutory wording; the
   "GOVERNMENT WARNING" heading must be capitalized, but the body's letter case is
   not regulated (all-caps is compliant). Bold, type size, and placement are
@@ -107,8 +101,15 @@ app — one deployable unit, appropriate for a prototype on a short timeline.
 
 ## Known limitations / future work
 
-- The COLA reader targets the TTB Form 5100.31 layout; other application formats
-  (a brand's own spec sheet, a scanned legacy form) aren't tuned for yet.
+- **COLA two-document comparison.** Auto-read the approved COLA application form
+  (TTB Form 5100.31, including COLA-public-registry exports) so Gemini fills the
+  expected fields from the form's typed boxes — a true label-vs-application
+  check, instead of the reviewer entering the application values by hand. Left
+  out deliberately: the brief frames this as a standalone proof-of-concept, not a
+  COLA-system integration. (The form doesn't carry the full label text — e.g. the
+  government warning — so those fields would still come from the label.)
+- **Image robustness** — handle labels shot at an angle, with glare, or in poor
+  lighting (a reviewer pain point in the interviews) rather than assuming a clean image.
 - Typography/placement rules (bold, minimum type size, distilled-spirits
   "same field of vision," "separate and apart") aren't machine-verifiable from
   text — documented rather than enforced.
