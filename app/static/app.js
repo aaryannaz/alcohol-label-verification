@@ -1495,6 +1495,14 @@ function setUploadMode(mode) {
 function initDropZone(zone) {
   const slot = zone.dataset.dropSlot;
 
+  // Click anywhere in the zone (except the Remove button) to browse for a file —
+  // so the same control does "drop here or browse".
+  zone.addEventListener("click", function(event) {
+    if (event.target.closest(".remove-file-button")) return;
+    const input = slot === "back" ? backImage : frontImage;
+    if (input) input.click();
+  });
+
   zone.addEventListener("dragenter", function(event) {
     if (!draggedFiles(event)) return;
     event.preventDefault();

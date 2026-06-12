@@ -1485,6 +1485,7 @@ tr.is-flagged td:first-child {
   gap: 8px;
   min-width: 0;
   min-height: 104px;
+  cursor: pointer;
   border: 2px dashed var(--line);
   border-radius: var(--radius);
   padding: 12px;
