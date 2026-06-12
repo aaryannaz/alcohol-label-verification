@@ -387,10 +387,9 @@ h3 {
   grid-template-columns: minmax(260px, 320px) minmax(0, 1fr);
   gap: 16px;
   padding: 16px;
-  /* Centered and capped so it doesn't spread across an ultrawide screen: the
-     category/origin/upload controls stay in a left column, and the narrower main
-     column makes the fields flow fewer-across (taller) than full width. */
-  max-width: 1280px;
+  /* Centered, near full width: 96% of the viewport, capped so an ultrawide
+     screen still gets margins instead of a sprawl. */
+  max-width: min(96vw, 1700px);
   margin: 0 auto;
   align-items: start;
 }
