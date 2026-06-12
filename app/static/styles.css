@@ -138,12 +138,12 @@
 :root[data-layout="government"] .topbar {
   background: #162e51;
   border-bottom: none;
-  padding: 28px 32px;
+  padding: 36px 32px;
 }
 
 :root[data-layout="government"] .topbar h1 {
   color: #ffffff;
-  font-size: 22px;
+  font-size: 25px;
 }
 
 :root[data-layout="government"] .topbar .theme-select,
@@ -187,10 +187,10 @@
 :root[data-layout="government"] .gov-nav-link {
   display: inline-flex;
   align-items: center;
-  padding: 20px 16px;
+  padding: 25px 16px;
   color: #ffffff;
   text-decoration: none;
-  font-size: 13px;
+  font-size: 15px;
   font-weight: 700;
   letter-spacing: 0.04em;
   text-transform: uppercase;
@@ -232,7 +232,7 @@ textarea {
   align-items: center;
   justify-content: space-between;
   gap: 20px;
-  padding: 32px 32px;
+  padding: 40px 32px;
   border-bottom: 1px solid var(--line);
   background: var(--surface);
 }
@@ -248,7 +248,7 @@ textarea {
 .eyebrow {
   margin: 0 0 4px;
   color: var(--muted);
-  font-size: 12px;
+  font-size: 14px;
   font-weight: 700;
   text-transform: uppercase;
 }
@@ -268,19 +268,19 @@ h3 {
 
 h1 {
   margin-bottom: 0;
-  font-size: 28px;
+  font-size: 32px;
   line-height: 1.15;
 }
 
 h2 {
   margin-bottom: 0;
-  font-size: 18px;
+  font-size: 21px;
   line-height: 1.2;
 }
 
 h3 {
   margin-bottom: 14px;
-  font-size: 15px;
+  font-size: 17px;
 }
 
 .docs-link {
@@ -301,7 +301,7 @@ h3 {
   align-items: center;
   gap: 8px;
   color: var(--text);
-  font-size: 13px;
+  font-size: 15px;
   font-weight: 750;
   white-space: nowrap;
 }
@@ -321,7 +321,7 @@ h3 {
   min-height: 40px;
   color: var(--text);
   cursor: pointer;
-  font-size: 13px;
+  font-size: 15px;
   font-weight: 750;
   user-select: none;
 }
@@ -435,7 +435,7 @@ h3 {
   border-radius: var(--radius);
   background: var(--surface);
   color: var(--text);
-  font-size: 14px;
+  font-size: 16px;
   font-weight: 400;
   cursor: pointer;
 }
@@ -522,7 +522,7 @@ label {
   display: grid;
   gap: 7px;
   color: var(--muted);
-  font-size: 13px;
+  font-size: 15px;
   font-weight: 650;
 }
 
@@ -594,7 +594,7 @@ textarea[name="importer_name_address"] {
      other fonts (e.g. installed Inter) render the "Choose File | No file chosen"
      string wider and overflow narrow columns. */
   font-family: "Public Sans", system-ui, -apple-system, "Segoe UI", Roboto, Helvetica, Arial, sans-serif;
-  font-size: 12.5px;
+  font-size: 14px;
 }
 
 .file-native::-webkit-file-upload-button {
@@ -633,7 +633,7 @@ textarea[name="importer_name_address"] {
 
 .label-preview-label {
   color: var(--muted);
-  font-size: 12px;
+  font-size: 14px;
   font-weight: 650;
 }
 
@@ -648,7 +648,7 @@ textarea[name="importer_name_address"] {
 
 .label-preview-note {
   color: var(--muted);
-  font-size: 12px;
+  font-size: 14px;
 }
 
 .field-columns {
@@ -743,7 +743,7 @@ textarea[name="importer_name_address"] {
 }
 
 #expectedFields .field-name {
-  font-size: 14px;
+  font-size: 16px;
   font-weight: 600;
 }
 
@@ -793,7 +793,7 @@ button:disabled {
 .status-text {
   margin: 0;
   color: var(--muted);
-  font-size: 13px;
+  font-size: 15px;
   font-weight: 700;
 }
 
@@ -831,7 +831,7 @@ button:disabled {
 .results-summary {
   margin: 0;
   color: var(--muted);
-  font-size: 13px;
+  font-size: 15px;
   font-weight: 650;
 }
 
@@ -842,7 +842,7 @@ button:disabled {
   padding: 12px;
   color: var(--red);
   background: var(--red-soft);
-  font-size: 13px;
+  font-size: 15px;
   font-weight: 650;
 }
 
@@ -864,12 +864,12 @@ td {
   padding: 11px 10px;
   text-align: left;
   vertical-align: top;
-  font-size: 13px;
+  font-size: 15px;
 }
 
 th {
   color: var(--muted);
-  font-size: 12px;
+  font-size: 14px;
   text-transform: uppercase;
 }
 
@@ -884,7 +884,7 @@ th {
   min-height: 26px;
   padding: 0 8px;
   border-radius: 999px;
-  font-size: 12px;
+  font-size: 14px;
   font-weight: 800;
 }
 
@@ -950,7 +950,7 @@ tr.is-flagged td:first-child {
   display: flex;
   align-items: baseline;
   gap: 8px;
-  font-size: 13px;
+  font-size: 15px;
   line-height: 1.45;
   color: var(--text);
 }
@@ -1007,7 +1007,7 @@ tr.is-flagged td:first-child {
    content. */
 .section-label {
   color: var(--text);
-  font-size: 16px;
+  font-size: 18px;
   font-weight: 700;
 }
 
@@ -1028,7 +1028,7 @@ tr.is-flagged td:first-child {
   padding: 0 8px;
   background: var(--subtle-bg);
   color: var(--muted);
-  font-size: 13px;
+  font-size: 15px;
   font-weight: 400;
   cursor: pointer;
   transition: background 140ms ease, color 140ms ease;
@@ -1087,7 +1087,7 @@ tr.is-flagged td:first-child {
 
 .upload-progress-text {
   color: var(--muted);
-  font-size: 12px;
+  font-size: 14px;
   font-weight: 650;
 }
 
@@ -1108,7 +1108,7 @@ tr.is-flagged td:first-child {
   background: var(--subtle-bg);
   color: var(--text);
   cursor: pointer;
-  font-size: 13px;
+  font-size: 15px;
   font-weight: 750;
 }
 
@@ -1133,7 +1133,7 @@ tr.is-flagged td:first-child {
 .file-name {
   min-width: 0;
   color: var(--muted);
-  font-size: 12px;
+  font-size: 14px;
   font-weight: 650;
 }
 
@@ -1159,7 +1159,7 @@ tr.is-flagged td:first-child {
   padding: 0 9px;
   background: var(--surface);
   color: var(--muted);
-  font-size: 12px;
+  font-size: 14px;
   font-weight: 750;
 }
 
@@ -1196,13 +1196,13 @@ tr.is-flagged td:first-child {
 
 .drop-label {
   color: var(--muted);
-  font-size: 13px;
+  font-size: 15px;
   font-weight: 650;
 }
 
 .drop-hint {
   color: var(--muted);
-  font-size: 12px;
+  font-size: 14px;
 }
 
 .drop-actions {
@@ -1223,7 +1223,7 @@ tr.is-flagged td:first-child {
 .batch-note {
   margin: 7px 0 0;
   color: var(--muted);
-  font-size: 13px;
+  font-size: 15px;
   font-weight: 650;
 }
 
@@ -1274,7 +1274,7 @@ tr.is-flagged td:first-child {
   display: block;
   margin-top: 4px;
   color: var(--muted);
-  font-size: 12px;
+  font-size: 14px;
   font-weight: 650;
 }
 
@@ -1294,7 +1294,7 @@ tr.is-flagged td:first-child {
   max-width: 280px;
   overflow: hidden;
   color: var(--muted);
-  font-size: 12px;
+  font-size: 14px;
   font-weight: 650;
   text-overflow: ellipsis;
   white-space: nowrap;
@@ -1311,7 +1311,7 @@ tr.is-flagged td:first-child {
   padding: 0 9px;
   background: var(--surface);
   color: var(--text);
-  font-size: 12px;
+  font-size: 14px;
   font-weight: 750;
   cursor: pointer;
 }
@@ -1344,7 +1344,7 @@ tr.is-flagged td:first-child {
   padding: 0 10px;
   background: var(--surface);
   color: var(--text);
-  font-size: 12px;
+  font-size: 14px;
   font-weight: 750;
 }
 
