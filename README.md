@@ -77,7 +77,9 @@ run `venv/bin/python -m evals.run_eval`. Extraction is **category-aware**:
 when the product category is known, the response schema is scoped to the
 fields applicable to it, which keeps the model focused and avoids the accuracy
 loss of asking for every field at once; in auto mode the label is read with
-the all-fields schema and the category is inferred from the result.
+the all-fields schema and the category is inferred from the result. Current
+baseline: 100% (418/418 fields across 32 cases, classification and
+spurious-field checks included), p95 latency ≈ 3.2s — under the 5s bar.
 
 ## Project Layout
 
@@ -87,7 +89,7 @@ pyproject.toml       Packaging metadata + ruff (lint) config
 vercel.json          Vercel build / routing config
 .python-version      Python version (3.12)
 .env.example         Copy to .env and set GEMINI_API_KEY
-.github/workflows/   CI: ruff + tests on every push / PR
+.github/workflows/   CI: ruff + tests (pushes to main, all PRs)
 app/
   main.py            FastAPI app: routes, exception handlers, middleware
   fields.py          Canonical regulated-field list (single source of truth)
@@ -95,6 +97,7 @@ app/
   clients.py         Gemini client + model / timeout config
   extraction.py      Image -> JSON field extraction (Gemini, category-aware)
   prompts.py         The extraction prompt (most domain rules live here)
+  classify.py        Deterministic category/origin detection from extracted fields
   validation.py      Rule-based field comparison + TTB compliance logic
   uploads.py         Upload validation (extension / content-type / signature)
   security.py        Rate limiting, optional auth, security headers, body cap
@@ -102,7 +105,7 @@ app/
   errors.py          AppError + one JSON error envelope for all failures
   static/            Browser UI (vanilla HTML/CSS/JS) served by FastAPI
 evals/               Extraction-accuracy eval harness (render, score, cases)
-tests/               Unit + API tests (test_validation.py, test_api.py)
+tests/               Unit + API tests (test_validation, test_classify, test_api, test_platform)
 scripts/             gemini_smoke_test.py (Gemini connectivity check)
 ```
 
@@ -158,10 +161,11 @@ Lint with [ruff](https://docs.astral.sh/ruff/) (the `dev` extra in `pyproject.to
 
 ```bash
 venv/bin/python -m pip install -e ".[dev]"   # or: pip install ruff
-ruff check app tests scripts evals
+venv/bin/ruff check app tests scripts evals
 ```
 
-`.github/workflows/ci.yml` runs ruff and the test suite on every push/PR. The
+`.github/workflows/ci.yml` runs ruff and the test suite on pushes to main and
+on every pull request. The
 repository-root `requirements.txt` is what Vercel installs; keep `pyproject.toml`
 aligned with it.
 

@@ -39,20 +39,24 @@ not a COLA-system integration.)
 the product category or origin by hand: in auto mode the label is read with the
 all-fields schema and both are inferred from the extracted text
 (`app/classify.py` — deterministic and rule-based, no extra model call). When
-the category is known (an override, or an eval case), the response schema is
-scoped to the fields that apply to it (malt beverage / wine / distilled
-spirits), which both improves accuracy and cuts latency versus asking for every
-field at once.
+the category is known (a reviewer override, or an explicit category passed to
+the API), the response schema is scoped to the fields that apply to it (malt
+beverage / wine / distilled spirits), keeping the model focused on a smaller
+schema.
 
 **Quality is measured, not assumed.** An eval harness renders ground-truth label
-cases, runs them through the production extraction path, and scores each field —
-currently ~99.5% accuracy. Prompt and model changes are gated on it.
+cases, runs them through the production extraction path (the same auto-detect
+flow the app ships), and scores each field — currently 100% (418/418 fields
+across 32 cases), with the category/origin classification scored and spurious
+extractions flagged. Prompt and model changes are gated on it.
 
 **Performance.** Extraction runs at ~2s by using `gemini-2.5-flash` with its
 "thinking" phase disabled — reading a label is perception, not reasoning, so
 thinking only added latency. Batch mode processes files **in parallel** (a small
-worker pool), so a realistic batch (around 10 files) finishes within the ~10s
-budget instead of ~20s sequentially. Each batch row gets an automatic
+worker pool), so a batch finishes in a fraction of the sequential time; the
+brief's peak-season scenario — importers dumping 200–300 applications at once —
+is what the per-IP rate limit is sized for, with the client pacing itself on
+429 `Retry-After` signals. Each batch row gets an automatic
 **Pass / Needs-attention** verdict from a single extract-and-validate call
 (`POST /verify`), and separate front/back photos named alike with
 `_front`/`_back` suffixes pair into one review item.
@@ -100,11 +104,13 @@ app — one deployable unit, appropriate for a prototype on a short timeline.
   sulfites) are mandatory only *if the additive is used* — a formulation fact on
   the COLA, not the label image — so the tool surfaces whether the statement
   appears and the reviewer confirms applicability.
-- Standard-of-fill checks are advisory: the approved-size tables change by
-  regulation, so a non-standard size is flagged for confirmation, not failed.
-- A realistic batch is around 10 files (15 would be unusual); files are
-  processed in parallel to land near the ~10-second target. There is no hard cap
-  — a larger batch simply takes proportionally longer.
+- Standard-of-fill tables change by regulation, so a non-standard size fails
+  the check with wording that directs the reviewer to confirm the size against
+  the current CFR tables rather than treating the result as final.
+- Batches scale toward the brief's 200–300-file peak-season dumps: files are
+  processed in parallel, the client paces itself when rate-limited (honoring
+  `Retry-After`), and there is no hard cap — a larger batch simply takes
+  proportionally longer.
 - Rate limiting is in-memory and single-instance; a multi-instance production
   deployment would back it with a shared store (e.g. Redis).
 
