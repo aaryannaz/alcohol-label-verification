@@ -18,7 +18,7 @@ from .errors import (
     unhandled_exception_handler,
     validation_error_handler,
 )
-from .extraction import extract_cola_fields, extract_label_fields
+from .extraction import extract_label_fields
 from .fields import field_specs_payload
 from .observability import RequestIdMiddleware, configure_logging
 from .schemas import OriginType, ProductCategory, VerifyReviewedRequest
@@ -148,8 +148,7 @@ async def verify(
     back_image: UploadFile | None = File(default=None),
 ):
     """Extract a label and validate it in one call. Expected and reviewed are both
-    seeded from the extraction (the documented COLA simplification — there is no
-    separate COLA upload here), so this is a completeness + statutory-warning +
+    seeded from the same extraction, so this is a completeness + statutory-warning +
     label-compliance check. Used by batch mode to give each row a real verdict in
     a single Gemini call, keeping the per-file request count (and rate-limit
     footprint) the same as a bare /extract."""
@@ -161,19 +160,6 @@ async def verify(
         expected=extracted,
         reviewed=extracted,
     )
-
-
-@app.post("/extract-cola", dependencies=COST_GUARDS)
-async def extract_cola(cola_file: UploadFile = File(...)):
-    """Read the approved COLA application form and return the application's stated
-    values plus the product category and origin detected from the form itself."""
-    result = await extract_cola_fields(cola_file)
-
-    return {
-        "product_category": result["product_category"],
-        "origin_type": result["origin_type"],
-        "extracted": result["fields"],
-    }
 
 
 @app.post("/verify-reviewed", dependencies=COST_GUARDS)

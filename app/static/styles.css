@@ -883,17 +883,9 @@ tr.is-flagged td:first-child {
   gap: 7px;
 }
 
-.workflow-toggle {
-  display: grid;
-  gap: 7px;
-  margin-bottom: 16px;
-  padding-bottom: 16px;
-  border-bottom: 1px solid var(--line);
-}
-
-/* Section labels (Workflow, Product category, Origin, Upload mode) are the
-   headers of each mini-section: bigger and bold so the lighter control text
-   below reads as the content. */
+/* Section labels (Product category, Origin, Upload mode) are the headers of each
+   mini-section: bigger and bold so the lighter control text below reads as the
+   content. */
 .section-label {
   color: var(--text);
   font-size: 16px;
@@ -941,41 +933,8 @@ tr.is-flagged td:first-child {
   display: none;
 }
 
-.cola-upload {
-  display: grid;
-  gap: 8px;
-  margin-bottom: 16px;
-  padding: 14px;
-  border: 1px dashed var(--line);
-  border-radius: var(--radius-lg);
-  background: var(--subtle-bg);
-}
-
-.cola-upload-head {
-  display: flex;
-  align-items: center;
-  justify-content: space-between;
-  gap: 10px;
-  flex-wrap: wrap;
-}
-
-.cola-upload-title {
-  font-size: 13px;
-  font-weight: 750;
-  color: var(--text);
-}
-
-
-
-.cola-drop-zone {
-  min-height: 60px;
-  align-content: center;
-}
-
 /* These set an explicit display, which would otherwise defeat the `hidden`
    attribute (same reason .upload-pane needs its own [hidden] rule). */
-.cola-upload[hidden],
-.cola-drop-zone[hidden],
 .file-select-button[hidden],
 .upload-progress[hidden] {
   display: none;

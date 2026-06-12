@@ -39,33 +39,6 @@
 
       <main class="workspace">
         <section class="panel setup-panel" aria-label="Application">
-          <div class="workflow-toggle">
-            <span class="section-label">Workflow mode</span>
-            <div class="upload-mode-buttons">
-              <button type="button" id="modeColaWorkflow" class="mode-btn active" aria-pressed="true">Upload COLA form</button>
-              <button type="button" id="modeLabelWorkflow" class="mode-btn" aria-pressed="false">Extract from label</button>
-            </div>
-          </div>
-
-          <div class="cola-upload">
-            <div class="cola-upload-head">
-              <span class="cola-upload-title">COLA application</span>
-              <input id="colaFile" class="file-native" type="file" accept=".pdf,.png,.jpg,.jpeg,.webp,application/pdf,image/png,image/jpeg,image/webp" />
-            </div>
-            <div class="drop-zone cola-drop-zone" id="colaDropZone" data-cola-drop aria-describedby="colaDropHint" hidden>
-              <span class="drop-hint" id="colaDropHint">Drop the COLA file here.</span>
-            </div>
-            <div class="file-summary" id="colaSummary" aria-live="polite">
-              <span class="file-empty">No COLA uploaded</span>
-              <span class="file-name" id="colaFileName"></span>
-              <button class="remove-file-button" id="colaRemove" type="button" hidden>Remove</button>
-            </div>
-            <div class="upload-progress" id="colaProgress" role="status" aria-live="polite" hidden>
-              <div class="upload-progress-track"><div class="upload-progress-fill"></div></div>
-              <span class="upload-progress-text">Reading the COLA application…</span>
-            </div>
-          </div>
-
           <div class="control-grid">
             <label>
               <span class="section-label">Product category</span>

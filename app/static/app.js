@@ -63,9 +63,6 @@ const state = {
   extracted: {},
   extractedKey: null,
   expectedValues: {},
-  workflowMode: "cola",
-  colaLoaded: false,
-  colaFile: null,
   validation: {},
   lastResult: null,
   inFlight: false,
@@ -93,16 +90,7 @@ const backImage = document.querySelector("#backImage");
 const expectedFields = document.querySelector("#expectedFields");
 const extractButton = document.querySelector("#extractButton");
 const verifyButton = document.querySelector("#verifyButton");
-const colaFile = document.getElementById("colaFile");
-const colaSummary = document.getElementById("colaSummary");
-const colaFileName = document.getElementById("colaFileName");
-const colaRemove = document.getElementById("colaRemove");
-const colaDropZone = document.getElementById("colaDropZone");
-const colaProgress = document.getElementById("colaProgress");
 const labelProgress = document.getElementById("labelProgress");
-const colaUploadBlock = document.querySelector(".cola-upload");
-const modeColaWorkflow = document.getElementById("modeColaWorkflow");
-const modeLabelWorkflow = document.getElementById("modeLabelWorkflow");
 const statusText = document.querySelector("#statusText");
 const errorBox = document.querySelector("#errorBox");
 const resultsBody = document.querySelector("#resultsBody");
@@ -355,7 +343,7 @@ function createField(prefix, key) {
   control.autocomplete = "off";
 
   // The government warning is editable and checked against the statutory text on
-  // both sides; in the label workflow it auto-fills from the label extraction.
+  // both sides; it auto-fills from the label extraction.
 
   row.appendChild(label);
   row.appendChild(control);
@@ -392,7 +380,7 @@ function setBusy(busy) {
   // origin) and the action buttons while a request is in flight, and show a
   // spinner / announce busy state to assistive tech.
   state.inFlight = busy;
-  const controls = [productCategory, originType, extractButton, verifyButton, modeChooseFile, modeDragDrop, modeBatch, colaFile, colaRemove, modeColaWorkflow, modeLabelWorkflow, themeToggle, layoutSelect];
+  const controls = [productCategory, originType, extractButton, verifyButton, modeChooseFile, modeDragDrop, modeBatch, themeToggle, layoutSelect];
   for (const control of controls) {
     if (control) control.disabled = busy;
   }
@@ -628,96 +616,6 @@ async function refreshRequirements() {
   setStatus("");
 }
 
-function renderColaSummary() {
-  if (!colaSummary) return;
-  const has = Boolean(state.colaFile);
-  // The native file input already shows the filename / "No file chosen", so only
-  // surface the summary once a COLA is loaded (to confirm the fields were read).
-  colaSummary.style.display = has ? "" : "none";
-  colaSummary.classList.toggle("has-file", has);
-  if (colaFileName) {
-    colaFileName.textContent = has
-      ? state.colaFile.name + (state.colaLoaded ? " — fields loaded" : "")
-      : "";
-  }
-  if (colaRemove) colaRemove.hidden = !has;
-}
-
-async function extractCola(file) {
-  const error = validateClientFile(file);
-  if (error) {
-    showError(error);
-    setStatus("File selection needs attention");
-    if (colaFile) colaFile.value = "";
-    return;
-  }
-  clearError();
-  state.colaFile = file;
-  renderColaSummary();
-
-  const formData = new FormData();
-  formData.append("cola_file", file);
-
-  setBusy(true);
-  if (colaProgress) colaProgress.hidden = false;
-  setStatus("Reading the COLA application");
-  try {
-    const response = await fetchWithTimeout("/extract-cola", { method: "POST", body: formData });
-    const body = await parseApiResponse(response);
-    if (body.product_category) productCategory.value = body.product_category;
-    if (body.origin_type) originType.value = body.origin_type;
-    state.expectedValues = body.extracted || {};
-    state.colaLoaded = true;
-    await refreshRequirements();
-    renderColaSummary();
-    setStatus("COLA fields loaded — upload the label artwork, then Verify against it");
-  } catch (error) {
-    showError(error.message);
-    setStatus("COLA extraction failed");
-  } finally {
-    if (colaProgress) colaProgress.hidden = true;
-    setBusy(false);
-  }
-}
-
-function clearExpectedFields() {
-  for (const control of expectedFields.querySelectorAll("input, textarea")) {
-    control.value = "";
-  }
-}
-
-function clearCola() {
-  state.colaFile = null;
-  state.colaLoaded = false;
-  state.expectedValues = state.extracted || {};
-  if (colaFile) colaFile.value = "";
-  renderColaSummary();
-  // Blank the form first so COLA-derived values don't linger; then re-apply
-  // whatever the label extraction left (empty until the reviewer extracts).
-  clearExpectedFields();
-  setExpectedValues(state.expectedValues);
-  clearError();
-  setStatus("COLA removed");
-}
-
-function setWorkflowMode(mode) {
-  const isCola = mode === "cola";
-  state.workflowMode = isCola ? "cola" : "label";
-  if (colaUploadBlock) colaUploadBlock.hidden = !isCola;
-  if (modeColaWorkflow) {
-    modeColaWorkflow.classList.toggle("active", isCola);
-    modeColaWorkflow.setAttribute("aria-pressed", String(isCola));
-  }
-  if (modeLabelWorkflow) {
-    modeLabelWorkflow.classList.toggle("active", !isCola);
-    modeLabelWorkflow.setAttribute("aria-pressed", String(!isCola));
-  }
-  // In COLA mode there's no separate Extract step: Verify reads the label itself.
-  if (extractButton) extractButton.hidden = isCola;
-  // Leaving COLA mode drops any loaded COLA so the form reverts to label-driven.
-  if (!isCola && state.colaLoaded) clearCola();
-}
-
 function labelFileKey() {
   const f = state.files.front;
   const b = state.files.back;
@@ -742,13 +640,10 @@ async function runLabelExtraction() {
 }
 
 function maybeAutoExtractLabel() {
-  // In the label-only workflow, reading the label IS what fills the form, so do
-  // it automatically on upload (mirroring the COLA auto-fill). The "Extract from
-  // Label" button stays as an explicit re-run (e.g. after changing category or
-  // adding a second label). Skip in COLA mode (Verify reads the label there),
-  // when no label is uploaded yet, while a request is in flight, and when these
-  // exact files were already read.
-  if (state.workflowMode !== "label") return;
+  // Reading the label IS what fills the form, so do it automatically on upload.
+  // The "Extract from Label" button stays as an explicit re-run (e.g. after
+  // changing category or adding a second label). Skip when no label is uploaded
+  // yet, while a request is in flight, and when these exact files were already read.
   if (!state.files.front && !state.files.back) return;
   if (state.inFlight) return;
   if (state.extractedKey === labelFileKey()) return;
@@ -769,15 +664,9 @@ async function extractFields() {
   setStatus("Extracting fields");
   try {
     await runLabelExtraction();
-    if (state.colaLoaded) {
-      // The COLA already populated the expected fields; the label only supplies
-      // the values being checked. Don't overwrite the reviewer's COLA values.
-      setStatus("Label read — now Verify it against the COLA application fields");
-    } else {
-      state.expectedValues = state.extracted;
-      setExpectedValues(state.expectedValues);
-      setStatus("Fields extracted from the label — edit each field to match the COLA application, then Verify");
-    }
+    state.expectedValues = state.extracted;
+    setExpectedValues(state.expectedValues);
+    setStatus("Fields extracted from the label — edit each field to match the COLA application, then Verify");
   } catch (error) {
     showError(error.message);
     setStatus("Extraction failed");
@@ -789,17 +678,16 @@ async function extractFields() {
 
 async function verifyReviewedFields() {
   clearError();
-  if (state.workflowMode === "cola" && !state.files.front && !state.files.back) {
-    showError("Upload the label artwork to verify against the COLA.");
+  if (!state.files.front && !state.files.back) {
+    showError("Add at least one label to verify against.");
     setStatus("File selection needs attention");
     return;
   }
   setBusy(true);
   try {
-    // COLA mode has no separate Extract button, so read the label here — but
-    // only when the label file has changed since the last read, so re-verifying
-    // after editing fields stays instant (no extra Gemini call).
-    if (state.workflowMode === "cola" && state.extractedKey !== labelFileKey()) {
+    // Read the label if these exact files haven't been read yet, so Verify works
+    // on its own; re-verifying after editing fields stays instant (no extra call).
+    if (state.extractedKey !== labelFileKey()) {
       setStatus("Reading the label");
       await runLabelExtraction();
     }
@@ -1204,14 +1092,10 @@ async function reviewBatchItem(id) {
   originType.value = item.originType;
   state.extracted = item.extracted;
   state.expectedValues = item.extracted;
-  state.colaLoaded = false;
-  state.colaFile = null;
-  if (colaFile) colaFile.value = "";
-  renderColaSummary();
   state.files.front = item.file;
   state.files.back = item.backFile || null;
-  // The batch item is already extracted; mark the label as read so a COLA-mode
-  // Verify doesn't needlessly re-extract it.
+  // The batch item is already extracted; mark the label as read so Verify
+  // doesn't needlessly re-extract it.
   state.extractedKey = labelFileKey();
   syncInputFiles("front", item.file);
   syncInputFiles("back", item.backFile || null);
@@ -1310,16 +1194,7 @@ function initBatchDropZone(zone) {
   });
 }
 
-function setColaMode(mode) {
-  // The COLA upload mirrors the label upload: a drop zone in Drag & Drop mode,
-  // the native file picker otherwise.
-  const dropMode = mode === "drop";
-  if (colaFile) colaFile.hidden = dropMode;
-  if (colaDropZone) colaDropZone.hidden = !dropMode;
-}
-
 function setUploadMode(mode) {
-  setColaMode(mode);
   if (mode === "choose") {
     chooseFileInputs.hidden = false;
     dropZoneInputs.hidden = true;
@@ -1390,39 +1265,6 @@ function initDropZone(zone) {
   });
 }
 
-function initColaDropZone(zone) {
-  if (!zone) return;
-  zone.addEventListener("dragenter", function(event) {
-    if (!draggedFiles(event)) return;
-    event.preventDefault();
-    zone.classList.add("drag-over");
-  });
-  zone.addEventListener("dragover", function(event) {
-    if (!draggedFiles(event)) return;
-    event.preventDefault();
-    zone.classList.add("drag-over");
-  });
-  zone.addEventListener("dragleave", function(event) {
-    if (zone.contains(event.relatedTarget)) return;
-    zone.classList.remove("drag-over");
-  });
-  zone.addEventListener("drop", function(event) {
-    if (!draggedFiles(event)) return;
-    event.preventDefault();
-    event.stopPropagation();
-    zone.classList.remove("drag-over");
-    const files = Array.from(event.dataTransfer.files || []);
-    if (files.length > 1) {
-      showError("Drop a single COLA application file.");
-      setStatus("File selection needs attention");
-      return;
-    }
-    if (files[0]) extractCola(files[0]);
-  });
-}
-
-initColaDropZone(colaDropZone);
-
 for (const input of uploadInputs) {
   input.addEventListener("change", function() {
     const slot = input.dataset.fileSlot;
@@ -1449,7 +1291,6 @@ for (const button of document.querySelectorAll("[data-remove-file]")) {
 setUploadMode("choose");
 renderFileState("front");
 renderFileState("back");
-renderColaSummary();
 renderBatchQueue();
 
 document.addEventListener("dragover", function(event) {
@@ -1526,15 +1367,6 @@ productCategory.addEventListener("change", refreshRequirements);
 originType.addEventListener("change", refreshRequirements);
 extractButton.addEventListener("click", extractFields);
 verifyButton.addEventListener("click", verifyReviewedFields);
-if (colaFile) {
-  colaFile.addEventListener("change", function() {
-    if (colaFile.files.length) extractCola(colaFile.files[0]);
-  });
-}
-if (colaRemove) colaRemove.addEventListener("click", clearCola);
-if (modeColaWorkflow) modeColaWorkflow.addEventListener("click", function() { setWorkflowMode("cola"); });
-if (modeLabelWorkflow) modeLabelWorkflow.addEventListener("click", function() { setWorkflowMode("label"); });
-setWorkflowMode(state.workflowMode);
 
 loadFieldConfig().then(refreshRequirements).catch(function(error) {
   showError(error.message);
