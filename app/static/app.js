@@ -594,6 +594,7 @@ const STATUS_LABELS = {
   "FAIL_HEADING_FORMAT": "Heading format",
   "FAIL_TEXT_MISMATCH": "Wording mismatch",
   "PRESENT_ON_LABEL_CONFIRM_APPLICABILITY": "On label — confirm",
+  "DEEMED_FROM_BOTTLER": "Brand = bottler — confirm",
   "EXEMPT_TABLE_WINE": "Exempt (table wine)",
   "FAIL_APPELLATION_REQUIRED_BY_TRIGGER": "Appellation required",
   "FAIL_NOT_ALLCAPS": "Not all-caps",
@@ -602,7 +603,7 @@ const STATUS_LABELS = {
 function statusClass(status) {
   if (status === "PASS" || status === "EXEMPT_TABLE_WINE") return "status-pass";
   if (status === "NOT REQUIRED") return "status-neutral";
-  if (status === "PRESENT_ON_LABEL_CONFIRM_APPLICABILITY") return "status-processing";
+  if (status === "PRESENT_ON_LABEL_CONFIRM_APPLICABILITY" || status === "DEEMED_FROM_BOTTLER") return "status-processing";
   if (status === "MISSING" || status === "EXPECTED VALUE MISSING") return "status-missing";
   return "status-fail";
 }

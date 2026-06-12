@@ -451,5 +451,40 @@ class ComparatorTests(unittest.TestCase):
         self.assertEqual(validation["domestic_name_address"], "PASS")
 
 
+class BrandNameDeemedBrandTests(unittest.TestCase):
+    """TTB deemed-brand rule (27 CFR 4.33): a brandless label that names its
+    bottler/producer/importer is not missing a brand."""
+
+    def _fields(self, **over):
+        from app.fields import FIELD_KEYS
+        base = {key: "" for key in FIELD_KEYS}
+        base.update(over)
+        return base
+
+    def test_brandless_wine_with_bottler_is_deemed_from_bottler(self):
+        expected = self._fields()
+        reviewed = self._fields(class_type="Red Wine", domestic_name_address="XYZ Winery, City, State")
+        result = validate_wine(expected, reviewed, "domestic")
+        self.assertEqual(result["brand_name"], "DEEMED_FROM_BOTTLER")
+
+    def test_brandless_with_no_bottler_is_missing(self):
+        expected = self._fields()
+        reviewed = self._fields(class_type="Red Wine")  # no bottler/importer named
+        result = validate_wine(expected, reviewed, "domestic")
+        self.assertEqual(result["brand_name"], "MISSING")
+
+    def test_imported_brandless_uses_importer_as_deemed_brand(self):
+        expected = self._fields()
+        reviewed = self._fields(class_type="Red Wine", importer_name_address="Acme Imports, New York, NY")
+        result = validate_wine(expected, reviewed, "imported")
+        self.assertEqual(result["brand_name"], "DEEMED_FROM_BOTTLER")
+
+    def test_brand_present_on_both_sides_matches_normally(self):
+        expected = self._fields(brand_name="Silver Oak")
+        reviewed = self._fields(brand_name="Silver Oak", domestic_name_address="X, Y")
+        result = validate_wine(expected, reviewed, "domestic")
+        self.assertEqual(result["brand_name"], "PASS")
+
+
 if __name__ == "__main__":
     unittest.main()

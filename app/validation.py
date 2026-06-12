@@ -372,6 +372,35 @@ def check_required(field, product_category, expected, reviewed):
     return match_field(field, product_category, expected, reviewed)
 
 
+def _deemed_brand_source(origin_type, fields):
+    """The bottler/producer (domestic) or importer (imported) name that TTB deems
+    to be the brand name when a label bears no brand name (27 CFR 4.33 for wine;
+    7.23 malt beverage; 5.x spirits). Returns that name if present, else ""."""
+    key = "importer_name_address" if origin_type == "imported" else "domestic_name_address"
+    return (fields.get(key) or "").strip()
+
+
+def check_brand_name(product_category, origin_type, expected, reviewed):
+    """Brand name, with TTB's deemed-brand rule (27 CFR 4.33 etc.): when a label
+    bears no brand name, the bottler/producer/importer name is deemed the brand,
+    so a brandless label that still names its bottler is compliant — surface that
+    as DEEMED_FROM_BOTTLER (confirm) rather than a missing-brand failure.
+    """
+    exp = (expected.get("brand_name") or "").strip()
+    rev = (reviewed.get("brand_name") or "").strip()
+
+    if rev:  # label carries a brand name → ordinary required-field handling
+        if not exp:
+            return "EXPECTED VALUE MISSING"
+        return match_field("brand_name", product_category, exp, rev)
+
+    # Label bears no brand name: fall back to the deemed brand if a bottler/
+    # producer/importer name is present; otherwise the brand is truly missing.
+    if _deemed_brand_source(origin_type, reviewed):
+        return "DEEMED_FROM_BOTTLER"
+    return "MISSING"
+
+
 def check_optional(field, product_category, expected, reviewed):
     if expected and expected.strip():
         return match_field(field, product_category, expected, reviewed)
@@ -572,6 +601,10 @@ def _validate_by_requirements(product_category: str, origin_type: str, expected:
             validation[field] = check_wine_appellation(expected.get(field), reviewed)
         elif field == "aspartame_declaration":
             validation[field] = check_aspartame(product_category, expected.get(field), reviewed.get(field))
+        elif field == "brand_name":
+            # Applies TTB's deemed-brand rule (27 CFR 4.33) — a brandless label
+            # that names its bottler is not missing a brand.
+            validation[field] = check_brand_name(product_category, origin_type, expected, reviewed)
         elif field in required_fields:
             validation[field] = check_required(field, product_category, expected.get(field), reviewed.get(field))
         else:
