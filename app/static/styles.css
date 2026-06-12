@@ -1650,11 +1650,16 @@ tr.is-flagged td:first-child {
 }
 
 .batch-table th:nth-child(1), .batch-table td:nth-child(1) { width: 15%; }
-.batch-table th:nth-child(2), .batch-table td:nth-child(2) { width: 23%; }
-.batch-table th:nth-child(3), .batch-table td:nth-child(3) { width: 19%; }
-.batch-table th:nth-child(4), .batch-table td:nth-child(4) { width: 13%; }
-.batch-table th:nth-child(5), .batch-table td:nth-child(5) { width: 14%; }
+.batch-table th:nth-child(2), .batch-table td:nth-child(2) { width: 21%; }
+.batch-table th:nth-child(3), .batch-table td:nth-child(3) { width: 17%; }
+.batch-table th:nth-child(4), .batch-table td:nth-child(4) { width: 12%; }
+.batch-table th:nth-child(5), .batch-table td:nth-child(5) { width: 19%; }
 .batch-table th:nth-child(6), .batch-table td:nth-child(6) { width: 16%; }
+
+/* Keep a long status like "Needs attention" from spilling into the next cell. */
+.batch-table > tbody > tr:not(.batch-detail-row) > td {
+  overflow: hidden;
+}
 
 /* Expandable per-product detail row. */
 .batch-detail-row td {

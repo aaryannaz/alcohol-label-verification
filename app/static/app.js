@@ -1338,7 +1338,7 @@ function makeBatchItem(frontFile, backFile, productName) {
     clientError,
     extracted: null,
     verification: null,
-    expanded: false,
+    expanded: true,  // show the per-product detail automatically once verified
   };
   state.batch.nextId += 1;
   return item;
