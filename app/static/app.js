@@ -111,14 +111,13 @@ const resultsThumb = document.getElementById("resultsThumb");
 const recheckBar = document.getElementById("recheckBar");
 const recheckButton = document.getElementById("recheckButton");
 const busySpinner = document.getElementById("busySpinner");
-const dropZoneInputs = document.getElementById("dropZoneInputs");
+const singleUploadPanel = document.getElementById("singleUploadPanel");
 const batchPanel = document.getElementById("batchPanel");
 const batchFiles = document.getElementById("batchFiles");
 const batchBrowse = document.getElementById("batchBrowse");
 const batchDropZone = document.getElementById("batchDropZone");
 const batchBody = document.getElementById("batchBody");
 const processBatchButton = document.getElementById("processBatchButton");
-const clearBatchButton = document.getElementById("clearBatchButton");
 const uploadInputs = Array.from(document.querySelectorAll("[data-file-slot]"));
 const dropZones = Array.from(document.querySelectorAll("[data-drop-slot]"));
 
@@ -1169,7 +1168,6 @@ function renderBatchQueue() {
 function updateBatchControls() {
   const hasProcessableItems = state.batch.items.some(canProcessBatchItem);
   processBatchButton.disabled = state.batch.processing || !hasProcessableItems;
-  clearBatchButton.disabled = state.batch.processing || !state.batch.items.length;
 }
 
 function addBatchFiles(files) {
@@ -1379,14 +1377,6 @@ function resetBatchItemVerdict(item) {
   }
 }
 
-function clearBatchQueue() {
-  if (state.batch.processing) return;
-  state.batch.items = [];
-  renderBatchQueue();
-  clearError();
-  setStatus("Batch cleared");
-}
-
 function initBatchDropZone(zone) {
   zone.addEventListener("dragenter", function(event) {
     if (!draggedFiles(event)) return;
@@ -1418,7 +1408,7 @@ function setUploadMode(mode) {
   // Two modes: "single" (the drop-or-browse zones) and "batch" (multiple labels).
   // Keep the radio in sync for programmatic calls (init, batch review).
   setRadioValue("uploadMode", mode);
-  dropZoneInputs.hidden = mode === "batch";
+  singleUploadPanel.hidden = mode === "batch";
   batchPanel.hidden = mode !== "batch";
 }
 
@@ -1537,7 +1527,6 @@ if (batchBrowse) {
 }
 
 processBatchButton.addEventListener("click", processBatchQueue);
-clearBatchButton.addEventListener("click", clearBatchQueue);
 
 batchBody.addEventListener("change", function(event) {
   const categoryControl = event.target.closest("[data-batch-category]");

@@ -58,31 +58,6 @@
               <label class="choice"><input type="radio" name="uploadMode" value="single" checked /><span>Single label</span></label>
               <label class="choice"><input type="radio" name="uploadMode" value="batch" /><span>Multiple labels</span></label>
             </fieldset>
-
-            <div id="dropZoneInputs" class="upload-pane">
-              <input id="frontImage" data-file-slot="front" type="file" hidden accept=".pdf,.png,.jpg,.jpeg,.webp,application/pdf,image/png,image/jpeg,image/webp" />
-              <input id="backImage" data-file-slot="back" type="file" hidden accept=".pdf,.png,.jpg,.jpeg,.webp,application/pdf,image/png,image/jpeg,image/webp" />
-              <div class="drop-zone" id="frontDropZone" data-drop-slot="front" aria-describedby="frontDropSummary">
-                <span class="drop-label">First file</span>
-                <div class="drop-actions">
-                  <button class="remove-file-button" data-remove-file="front" type="button" hidden>Remove</button>
-                </div>
-                <div class="file-summary" id="frontDropSummary" data-file-summary="front" aria-live="polite">
-                  <span class="file-empty">Drop a label here or browse</span>
-                  <span class="file-name" data-file-name="front"></span>
-                </div>
-              </div>
-              <div class="drop-zone" id="backDropZone" data-drop-slot="back" aria-describedby="backDropSummary">
-                <span class="drop-label">Second file</span>
-                <div class="drop-actions">
-                  <button class="remove-file-button" data-remove-file="back" type="button" hidden>Remove</button>
-                </div>
-                <div class="file-summary" id="backDropSummary" data-file-summary="back" aria-live="polite">
-                  <span class="file-empty">Drop a label here or browse</span>
-                  <span class="file-name" data-file-name="back"></span>
-                </div>
-              </div>
-            </div>
           </div>
 
           <div class="upload-progress" id="labelProgress" role="status" aria-live="polite" hidden>
@@ -92,6 +67,32 @@
         </section>
 
         <div class="main-column">
+        <section id="singleUploadPanel" class="panel upload-panel" aria-label="Upload label">
+          <div id="dropZoneInputs" class="upload-pane">
+            <input id="frontImage" data-file-slot="front" type="file" hidden accept=".pdf,.png,.jpg,.jpeg,.webp,application/pdf,image/png,image/jpeg,image/webp" />
+            <input id="backImage" data-file-slot="back" type="file" hidden accept=".pdf,.png,.jpg,.jpeg,.webp,application/pdf,image/png,image/jpeg,image/webp" />
+            <div class="drop-zone" id="frontDropZone" data-drop-slot="front" aria-describedby="frontDropSummary">
+              <span class="drop-label">First file</span>
+              <div class="file-summary" id="frontDropSummary" data-file-summary="front" aria-live="polite">
+                <span class="file-empty">Drop a label here or browse</span>
+                <span class="file-name" data-file-name="front"></span>
+              </div>
+              <div class="drop-actions">
+                <button class="remove-file-button" data-remove-file="front" type="button" hidden>Remove</button>
+              </div>
+            </div>
+            <div class="drop-zone" id="backDropZone" data-drop-slot="back" aria-describedby="backDropSummary">
+              <span class="drop-label">Second file (optional)</span>
+              <div class="file-summary" id="backDropSummary" data-file-summary="back" aria-live="polite">
+                <span class="file-empty">Drop a label here or browse</span>
+                <span class="file-name" data-file-name="back"></span>
+              </div>
+              <div class="drop-actions">
+                <button class="remove-file-button" data-remove-file="back" type="button" hidden>Remove</button>
+              </div>
+            </div>
+          </div>
+        </section>
         <section id="batchPanel" class="panel batch-panel" aria-labelledby="batch-title" hidden>
           <div class="section-heading batch-heading">
             <div>
@@ -101,7 +102,6 @@
             <div class="batch-actions">
               <input id="batchFiles" type="file" multiple hidden accept=".pdf,.png,.jpg,.jpeg,.webp,application/pdf,image/png,image/jpeg,image/webp" />
               <button id="processBatchButton" class="secondary-button" type="button">Process Batch</button>
-              <button id="clearBatchButton" class="secondary-button" type="button">Clear</button>
             </div>
           </div>
 

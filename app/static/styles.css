@@ -471,8 +471,13 @@ h3 {
 .fields-panel,
 .results-panel,
 .batch-panel,
-.preview-panel {
+.preview-panel,
+.upload-panel {
   padding: 18px;
+}
+
+.upload-panel[hidden] {
+  display: none;
 }
 
 .results-panel {
@@ -1362,9 +1367,10 @@ tr.is-flagged td:first-child {
 
 .upload-pane {
   display: grid;
+  /* Front and back drop pads side by side on the wide main column; they stack
+     when the column is narrow. min-width:0 lets long filenames truncate. */
+  grid-template-columns: repeat(auto-fit, minmax(260px, 1fr));
   gap: 14px;
-  /* Allow the pane (and its drop zones below) to shrink into the grid column
-     so a long filename truncates instead of widening the whole sidebar. */
   min-width: 0;
 }
 
@@ -1491,15 +1497,27 @@ tr.is-flagged td:first-child {
 
 .drop-zone {
   display: grid;
-  gap: 8px;
+  gap: 6px;
+  place-items: center;
+  align-content: center;
+  text-align: center;
   min-width: 0;
-  min-height: 104px;
+  min-height: 130px;
   cursor: pointer;
   border: 2px dashed var(--line);
   border-radius: var(--radius);
-  padding: 12px;
+  padding: 18px;
   background: var(--subtle-bg);
   transition: border-color 140ms ease, background 140ms ease;
+}
+
+/* Inside the pad, the file summary is plain centered text (no box-in-box). */
+.drop-zone .file-summary {
+  border: none;
+  background: none;
+  padding: 0;
+  min-height: 0;
+  justify-content: center;
 }
 
 .drop-zone:focus-visible {
@@ -1554,9 +1572,6 @@ tr.is-flagged td:first-child {
   flex-wrap: wrap;
 }
 
-.drop-zone .file-summary {
-  background: var(--control-bg);
-}
 
 .batch-heading {
   align-items: flex-start;
@@ -1595,11 +1610,23 @@ tr.is-flagged td:first-child {
 
 .batch-table-wrap {
   margin-top: 14px;
+  overflow-x: hidden;
 }
 
+/* Fixed layout so the six columns share the panel width and never force a
+   horizontal scroll; long filenames truncate instead. */
 .batch-table {
-  min-width: 880px;
+  min-width: 0;
+  table-layout: fixed;
+  width: 100%;
 }
+
+.batch-table th:nth-child(1), .batch-table td:nth-child(1) { width: 15%; }
+.batch-table th:nth-child(2), .batch-table td:nth-child(2) { width: 23%; }
+.batch-table th:nth-child(3), .batch-table td:nth-child(3) { width: 19%; }
+.batch-table th:nth-child(4), .batch-table td:nth-child(4) { width: 13%; }
+.batch-table th:nth-child(5), .batch-table td:nth-child(5) { width: 14%; }
+.batch-table th:nth-child(6), .batch-table td:nth-child(6) { width: 16%; }
 
 .batch-file-name {
   display: block;
