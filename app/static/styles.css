@@ -1585,6 +1585,14 @@ tr.is-flagged td:first-child {
   text-decoration: none;
 }
 
+/* "browse" highlighted as a link inside the single-label drop pads (the whole
+   pad is clickable, so this is a visual affordance). */
+.link-text {
+  color: var(--primary);
+  font-weight: 650;
+  text-decoration: underline;
+}
+
 .drop-actions {
   display: flex;
   align-items: center;
@@ -1647,6 +1655,93 @@ tr.is-flagged td:first-child {
 .batch-table th:nth-child(4), .batch-table td:nth-child(4) { width: 13%; }
 .batch-table th:nth-child(5), .batch-table td:nth-child(5) { width: 14%; }
 .batch-table th:nth-child(6), .batch-table td:nth-child(6) { width: 16%; }
+
+/* Expandable per-product detail row. */
+.batch-detail-row td {
+  padding: 0;
+  background: var(--subtle-bg);
+}
+
+.batch-detail {
+  display: grid;
+  gap: 14px;
+  padding: 16px 14px;
+}
+
+.batch-detail-summary {
+  font-size: 16.8px;
+  font-weight: 750;
+}
+
+.batch-detail-summary.is-pass { color: var(--green); }
+.batch-detail-summary.is-attention { color: var(--amber); }
+
+.batch-detail-grid {
+  display: grid;
+  grid-template-columns: repeat(auto-fit, minmax(220px, 1fr));
+  gap: 10px;
+}
+
+.batch-detail-field {
+  display: grid;
+  grid-template-columns: 1fr auto;
+  gap: 3px 10px;
+  align-items: center;
+  padding: 10px 12px;
+  border: 1px solid var(--line);
+  border-radius: var(--radius);
+  background: var(--surface);
+}
+
+.batch-detail-field.is-flagged {
+  border-color: color-mix(in srgb, var(--red) 45%, var(--line));
+  background: var(--red-soft);
+}
+
+.batch-detail-name {
+  font-weight: 650;
+  font-size: 15.6px;
+}
+
+.batch-detail-field .status-badge {
+  justify-self: end;
+  font-size: 14px;
+}
+
+.batch-detail-value {
+  grid-column: 1 / -1;
+  min-width: 0;
+  color: var(--muted);
+  font-size: 15.6px;
+  white-space: nowrap;
+  overflow: hidden;
+  text-overflow: ellipsis;
+}
+
+.batch-detail-checks {
+  display: grid;
+  gap: 6px;
+}
+
+.batch-detail-checks-title {
+  font-weight: 700;
+  font-size: 15.6px;
+}
+
+.batch-detail-check {
+  font-size: 15.6px;
+  color: var(--muted);
+}
+
+.batch-detail-check .status-badge {
+  margin-right: 6px;
+  font-size: 13px;
+}
+
+.batch-detail-edit {
+  justify-self: start;
+  font-size: 15.6px;
+}
 
 .batch-file-name {
   display: block;

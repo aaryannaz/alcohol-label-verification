@@ -1074,6 +1074,87 @@ function createBatchSelect(item, key, options) {
   return select;
 }
 
+// The expandable per-product detail shown inline under a verified batch row:
+// a field-by-field breakdown (name / status / label value) plus the compliance
+// checks, so a reviewer can read a product's result without leaving the batch.
+function buildBatchDetail(item) {
+  const wrap = document.createElement("div");
+  wrap.className = "batch-detail";
+  const v = item.verification;
+  if (!v) {
+    wrap.textContent = "Process this item to see its details.";
+    return wrap;
+  }
+
+  const validation = v.validation || {};
+  const reviewed = v.reviewed || v.extracted || {};
+  const req = v.field_requirements || {};
+  const keys = [].concat(req.required || [], req.conditional || [], req.optional || []);
+
+  const verdict = computeBatchVerdict(v);
+  const summary = document.createElement("div");
+  summary.className = "batch-detail-summary " + (verdict.flagged ? "is-attention" : "is-pass");
+  summary.textContent = verdict.flagged
+    ? `${verdict.flagged} ${verdict.flagged === 1 ? "item needs" : "items need"} attention · ${verdict.checked} fields checked`
+    : `No issues found · ${verdict.checked} fields checked`;
+  wrap.appendChild(summary);
+
+  const grid = document.createElement("div");
+  grid.className = "batch-detail-grid";
+  for (const key of keys) {
+    const cfg = FIELD_LOOKUP[key];
+    if (!cfg) continue;
+    const raw = validation[key];
+    const status = raw && typeof raw === "object"
+      ? (raw.expected === "PASS" && raw.label === "PASS" ? "PASS" : "FAIL")
+      : (raw || "NOT REVIEWED");
+    const card = document.createElement("div");
+    card.className = "batch-detail-field" + (isFlaggedStatus(status) || status === "FAIL" ? " is-flagged" : "");
+    const name = document.createElement("span");
+    name.className = "batch-detail-name";
+    name.textContent = cfg.label;
+    const value = document.createElement("span");
+    value.className = "batch-detail-value";
+    value.textContent = reviewed[key] || "—";
+    value.title = reviewed[key] || "";
+    card.appendChild(name);
+    card.appendChild(makeBadge(status));
+    card.appendChild(value);
+    grid.appendChild(card);
+  }
+  wrap.appendChild(grid);
+
+  const checks = v.compliance_checks || [];
+  if (checks.length) {
+    const cwrap = document.createElement("div");
+    cwrap.className = "batch-detail-checks";
+    const h = document.createElement("div");
+    h.className = "batch-detail-checks-title";
+    h.textContent = "Label compliance checks";
+    cwrap.appendChild(h);
+    for (const c of checks) {
+      const line = document.createElement("div");
+      line.className = "batch-detail-check";
+      const cb = document.createElement("span");
+      cb.className = "status-badge " + complianceStatusClass(c.status);
+      cb.textContent = c.status;
+      line.appendChild(cb);
+      line.appendChild(document.createTextNode(" " + c.label + " — " + c.detail));
+      cwrap.appendChild(line);
+    }
+    wrap.appendChild(cwrap);
+  }
+
+  const editLink = document.createElement("button");
+  editLink.type = "button";
+  editLink.className = "link-button batch-detail-edit";
+  editLink.dataset.reviewBatch = String(item.id);
+  editLink.textContent = "Open in the editor to correct fields →";
+  wrap.appendChild(editLink);
+
+  return wrap;
+}
+
 function renderBatchQueue() {
   batchBody.innerHTML = "";
 
@@ -1128,13 +1209,13 @@ function renderBatchQueue() {
     actions.className = "batch-row-actions";
 
     if (isBatchItemVerified(item)) {
-      const reviewButton = document.createElement("button");
-      reviewButton.className = "small-button";
-      reviewButton.dataset.reviewBatch = String(item.id);
-      reviewButton.disabled = state.batch.processing;
-      reviewButton.type = "button";
-      reviewButton.textContent = item.status === "Needs attention" ? "Review" : "Open";
-      actions.appendChild(reviewButton);
+      const toggle = document.createElement("button");
+      toggle.className = "small-button";
+      toggle.dataset.toggleBatch = String(item.id);
+      toggle.disabled = state.batch.processing;
+      toggle.type = "button";
+      toggle.textContent = item.expanded ? "Hide details" : "Details";
+      actions.appendChild(toggle);
     }
 
     if (item.status === "Error" && !item.clientError) {
@@ -1164,6 +1245,16 @@ function renderBatchQueue() {
     row.appendChild(statusCell);
     row.appendChild(actionCell);
     batchBody.appendChild(row);
+
+    if (item.expanded && isBatchItemVerified(item)) {
+      const detailRow = document.createElement("tr");
+      detailRow.className = "batch-detail-row";
+      const detailCell = document.createElement("td");
+      detailCell.colSpan = 6;
+      detailCell.appendChild(buildBatchDetail(item));
+      detailRow.appendChild(detailCell);
+      batchBody.appendChild(detailRow);
+    }
   }
 
   updateBatchControls();
@@ -1551,10 +1642,15 @@ batchBody.addEventListener("click", function(event) {
   const reviewButton = event.target.closest("[data-review-batch]");
   const retryButton = event.target.closest("[data-retry-batch]");
   const removeButton = event.target.closest("[data-remove-batch]");
+  const toggleButton = event.target.closest("[data-toggle-batch]");
 
   if (reviewButton) reviewBatchItem(Number(reviewButton.dataset.reviewBatch));
   if (retryButton) retryBatchItem(Number(retryButton.dataset.retryBatch));
   if (removeButton) removeBatchItem(Number(removeButton.dataset.removeBatch));
+  if (toggleButton) {
+    const item = state.batch.items.find((candidate) => candidate.id === Number(toggleButton.dataset.toggleBatch));
+    if (item) { item.expanded = !item.expanded; renderBatchQueue(); }
+  }
 });
 
 // A category/origin change rebuilds the field list AND re-extracts from the
