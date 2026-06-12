@@ -448,31 +448,46 @@ def normalize_warning_spacing(value):
     return re.sub(r"\s+", " ", value).strip()
 
 
+def _warning_key(value):
+    """Whitespace-free comparison key. Spacing is not regulated wording — only the
+    words and punctuation are — so comparing on a space-free key keeps OCR/extraction
+    artifacts like "WARNING:(1)" vs "WARNING: (1)" from registering as a mismatch,
+    while every letter, comma, period, and (1)/(2) marker is still required.
+    """
+    return re.sub(r"\s+", "", value or "")
+
+
 def check_government_warning(actual):
     """Validate the health warning against the exact statutory text (27 CFR 16.21).
 
     The heading "GOVERNMENT WARNING" must appear in capital letters (27 CFR
     16.22). The wording and punctuation must match, but the *case* of the body is
     not regulated — an all-caps warning is compliant and common on real labels —
-    so the body is compared case-insensitively. Whitespace/OCR line-breaks are
-    normalized away. Returns granular codes — FAIL_MISSING_HEADING,
-    FAIL_HEADING_FORMAT (e.g. title-case heading), FAIL_TEXT_MISMATCH, MISSING —
-    rather than PASS/FAIL. Typography (bold, type size) is not text-verifiable.
+    so the body is compared case-insensitively. Spacing is not regulated either
+    (and OCR routinely drops the space around "(1)"/"(2)"), so the comparison
+    ignores whitespace entirely; the words and punctuation marks are still
+    required. Returns granular codes — FAIL_MISSING_HEADING, FAIL_HEADING_FORMAT
+    (e.g. title-case heading), FAIL_TEXT_MISMATCH, MISSING — rather than PASS/FAIL.
+    Typography (bold, type size) is not text-verifiable.
     """
-    actual_warning = normalize_warning_spacing(actual)
-    if not actual_warning:
+    if not normalize_warning_spacing(actual):
         return "MISSING"
 
-    expected_warning = normalize_warning_spacing(EXPECTED_WARNING)
+    actual_key = _warning_key(actual)
+    heading_key = _warning_key(EXPECTED_WARNING_HEADING)  # "GOVERNMENTWARNING:"
+    heading_words = heading_key.rstrip(":")               # "GOVERNMENTWARNING"
+    expected_key = _warning_key(EXPECTED_WARNING)
 
-    # The heading must be present in capital letters, including the colon.
-    if EXPECTED_WARNING_HEADING not in actual_warning:
-        if "government warning" in actual_warning.lower():
+    # The heading must be present in capital letters, including the colon
+    # (spacing within it ignored, case enforced). If the words are there but the
+    # caps or colon are wrong, that's a format failure rather than a missing one.
+    if heading_key not in actual_key:
+        if heading_words.lower() in actual_key.lower():
             return "FAIL_HEADING_FORMAT"
         return "FAIL_MISSING_HEADING"
 
-    # Wording + punctuation must match; letter case of the body is not regulated.
-    if actual_warning.lower() == expected_warning.lower():
+    # Wording + punctuation must match; letter case and spacing are not regulated.
+    if actual_key.lower() == expected_key.lower():
         return "PASS"
 
     return "FAIL_TEXT_MISMATCH"

@@ -129,6 +129,19 @@ class ValidationTests(unittest.TestCase):
 
         self.assertEqual(check_government_warning(warning), "FAIL_TEXT_MISMATCH")
 
+    def test_government_warning_allows_missing_spaces_around_markers(self):
+        # OCR/extraction routinely drops the space after the colon and around the
+        # (1)/(2) markers ("WARNING:(1)", "defects.(2)"). Spacing is not regulated
+        # wording, so this must PASS — only the words and punctuation are checked.
+        warning = (
+            "GOVERNMENT WARNING:(1) According to the Surgeon General, women should not "
+            "drink alcoholic beverages during pregnancy because of the risk of birth defects.(2) "
+            "Consumption of alcoholic beverages impairs your ability to drive a car or "
+            "operate machinery, and may cause health problems."
+        )
+
+        self.assertEqual(check_government_warning(warning), "PASS")
+
     def test_government_warning_allows_ocr_line_breaks(self):
         warning = (
             "GOVERNMENT WARNING:\n(1) According to the Surgeon General, women should not\n"
