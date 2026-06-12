@@ -476,13 +476,44 @@ h3 {
   box-shadow: none;
 }
 
-/* Progressive step highlight: a soft ring spotlights the section the reviewer is
-   on now (set up & upload -> review the fields -> results), guiding the eye from
-   start to finish without blocking anything. Only one step is active at a time. */
+/* Progressive step highlight: a soft shadow "spotlights" the section the reviewer
+   is on now, and a small callout box says what to do. Advances start to finish
+   (set up & upload -> review the fields -> results); one step active at a time;
+   non-blocking. */
 .step-active {
-  outline: 2px solid var(--primary);
-  outline-offset: 4px;
   border-radius: var(--radius-lg);
+  box-shadow: 0 0 0 2px color-mix(in srgb, var(--primary) 22%, transparent),
+              0 14px 34px color-mix(in srgb, var(--primary) 20%, transparent);
+}
+
+.step-callout {
+  display: flex;
+  align-items: center;
+  gap: 9px;
+  margin-bottom: 16px;
+  padding: 12px 14px;
+  background: var(--primary-soft);
+  color: var(--text);
+  border-left: 4px solid var(--primary);
+  border-radius: var(--radius);
+  font-size: 15px;
+  font-weight: 650;
+  line-height: 1.35;
+  box-shadow: 0 6px 18px color-mix(in srgb, var(--primary) 16%, transparent);
+}
+
+.step-callout .step-num {
+  flex: none;
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  width: 24px;
+  height: 24px;
+  border-radius: 50%;
+  background: var(--primary);
+  color: #ffffff;
+  font-size: 13px;
+  font-weight: 800;
 }
 
 /* Once a label is loaded, the Verify button gently pulses as the next action. */

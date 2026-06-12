@@ -272,6 +272,25 @@ function renderLabelPreview() {
 // set up & upload (no label yet) -> review the fields (label loaded) -> results
 // (verified). Guides the eye start-to-finish without blocking. Called on every
 // state transition (file change, extraction, verify).
+const STEP_CALLOUTS = {
+  upload: { num: 1, text: "Upload the label artwork to begin." },
+  review: { num: 2, text: "Review these fields, then click Verify Against Label." },
+  done: { num: 3, text: "Here are your verification results." },
+};
+
+function getStepCallout() {
+  let el = document.getElementById("stepCallout");
+  if (!el) {
+    el = document.createElement("div");
+    el.id = "stepCallout";
+    el.className = "step-callout";
+    el.setAttribute("role", "status");
+    el.setAttribute("aria-live", "polite");
+    el.innerHTML = '<span class="step-num" aria-hidden="true"></span><span class="step-text"></span>';
+  }
+  return el;
+}
+
 function updateStepHighlight() {
   const setup = document.querySelector(".setup-panel");
   const fields = document.querySelector(".fields-panel");
@@ -279,10 +298,21 @@ function updateStepHighlight() {
   const hasLabel = Boolean(state.files.front || state.files.back);
   const hasResult = Boolean(state.lastResult);
   const step = !hasLabel ? "upload" : !hasResult ? "review" : "done";
+
   if (setup) setup.classList.toggle("step-active", step === "upload");
   if (fields) fields.classList.toggle("step-active", step === "review");
   if (results) results.classList.toggle("step-active", step === "done");
   if (verifyButton) verifyButton.classList.toggle("is-ready", step === "review");
+
+  // Move the callout box to the active section and update its text.
+  const target = step === "upload" ? setup : step === "review" ? fields : results;
+  const info = STEP_CALLOUTS[step];
+  if (target && info) {
+    const callout = getStepCallout();
+    callout.querySelector(".step-num").textContent = info.num;
+    callout.querySelector(".step-text").textContent = info.text;
+    if (callout.parentElement !== target) target.prepend(callout);
+  }
 }
 
 function setSelectedFile(slot, file) {
