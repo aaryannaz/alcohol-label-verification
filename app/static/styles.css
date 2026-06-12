@@ -739,12 +739,21 @@ textarea[name="importer_name_address"] {
   outline: none;
 }
 
-/* Small label thumbnail in the results panel, beside the heading. */
+/* Small label thumbnail in the results panel, beside the heading. The head is
+   sticky so the photo + heading stay pinned at the top of the viewport while the
+   reviewer scrolls down through the field rows. */
 .results-head {
   display: flex;
   align-items: center;
   gap: 14px;
-  margin-bottom: 16px;
+  position: sticky;
+  top: 0;
+  z-index: 4;
+  background: var(--surface);
+  padding-top: 4px;
+  padding-bottom: 12px;
+  margin-bottom: 8px;
+  border-bottom: 1px solid var(--line);
 }
 
 .results-head .section-heading {
