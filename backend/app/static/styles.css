@@ -600,9 +600,11 @@ textarea[name="importer_name_address"] {
   align-items: start;
 }
 
-/* COLA application field labels read as plain body text, not semibold (the
-   global label weight). The required asterisk keeps its own weight below. */
+/* COLA application field labels read as plain body text: normal weight and the
+   main text color, not the muted/semibold global label style. The required
+   asterisk keeps its own color and weight below. */
 #expectedFields .field-name {
+  color: var(--text);
   font-weight: 400;
 }
 
