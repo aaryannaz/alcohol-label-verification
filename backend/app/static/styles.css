@@ -600,6 +600,12 @@ textarea[name="importer_name_address"] {
   align-items: start;
 }
 
+/* COLA application field labels read as plain body text, not semibold (the
+   global label weight). The required asterisk keeps its own weight below. */
+#expectedFields .field-name {
+  font-weight: 400;
+}
+
 /* Red asterisk marking a required field. */
 .req-mark {
   margin-left: 3px;
