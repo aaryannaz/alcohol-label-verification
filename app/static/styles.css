@@ -224,6 +224,8 @@ textarea {
 }
 
 .app-shell {
+  display: flex;
+  flex-direction: column;
   min-height: 100vh;
 }
 
@@ -383,6 +385,10 @@ h3 {
      column makes the fields flow fewer-across (taller) than full width. */
   max-width: 1080px;
   margin: 0 auto;
+  /* Fill the viewport height so the cards extend down instead of leaving dead
+     space at the bottom (the single row stretches to the workspace height). */
+  flex: 1;
+  grid-template-rows: 1fr;
 }
 
 .info-page {
@@ -401,7 +407,6 @@ h3 {
 }
 
 .setup-panel {
-  align-self: start;
   padding: 18px;
 }
 
@@ -418,6 +423,24 @@ h3 {
 .batch-panel,
 .preview-panel {
   padding: 18px;
+}
+
+/* Grow the fields and results cards to fill the column's height so they extend
+   to the bottom of the viewport instead of floating with dead space below. */
+.fields-panel,
+.results-panel {
+  flex: 1;
+}
+
+/* In the (now taller) fields card, anchor the Verify button to the bottom so the
+   card reads as intentional rather than a form with empty space under it. */
+.fields-panel {
+  display: flex;
+  flex-direction: column;
+}
+
+.fields-panel .action-row {
+  margin-top: auto;
 }
 
 .results-panel {
