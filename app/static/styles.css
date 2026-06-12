@@ -489,12 +489,14 @@ h3 {
               0 14px 34px color-mix(in srgb, var(--primary) 20%, transparent);
 }
 
-/* Amber so the guidance stands out against the blue UI. */
+/* Amber so the guidance stands out against the blue UI. Capped to the field
+   column width so it lines up with the cards instead of jutting out past them. */
 .step-callout {
   display: flex;
   align-items: center;
   gap: 9px;
   margin-bottom: 16px;
+  max-width: 820px;
   padding: 12px 14px;
   background: var(--amber-soft);
   color: var(--amber);
