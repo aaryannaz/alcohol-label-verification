@@ -111,7 +111,6 @@ const resultsThumb = document.getElementById("resultsThumb");
 const recheckBar = document.getElementById("recheckBar");
 const recheckButton = document.getElementById("recheckButton");
 const busySpinner = document.getElementById("busySpinner");
-const chooseFileInputs = document.getElementById("chooseFileInputs");
 const dropZoneInputs = document.getElementById("dropZoneInputs");
 const batchPanel = document.getElementById("batchPanel");
 const batchFiles = document.getElementById("batchFiles");
@@ -1390,7 +1389,7 @@ async function reviewBatchItem(id) {
   syncInputFiles("back", item.backFile || null);
   renderFileState("front");
   renderFileState("back");
-  setUploadMode("choose");
+  setUploadMode("single");
   await refreshRequirements();
   setExpectedValues(item.extracted);
   // Show the auto-verdict immediately so the reviewer lands on the flagged
@@ -1484,11 +1483,10 @@ function initBatchDropZone(zone) {
 }
 
 function setUploadMode(mode) {
-  // Keep the radio in sync for programmatic calls (init, batch review), then
-  // show the matching upload pane. The radio's checked state is the visual cue.
+  // Two modes: "single" (the drop-or-browse zones) and "batch" (multiple labels).
+  // Keep the radio in sync for programmatic calls (init, batch review).
   setRadioValue("uploadMode", mode);
-  chooseFileInputs.hidden = mode !== "choose";
-  dropZoneInputs.hidden = mode !== "drop";
+  dropZoneInputs.hidden = mode === "batch";
   batchPanel.hidden = mode !== "batch";
 }
 
@@ -1560,7 +1558,7 @@ for (const button of document.querySelectorAll("[data-remove-file]")) {
   });
 }
 
-setUploadMode("choose");
+setUploadMode("single");
 renderFileState("front");
 renderFileState("back");
 renderBatchQueue();

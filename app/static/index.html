@@ -54,25 +54,14 @@
             </fieldset>
 
             <fieldset id="uploadModeGroup" class="choice-group">
-              <legend class="section-label">Upload mode</legend>
-              <label class="choice"><input type="radio" name="uploadMode" value="choose" checked /><span>Choose File</span></label>
-              <label class="choice"><input type="radio" name="uploadMode" value="drop" /><span>Drag &amp; Drop</span></label>
-              <label class="choice"><input type="radio" name="uploadMode" value="batch" /><span>Batch</span></label>
+              <legend class="section-label">Labels</legend>
+              <label class="choice"><input type="radio" name="uploadMode" value="single" checked /><span>Single label</span></label>
+              <label class="choice"><input type="radio" name="uploadMode" value="batch" /><span>Multiple labels</span></label>
             </fieldset>
 
-            <div id="chooseFileInputs" class="upload-pane">
-              <div class="file-control">
-                <label for="frontImage">First file</label>
-                <input id="frontImage" class="file-native" data-file-slot="front" type="file" accept=".pdf,.png,.jpg,.jpeg,.webp,application/pdf,image/png,image/jpeg,image/webp" />
-              </div>
-
-              <div class="file-control">
-                <label for="backImage">Second file</label>
-                <input id="backImage" class="file-native" data-file-slot="back" type="file" accept=".pdf,.png,.jpg,.jpeg,.webp,application/pdf,image/png,image/jpeg,image/webp" />
-              </div>
-            </div>
-
-            <div id="dropZoneInputs" class="upload-pane" hidden>
+            <div id="dropZoneInputs" class="upload-pane">
+              <input id="frontImage" data-file-slot="front" type="file" hidden accept=".pdf,.png,.jpg,.jpeg,.webp,application/pdf,image/png,image/jpeg,image/webp" />
+              <input id="backImage" data-file-slot="back" type="file" hidden accept=".pdf,.png,.jpg,.jpeg,.webp,application/pdf,image/png,image/jpeg,image/webp" />
               <div class="drop-zone" id="frontDropZone" data-drop-slot="front" aria-describedby="frontDropSummary">
                 <span class="drop-label">First file</span>
                 <div class="drop-actions">
