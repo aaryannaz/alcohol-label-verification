@@ -881,6 +881,14 @@ body.lightbox-open {
   border-radius: var(--radius-lg);
   padding: 14px 16px;
   box-shadow: 0 1px 2px rgba(32, 36, 33, 0.05);
+  transition: box-shadow 0.2s ease, border-color 0.2s ease;
+}
+
+/* On step 2 the callout points at "these fields" — lift each card slightly so
+   it's clear which fields it means (no arrow needed). */
+.fields-panel.step-active #expectedFields .field-row {
+  border-color: color-mix(in srgb, var(--primary) 32%, var(--line));
+  box-shadow: 0 3px 12px color-mix(in srgb, var(--primary) 16%, transparent);
 }
 
 #expectedFields .field-name {
