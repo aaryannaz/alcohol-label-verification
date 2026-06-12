@@ -98,7 +98,7 @@ readme = [
     P("File structure", "h"),
     M(
         """alcohol-label-verification/
-  README.md  APPROACH.md  LICENSE        docs (this PDF mirrors README.md)
+  README.md  LICENSE  CLAUDE.md          repo-root docs (this PDF mirrors README.md)
   requirements.txt                       runtime deps (installed by Vercel)
   pyproject.toml                         packaging + ruff (lint) config
   vercel.json   .vercelignore            deploy / routing config
@@ -120,7 +120,11 @@ readme = [
     static/            browser UI (HTML/CSS/JS) served by FastAPI
   evals/               extraction-accuracy harness (render, score, cases)
   tests/               unit + API tests (validation, classify, api, platform)
-  scripts/             gemini_smoke_test.py (Gemini connectivity check)"""
+  scripts/             gemini_smoke_test.py (Gemini connectivity check)
+  docs/                submission documents (APPROACH.md + these PDFs)
+  reference/           project brief + TTB labeling checklists (rule sources)
+  tools/               make_pdfs.py (regenerates the docs/ PDFs)
+  archive/             historical eval run logs and candidate prompts"""
     ),
     P("Run it locally (step by step)", "h"),
     P(

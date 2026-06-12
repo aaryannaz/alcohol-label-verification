@@ -1,7 +1,7 @@
 # Approach, Tools & Assumptions
 
 A short design writeup for the AI-Powered Alcohol Label Verification prototype.
-(See the [README](README.md) for setup/run instructions and the full feature list.)
+(See the [README](../README.md) for setup/run instructions and the full feature list.)
 
 ## What it does
 
