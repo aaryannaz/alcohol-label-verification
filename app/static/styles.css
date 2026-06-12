@@ -407,7 +407,21 @@ h3 {
 }
 
 .setup-panel {
+  display: flex;
+  flex-direction: column;
   padding: 18px;
+}
+
+/* The setup card stretches to full height; fill it by keeping category/origin at
+   the top and anchoring the upload section to the bottom. */
+.setup-panel .control-grid {
+  display: flex;
+  flex-direction: column;
+  flex: 1;
+}
+
+.setup-panel .upload-mode-toggle {
+  margin-top: auto;
 }
 
 .main-column {
