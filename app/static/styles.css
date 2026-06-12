@@ -1394,6 +1394,37 @@ tr.is-flagged td:first-child {
   color: #ffffff;
 }
 
+/* Category/Origin selects above the single-label drop pads. Default "Auto" —
+   the server detects both from the label; the selects then show the detection. */
+.product-bar {
+  display: flex;
+  align-items: center;
+  flex-wrap: wrap;
+  gap: 10px 18px;
+  margin-bottom: 14px;
+}
+
+.product-bar-field {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  font-size: 16.8px;
+  font-weight: 650;
+}
+
+.product-bar-field select {
+  width: auto;
+  min-width: 150px;
+  height: 30px;
+  font-size: 16.8px;
+  font-weight: 500;
+}
+
+.product-bar-hint {
+  color: var(--muted);
+  font-size: 15.6px;
+}
+
 .upload-pane {
   display: grid;
   /* Front and back drop pads side by side on the wide main column; they stack

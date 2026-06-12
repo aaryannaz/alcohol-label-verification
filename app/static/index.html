@@ -45,19 +45,6 @@
               <label class="choice"><input type="radio" name="uploadMode" value="single" checked /><span>Single label</span></label>
               <label class="choice"><input type="radio" name="uploadMode" value="batch" /><span>Multiple labels</span></label>
             </fieldset>
-
-            <fieldset id="categoryGroup" class="choice-group">
-              <legend class="section-label">Product category</legend>
-              <label class="choice"><input type="radio" name="productCategory" value="malt_beverage" checked /><span>Malt beverage</span></label>
-              <label class="choice"><input type="radio" name="productCategory" value="distilled_spirits" /><span>Distilled spirits</span></label>
-              <label class="choice"><input type="radio" name="productCategory" value="wine" /><span>Wine</span></label>
-            </fieldset>
-
-            <fieldset id="originGroup" class="choice-group">
-              <legend class="section-label">Origin</legend>
-              <label class="choice"><input type="radio" name="originType" value="domestic" checked /><span>Domestic</span></label>
-              <label class="choice"><input type="radio" name="originType" value="imported" /><span>Imported</span></label>
-            </fieldset>
           </div>
 
           <div class="upload-progress" id="labelProgress" role="status" aria-live="polite" hidden>
@@ -68,6 +55,26 @@
 
         <div class="main-column">
         <section id="singleUploadPanel" class="panel upload-panel" aria-label="Upload label">
+          <div class="product-bar">
+            <label class="product-bar-field">
+              <span>Category</span>
+              <select id="singleCategory" aria-label="Product category">
+                <option value="auto" selected>Auto</option>
+                <option value="malt_beverage">Malt beverage</option>
+                <option value="distilled_spirits">Distilled spirits</option>
+                <option value="wine">Wine</option>
+              </select>
+            </label>
+            <label class="product-bar-field">
+              <span>Origin</span>
+              <select id="singleOrigin" aria-label="Origin">
+                <option value="auto" selected>Auto</option>
+                <option value="domestic">Domestic</option>
+                <option value="imported">Imported</option>
+              </select>
+            </label>
+            <span class="product-bar-hint">Detected from the label — change to override.</span>
+          </div>
           <div id="dropZoneInputs" class="upload-pane">
             <input id="frontImage" data-file-slot="front" type="file" hidden accept=".pdf,.png,.jpg,.jpeg,.webp,application/pdf,image/png,image/jpeg,image/webp" />
             <input id="backImage" data-file-slot="back" type="file" hidden accept=".pdf,.png,.jpg,.jpeg,.webp,application/pdf,image/png,image/jpeg,image/webp" />

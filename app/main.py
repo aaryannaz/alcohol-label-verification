@@ -127,16 +127,28 @@ async def field_requirements(product_category: ProductCategory, origin_type: Ori
 
 @app.post("/extract", dependencies=COST_GUARDS)
 async def extract(
-    product_category: ProductCategory = Form(...),
-    origin_type: OriginType = Form(...),
+    product_category: str = Form("auto"),
+    origin_type: str = Form("auto"),
     front_image: UploadFile = File(...),
     back_image: UploadFile | None = File(default=None),
 ):
-    extracted = await extract_label_fields(front_image, back_image, product_category.value)
+    """Extract the label fields. Like /verify, accepts "auto" for the category
+    and origin: the label is read with the all-fields schema and both are
+    inferred from the result, so the single-label flow needs no manual picks."""
+    auto_category = product_category not in _CATEGORY_VALUES
+    auto_origin = origin_type not in _ORIGIN_VALUES
+
+    extracted = await extract_label_fields(
+        front_image, back_image, None if auto_category else product_category
+    )
+    category = classify_category(extracted) if auto_category else product_category
+    origin = classify_origin(extracted) if auto_origin else origin_type
 
     return {
-        "product_category": product_category.value,
-        "origin_type": origin_type.value,
+        "product_category": category,
+        "origin_type": origin,
+        "detected_category": category,
+        "detected_origin": origin,
         "extracted": extracted,
     }
 

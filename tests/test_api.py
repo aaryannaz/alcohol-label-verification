@@ -48,9 +48,11 @@ class ApiTests(unittest.TestCase):
         self.assertIn("layoutSelect", response.text)
         self.assertIn("data-file-slot=\"front\"", response.text)
         self.assertIn("data-drop-slot=\"front\"", response.text)
-        # Category/origin/upload-mode are radio groups (friendlier than dropdowns).
-        self.assertIn("name=\"productCategory\"", response.text)
+        # Single/multiple is a radio group; category/origin are auto-detected
+        # from the label, with Auto-defaulting dropdowns to override.
         self.assertIn("name=\"uploadMode\"", response.text)
+        self.assertIn("id=\"singleCategory\"", response.text)
+        self.assertIn("id=\"singleOrigin\"", response.text)
         self.assertIn("id=\"batchPanel\"", response.text)
         self.assertIn("batchDropZone", response.text)
         self.assertIn("processBatchButton", response.text)

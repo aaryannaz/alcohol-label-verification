@@ -67,6 +67,8 @@ const state = {
   requirements: { required: [], conditional: [], optional: [] },
   extracted: {},
   extractedKey: null,
+  detectedCategory: null,
+  detectedOrigin: null,
   expectedValues: {},
   validation: {},
   lastResult: null,
@@ -88,9 +90,9 @@ const THEMES = ["light", "dark"];
 const LAYOUTS = ["standard", "government"];
 const themeToggle = document.querySelector("#themeToggle");
 const layoutSelect = document.querySelector("#layoutSelect");
-const categoryGroup = document.getElementById("categoryGroup");
-const originGroup = document.getElementById("originGroup");
 const uploadModeGroup = document.getElementById("uploadModeGroup");
+const singleCategory = document.getElementById("singleCategory");
+const singleOrigin = document.getElementById("singleOrigin");
 
 // Product category, origin, and upload mode are radio groups (visible options,
 // friendlier than dropdowns). Read/write the selected value by radio name.
@@ -101,6 +103,18 @@ function radioValue(name) {
 function setRadioValue(name, val) {
   const el = document.querySelector('input[name="' + name + '"][value="' + val + '"]');
   if (el) el.checked = true;
+}
+
+// Resolved category/origin for the single-label flow. The selects default to
+// "auto" (the server detects from the label); once detected, the resolved value
+// lives in state so requirements/validation always get a concrete value.
+function currentCategory() {
+  const v = singleCategory ? singleCategory.value : "auto";
+  return v !== "auto" ? v : (state.detectedCategory || "malt_beverage");
+}
+function currentOrigin() {
+  const v = singleOrigin ? singleOrigin.value : "auto";
+  return v !== "auto" ? v : (state.detectedOrigin || "domestic");
 }
 
 const frontImage = document.querySelector("#frontImage");
@@ -565,7 +579,7 @@ function setBusy(busy) {
   // origin) and the action buttons while a request is in flight, and show a
   // spinner / announce busy state to assistive tech.
   state.inFlight = busy;
-  const controls = [categoryGroup, originGroup, uploadModeGroup, verifyButton, themeToggle, layoutSelect];
+  const controls = [singleCategory, singleOrigin, uploadModeGroup, verifyButton, themeToggle, layoutSelect];
   for (const control of controls) {
     if (control) control.disabled = busy;
   }
@@ -715,8 +729,8 @@ async function recheckFromResults() {
       method: "POST",
       headers: { "Content-Type": "application/json" },
       body: JSON.stringify({
-        product_category: radioValue("productCategory"),
-        origin_type: radioValue("originType"),
+        product_category: currentCategory(),
+        origin_type: currentOrigin(),
         expected: expected,
         reviewed: reviewed,
       }),
@@ -905,8 +919,8 @@ async function refreshRequirements() {
   clearError();
   setStatus("Loading requirements");
   const params = new URLSearchParams({
-    product_category: radioValue("productCategory"),
-    origin_type: radioValue("originType"),
+    product_category: currentCategory(),
+    origin_type: currentOrigin(),
   });
   const response = await fetch("/field-requirements?" + params.toString());
   const body = await parseApiResponse(response);
@@ -929,14 +943,21 @@ async function runLabelExtraction() {
   // primary image — so it doesn't matter which slot the reviewer used.
   const files = [state.files.front, state.files.back].filter(Boolean);
   const formData = new FormData();
-  formData.append("product_category", radioValue("productCategory"));
-  formData.append("origin_type", radioValue("originType"));
+  // "auto" lets the server detect the category/origin from the label itself;
+  // a manual pick in the dropdowns sends the chosen value instead.
+  formData.append("product_category", singleCategory ? singleCategory.value : "auto");
+  formData.append("origin_type", singleOrigin ? singleOrigin.value : "auto");
   formData.append("front_image", files[0]);
   if (files[1]) formData.append("back_image", files[1]);
   const response = await fetchWithTimeout("/extract", { method: "POST", body: formData });
   const body = await parseApiResponse(response);
   state.extracted = body.extracted || {};
   state.extractedKey = labelFileKey();
+  // Reflect the detection back into the dropdowns (like batch rows do).
+  state.detectedCategory = body.detected_category || body.product_category || state.detectedCategory;
+  state.detectedOrigin = body.detected_origin || body.origin_type || state.detectedOrigin;
+  if (singleCategory && singleCategory.value === "auto" && state.detectedCategory) singleCategory.value = state.detectedCategory;
+  if (singleOrigin && singleOrigin.value === "auto" && state.detectedOrigin) singleOrigin.value = state.detectedOrigin;
 }
 
 function maybeAutoExtractLabel() {
@@ -965,15 +986,25 @@ async function extractFields() {
   try {
     await runLabelExtraction();
     state.expectedValues = state.extracted;
-    setExpectedValues(state.expectedValues);
+    // The detected category/origin decide which fields apply, so re-render the
+    // field list (refreshRequirements re-applies state.expectedValues).
+    await refreshRequirements();
     setStatus("Fields extracted from the label — edit each field to match the approved application, then Verify");
   } catch (error) {
-    showError(error.message);
+    showError(friendlyExtractionError(error));
     setStatus("Extraction failed");
   } finally {
     if (labelProgress) labelProgress.hidden = true;
     setBusy(false);
   }
+}
+
+// Gemini failures are almost always a temporary busy spike — say so instead of
+// surfacing a bare error.
+function friendlyExtractionError(error) {
+  return /gemini/i.test(error.message || "")
+    ? "Gemini was briefly unavailable — try again in a moment."
+    : error.message;
 }
 
 async function verifyReviewedFields() {
@@ -990,14 +1021,18 @@ async function verifyReviewedFields() {
     if (state.extractedKey !== labelFileKey()) {
       setStatus("Reading the label");
       await runLabelExtraction();
+      // First read on this file: seed the form and render the field set for the
+      // detected category/origin before validating.
+      state.expectedValues = state.extracted;
+      await refreshRequirements();
     }
     setStatus("Verifying fields");
     const response = await fetchWithTimeout("/verify-reviewed", {
       method: "POST",
       headers: { "Content-Type": "application/json" },
       body: JSON.stringify({
-        product_category: radioValue("productCategory"),
-        origin_type: radioValue("originType"),
+        product_category: currentCategory(),
+        origin_type: currentOrigin(),
         expected: formValues(expectedFields),
         reviewed: state.extracted,
       }),
@@ -1006,7 +1041,7 @@ async function verifyReviewedFields() {
     renderResults(body);
     setStatus("");
   } catch (error) {
-    showError(error.message);
+    showError(friendlyExtractionError(error));
     setStatus("Verification failed");
   } finally {
     setBusy(false);
@@ -1533,10 +1568,13 @@ async function reviewBatchItem(id) {
 
   clearError();
   // The row's dropdown may read "auto"; the verification response carries the
-  // resolved (detected or chosen) category/origin, so prefer that for the radios.
+  // resolved (detected or chosen) category/origin — load those into the
+  // single-label dropdowns so the editor opens on the right field set.
   const v = item.verification || {};
-  setRadioValue("productCategory", v.product_category || item.productCategory);
-  setRadioValue("originType", v.origin_type || item.originType);
+  const category = v.product_category || item.productCategory;
+  const origin = v.origin_type || item.originType;
+  if (singleCategory && category !== "auto") { singleCategory.value = category; state.detectedCategory = category; }
+  if (singleOrigin && origin !== "auto") { singleOrigin.value = origin; state.detectedOrigin = origin; }
   state.extracted = item.extracted;
   state.expectedValues = item.extracted;
   state.files.front = item.file;
@@ -1621,10 +1659,6 @@ function setUploadMode(mode) {
   const resultsPanel = document.querySelector(".results-panel");
   if (fieldsPanel) fieldsPanel.hidden = batch;
   if (resultsPanel) resultsPanel.hidden = batch;
-  // Category/origin are picked per-row (and auto-detected) in batch, so the
-  // sidebar's global Product category / Origin only apply to single uploads.
-  if (categoryGroup) categoryGroup.hidden = batch;
-  if (originGroup) originGroup.hidden = batch;
   updateStepHighlight();
 }
 
@@ -1782,8 +1816,8 @@ async function onCategoryOrOriginChange() {
   state.extractedKey = null;
   maybeAutoExtractLabel();
 }
-categoryGroup.addEventListener("change", onCategoryOrOriginChange);
-originGroup.addEventListener("change", onCategoryOrOriginChange);
+if (singleCategory) singleCategory.addEventListener("change", onCategoryOrOriginChange);
+if (singleOrigin) singleOrigin.addEventListener("change", onCategoryOrOriginChange);
 verifyButton.addEventListener("click", verifyReviewedFields);
 if (recheckButton) recheckButton.addEventListener("click", recheckFromResults);
 
