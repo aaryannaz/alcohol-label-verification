@@ -591,12 +591,18 @@ textarea[name="importer_name_address"] {
 
 /* Each field puts its label on the left and the input box on the right; subgrid
    keeps the label column aligned across every row. */
+/* Flow the fields like a real registration form: short single-value fields pack
+   several per row and wrap to fit the panel, instead of each taking its own line. */
 .field-grid {
-  grid-template-columns: minmax(110px, max-content) minmax(0, 1fr);
-  gap: 12px 14px;
+  grid-template-columns: repeat(auto-fit, minmax(260px, 1fr));
+  gap: 10px 18px;
+  align-items: start;
 }
 
+/* The textarea fields (name/address blocks and the government warning) carry
+   longer text, so give them the full width of the row. */
 .field-grid .field-row:has(textarea) {
+  grid-column: 1 / -1;
   align-items: start;
 }
 
@@ -628,10 +634,10 @@ textarea[name="importer_name_address"] {
 }
 
 .field-row {
-  grid-column: 1 / -1;
   display: grid;
-  grid-template-columns: subgrid;
+  grid-template-columns: minmax(72px, max-content) minmax(0, 1fr);
   align-items: center;
+  gap: 4px 10px;
 }
 
 .optional-divider {
