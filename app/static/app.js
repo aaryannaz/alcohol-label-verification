@@ -554,6 +554,8 @@ function renderEmptyResults(message) {
   if (compliance) compliance.innerHTML = "";
   state.lastResult = null;
   if (resultsSummary) resultsSummary.textContent = "";
+  const verdict = document.getElementById("resultsVerdict");
+  if (verdict) verdict.hidden = true;
   updateStepHighlight();
 }
 
@@ -700,12 +702,33 @@ function renderResults(response) {
     resultsBody.appendChild(row);
   }
 
+  const checked = keys.filter((key) => FIELD_LOOKUP[key]).length;
   if (resultsSummary) {
-    const checked = keys.filter((key) => FIELD_LOOKUP[key]).length;
     resultsSummary.textContent = `${checked} fields checked · ${passed} passed · ${attention} need attention`;
   }
 
+  const complianceFails = (response.compliance_checks || []).filter((c) => c.status === "FAIL").length;
+  renderVerdict(checked, attention + complianceFails);
+
   renderComplianceChecks(response.compliance_checks || []);
+}
+
+// One prominent overall pass/attention banner above the per-field table, so a
+// clean result reads at a glance instead of only as small green words.
+function renderVerdict(checked, flagged) {
+  const banner = document.getElementById("resultsVerdict");
+  if (!banner) return;
+  if (!checked) {
+    banner.hidden = true;
+    return;
+  }
+  const pass = flagged === 0;
+  banner.hidden = false;
+  banner.className = "results-verdict " + (pass ? "verdict-pass" : "verdict-attention");
+  banner.querySelector(".results-verdict-icon").textContent = pass ? "✓" : "!";
+  banner.querySelector(".results-verdict-text").textContent = pass
+    ? "Passed — all checks cleared"
+    : `Needs attention — ${flagged} ${flagged === 1 ? "item" : "items"} to review`;
 }
 
 function complianceStatusClass(status) {
