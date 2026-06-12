@@ -131,6 +131,11 @@ Alcohol By Volume
 Proof
 ABV
 
+For net_contents, capture the complete net-contents statement. If the label shows the volume in TWO unit systems — a metric measure (e.g. "500 mL") and a U.S. customary measure (e.g. "1 PINT 0.9 FL OZ" or "16 FL OZ") — include BOTH exactly as printed, keeping the U.S. customary measure (it is the mandatory one for malt beverages).
+Examples:
+- Label shows "500 mL" and "1 PINT 0.9 FL OZ" -> 500 mL (1 Pint 0.9 fl oz)
+- Label shows only "750 mL" -> 750 mL
+
 Do not use IPA, Ale, Beer, Lager, Wine, Rum, Vodka, Whiskey, or other class/type words as brand_name.
 If a large text item is a class/type, product style, or abbreviation like IPA, do not treat it as the brand name.
 Example:

@@ -60,6 +60,18 @@ class LabelCheckTests(unittest.TestCase):
         self.assertEqual(self._find(checks, "net_contents_unit_system")["status"], "PASS")
         self.assertIsNone(self._find(checks, "standard_of_fill"))
 
+    def test_malt_dual_unit_with_customary_passes(self):
+        # Metric AND customary shown (common on imports) — compliant under 27 CFR
+        # 7.70 because the customary statement is present.
+        checks = compute_label_checks("malt_beverage", "imported",
+                                      self._reviewed(net_contents="500 mL (1 Pint 0.9 fl oz)"))
+        self.assertEqual(self._find(checks, "net_contents_unit_system")["status"], "PASS")
+
+    def test_malt_metric_only_still_fails(self):
+        checks = compute_label_checks("malt_beverage", "imported",
+                                      self._reviewed(net_contents="500 mL"))
+        self.assertEqual(self._find(checks, "net_contents_unit_system")["status"], "FAIL")
+
     def test_origin_consistency_imported_with_domestic_address(self):
         checks = compute_label_checks("wine", "imported",
                                       self._reviewed(net_contents="750 mL", domestic_name_address="X, Napa CA"))

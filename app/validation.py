@@ -305,6 +305,17 @@ def net_contents_unit_system(value):
     return None
 
 
+def net_contents_has_customary(value):
+    """True if the net-contents statement includes a U.S. customary measure
+    anywhere (so a dual-unit statement like "500 mL (1 PINT 0.9 FL OZ)" counts)."""
+    if not value:
+        return False
+    text = value.lower()
+    text = re.sub(r"fl\.?\s*oz\.?", "fl oz", text)
+    text = re.sub(r"fluid\s+ounces?", "fl oz", text)
+    return re.search(r"\d+(?:\.\d+)?\s*(fl oz|gallons?|quarts?|pints?|gal|qt|pt)\b", text) is not None
+
+
 def is_approved_standard_of_fill(product_category, milliliters):
     """True/False if the volume is an approved standard of fill, or None when the
     category has no enumerated standard (malt beverage)."""
@@ -655,9 +666,15 @@ def compute_label_checks(product_category: str, origin_type: str, reviewed: dict
         if system is None:
             checks.append(_check("net_contents_unit_system", "Net contents unit system",
                                  "INFO", "Could not recognize the net-contents unit."))
-        elif system != expected_system:
+        elif product_category == "malt_beverage" and net_contents_has_customary(net_contents):
+            # 27 CFR 7.70 requires U.S. customary units; metric MAY also be shown,
+            # so a dual-unit statement that includes customary is compliant.
             checks.append(_check("net_contents_unit_system", "Net contents unit system",
-                                 "FAIL", f"{readable} must use {expected_system} units; the label uses {system} units."))
+                                 "PASS", "Includes U.S. customary units."))
+        elif system != expected_system:
+            only = " only" if product_category == "malt_beverage" else ""
+            checks.append(_check("net_contents_unit_system", "Net contents unit system",
+                                 "FAIL", f"{readable} must use {expected_system} units; the label uses {system} units{only}."))
         else:
             checks.append(_check("net_contents_unit_system", "Net contents unit system",
                                  "PASS", f"Uses {expected_system} units."))
