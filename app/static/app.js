@@ -1440,7 +1440,11 @@ async function processBatchItem(item) {
       : flagged + " item" + (flagged === 1 ? "" : "s") + " need attention";
   } catch (error) {
     item.status = "Error";
-    item.message = error.message;
+    // Gemini failures are almost always a temporary busy spike — say so, and
+    // point at the Retry button instead of leaving a bare error.
+    item.message = /gemini/i.test(error.message || "")
+      ? "Gemini was briefly unavailable — click Retry."
+      : error.message;
     item.verification = null;
   }
 
@@ -1478,6 +1482,16 @@ async function processBatchQueue() {
   setStatus("Processing " + queue.length + " file" + (queue.length === 1 ? "" : "s") + "…");
 
   await runBatchConcurrently(queue, BATCH_CONCURRENCY);
+
+  // Gemini occasionally rejects a call in a busy burst (503) even after the
+  // server's own retries. One automatic second pass after a short pause clears
+  // most of these without the reviewer having to click Retry per row.
+  const failed = queue.filter((item) => item.status === "Error" && !item.clientError);
+  if (failed.length) {
+    setStatus("Retrying " + failed.length + " failed item" + (failed.length === 1 ? "" : "s") + "…");
+    await new Promise((resolve) => setTimeout(resolve, 2000));
+    await runBatchConcurrently(failed, BATCH_CONCURRENCY);
+  }
 
   state.batch.processing = false;
   renderBatchQueue();
