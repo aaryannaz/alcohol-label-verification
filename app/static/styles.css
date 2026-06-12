@@ -1203,6 +1203,9 @@ tr.is-flagged td:first-child {
 .upload-pane {
   display: grid;
   gap: 14px;
+  /* Allow the pane (and its drop zones below) to shrink into the grid column
+     so a long filename truncates instead of widening the whole sidebar. */
+  min-width: 0;
 }
 
 .upload-pane[hidden] {
@@ -1279,6 +1282,7 @@ tr.is-flagged td:first-child {
   align-items: center;
   justify-content: space-between;
   gap: 10px;
+  min-width: 0;
   min-height: 32px;
   border: 1px solid var(--line);
   border-radius: var(--radius);
@@ -1328,6 +1332,7 @@ tr.is-flagged td:first-child {
 .drop-zone {
   display: grid;
   gap: 8px;
+  min-width: 0;
   min-height: 104px;
   border: 2px dashed var(--line);
   border-radius: var(--radius);
