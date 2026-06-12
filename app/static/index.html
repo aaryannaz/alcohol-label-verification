@@ -96,19 +96,17 @@
           <div class="section-heading batch-heading">
             <div>
               <h2 id="batch-title">Batch</h2>
-              <p class="batch-note">Each file is one review item; files are processed in parallel. If a label's front and back are separate images, use “Add second image” on its row.</p>
+              <p class="batch-note">Each file is one review item; files are processed in parallel.</p>
             </div>
             <div class="batch-actions">
-              <label class="file-select-button" for="batchFiles">Select files</label>
-              <input id="batchFiles" class="native-file-input" type="file" multiple accept=".pdf,.png,.jpg,.jpeg,.webp,application/pdf,image/png,image/jpeg,image/webp" />
+              <input id="batchFiles" type="file" multiple hidden accept=".pdf,.png,.jpg,.jpeg,.webp,application/pdf,image/png,image/jpeg,image/webp" />
               <button id="processBatchButton" class="secondary-button" type="button">Process Batch</button>
               <button id="clearBatchButton" class="secondary-button" type="button">Clear</button>
             </div>
           </div>
 
           <div id="batchDropZone" class="batch-drop-zone" data-batch-drop-zone aria-describedby="batchDropHint">
-            <span class="drop-label">Batch files</span>
-            <span class="drop-hint" id="batchDropHint">Drop multiple files here.</span>
+            <span class="drop-hint" id="batchDropHint">Drop multiple files here or <button type="button" class="link-button" id="batchBrowse">browse</button></span>
           </div>
 
           <div class="table-wrap batch-table-wrap">

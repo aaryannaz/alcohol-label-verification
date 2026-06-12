@@ -114,6 +114,7 @@ const busySpinner = document.getElementById("busySpinner");
 const dropZoneInputs = document.getElementById("dropZoneInputs");
 const batchPanel = document.getElementById("batchPanel");
 const batchFiles = document.getElementById("batchFiles");
+const batchBrowse = document.getElementById("batchBrowse");
 const batchDropZone = document.getElementById("batchDropZone");
 const batchBody = document.getElementById("batchBody");
 const processBatchButton = document.getElementById("processBatchButton");
@@ -245,11 +246,6 @@ function renderLabelPreview() {
   for (const [slot, file] of present) {
     const item = document.createElement("figure");
     item.className = "label-preview-item";
-
-    const caption = document.createElement("figcaption");
-    caption.className = "label-preview-label";
-    caption.textContent = FILE_LABELS[slot];
-    item.appendChild(caption);
 
     if (file.type && file.type.indexOf("image/") === 0) {
       const url = URL.createObjectURL(file);
@@ -715,7 +711,7 @@ async function recheckFromResults() {
     });
     const body = await parseApiResponse(response);
     renderResults(body);
-    setStatus("Verification complete");
+    setStatus("");
   } catch (error) {
     showError(error.message);
     setStatus("Re-check failed");
@@ -992,7 +988,7 @@ async function verifyReviewedFields() {
     });
     const body = await parseApiResponse(response);
     renderResults(body);
-    setStatus("Verification complete");
+    setStatus("");
   } catch (error) {
     showError(error.message);
     setStatus("Verification failed");
@@ -1075,43 +1071,6 @@ function createBatchSelect(item, key, options) {
   return select;
 }
 
-// A batch row is one label; this control lets a reviewer attach a second image
-// (e.g. the back panel) so the row is verified as a single item, mirroring the
-// First/Second slots in single-upload mode.
-function buildBatchSecondImage(item) {
-  const wrap = document.createElement("div");
-  wrap.className = "batch-second";
-  const locked = state.batch.processing || item.status === "Processing";
-
-  if (item.backFile) {
-    const name = document.createElement("span");
-    name.className = "batch-second-name";
-    name.textContent = "+ second image: " + item.backFile.name + " (" + formatBytes(item.backFile.size) + ")";
-    wrap.appendChild(name);
-
-    const remove = document.createElement("button");
-    remove.type = "button";
-    remove.className = "batch-second-button";
-    remove.dataset.removeBatchSecond = String(item.id);
-    remove.disabled = locked;
-    remove.textContent = "Remove";
-    wrap.appendChild(remove);
-  } else {
-    const label = document.createElement("label");
-    label.className = "batch-second-button";
-    label.textContent = "+ Add second image";
-    const input = document.createElement("input");
-    input.type = "file";
-    input.className = "native-file-input";
-    input.accept = ".pdf,.png,.jpg,.jpeg,.webp,application/pdf,image/png,image/jpeg,image/webp";
-    input.dataset.addBatchSecond = String(item.id);
-    input.disabled = locked;
-    label.appendChild(input);
-    wrap.appendChild(label);
-  }
-  return wrap;
-}
-
 function renderBatchQueue() {
   batchBody.innerHTML = "";
 
@@ -1148,7 +1107,6 @@ function renderBatchQueue() {
       message.textContent = item.message;
       fileCell.appendChild(message);
     }
-    fileCell.appendChild(buildBatchSecondImage(item));
 
     const categoryCell = document.createElement("td");
     categoryCell.appendChild(createBatchSelect(item, "productCategory", PRODUCT_CATEGORY_OPTIONS));
@@ -1421,32 +1379,6 @@ function resetBatchItemVerdict(item) {
   }
 }
 
-function attachBatchSecondImage(id, file) {
-  const item = state.batch.items.find((candidate) => candidate.id === id);
-  if (!item || state.batch.processing) return;
-
-  const clientError = validateClientFile(file);
-  if (clientError) {
-    showError("Second image: " + clientError);
-    return;
-  }
-  clearError();
-  item.backFile = file;
-  resetBatchItemVerdict(item);
-  renderBatchQueue();
-  setStatus("Second image added to item #" + id);
-}
-
-function removeBatchSecondImage(id) {
-  const item = state.batch.items.find((candidate) => candidate.id === id);
-  if (!item || state.batch.processing) return;
-
-  item.backFile = null;
-  resetBatchItemVerdict(item);
-  renderBatchQueue();
-  setStatus("Second image removed from item #" + id);
-}
-
 function clearBatchQueue() {
   if (state.batch.processing) return;
   state.batch.items = [];
@@ -1597,6 +1529,13 @@ batchFiles.addEventListener("change", function() {
   batchFiles.value = "";
 });
 
+if (batchBrowse) {
+  batchBrowse.addEventListener("click", function(event) {
+    event.stopPropagation();
+    batchFiles.click();
+  });
+}
+
 processBatchButton.addEventListener("click", processBatchQueue);
 clearBatchButton.addEventListener("click", clearBatchQueue);
 
@@ -1613,23 +1552,16 @@ batchBody.addEventListener("change", function(event) {
     const item = state.batch.items.find((candidate) => candidate.id === Number(originControl.dataset.batchOrigin));
     if (item) item.originType = originControl.value;
   }
-
-  const addSecond = event.target.closest("[data-add-batch-second]");
-  if (addSecond && addSecond.files && addSecond.files.length) {
-    attachBatchSecondImage(Number(addSecond.dataset.addBatchSecond), addSecond.files[0]);
-  }
 });
 
 batchBody.addEventListener("click", function(event) {
   const reviewButton = event.target.closest("[data-review-batch]");
   const retryButton = event.target.closest("[data-retry-batch]");
   const removeButton = event.target.closest("[data-remove-batch]");
-  const removeSecondButton = event.target.closest("[data-remove-batch-second]");
 
   if (reviewButton) reviewBatchItem(Number(reviewButton.dataset.reviewBatch));
   if (retryButton) retryBatchItem(Number(retryButton.dataset.retryBatch));
   if (removeButton) removeBatchItem(Number(removeButton.dataset.removeBatch));
-  if (removeSecondButton) removeBatchSecondImage(Number(removeSecondButton.dataset.removeBatchSecond));
 });
 
 // A category/origin change rebuilds the field list AND re-extracts from the

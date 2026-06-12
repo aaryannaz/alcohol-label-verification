@@ -66,7 +66,7 @@ class ApiTests(unittest.TestCase):
         self.assertIn("text/html", response.headers["content-type"])
         self.assertIn("Instructions", response.text)
         self.assertIn("Each batch file is treated as one review item.", response.text)
-        self.assertIn("Use Batch mode when uploading multiple review items at once.", response.text)
+        self.assertIn("Switch to <strong>Multiple labels</strong> when screening several review items at once.", response.text)
         self.assertIn("CSV or Excel import is a future enhancement.", response.text)
         self.assertNotIn(">Swagger<", response.text)
 
