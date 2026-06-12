@@ -107,6 +107,7 @@ const statusText = document.querySelector("#statusText");
 const errorBox = document.querySelector("#errorBox");
 const resultsBody = document.querySelector("#resultsBody");
 const resultsSummary = document.getElementById("resultsSummary");
+const resultsThumb = document.getElementById("resultsThumb");
 const busySpinner = document.getElementById("busySpinner");
 const chooseFileInputs = document.getElementById("chooseFileInputs");
 const dropZoneInputs = document.getElementById("dropZoneInputs");
@@ -296,6 +297,32 @@ function renderLabelPreview() {
 
     container.appendChild(item);
   }
+}
+
+// Small clickable label thumbnail shown in the results panel — same Quick Look
+// overlay as the top preview, just smaller. Images only (PDFs use the top viewer).
+function renderResultsThumb() {
+  if (!resultsThumb) return;
+  if (state.resultsThumbUrl) {
+    URL.revokeObjectURL(state.resultsThumbUrl);
+    state.resultsThumbUrl = null;
+  }
+  resultsThumb.innerHTML = "";
+  const file = state.files.front || state.files.back;
+  if (!file || !(file.type && file.type.indexOf("image/") === 0)) {
+    resultsThumb.hidden = true;
+    resultsThumb.onclick = null;
+    return;
+  }
+  const url = URL.createObjectURL(file);
+  state.resultsThumbUrl = url;
+  const img = document.createElement("img");
+  img.src = url;
+  img.alt = "";
+  resultsThumb.appendChild(img);
+  resultsThumb.hidden = false;
+  resultsThumb.title = "Click to preview the label";
+  resultsThumb.onclick = function() { openLightbox(url, "Label artwork"); };
 }
 
 // Quick Look–style preview: click a label thumbnail to see it large on a dim
@@ -556,6 +583,7 @@ function renderEmptyResults(message) {
   if (resultsSummary) resultsSummary.textContent = "";
   const verdict = document.getElementById("resultsVerdict");
   if (verdict) verdict.hidden = true;
+  if (resultsThumb) { resultsThumb.hidden = true; resultsThumb.onclick = null; }
   updateStepHighlight();
 }
 
@@ -639,6 +667,7 @@ function isFlaggedStatus(status) {
 function renderResults(response) {
   state.lastResult = response;
   updateStepHighlight();
+  renderResultsThumb();
   const expected = response.expected || formValues(expectedFields);
   const reviewed = response.reviewed || response.extracted || state.extracted || {};
   const validation = response.validation || {};
