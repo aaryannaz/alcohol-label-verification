@@ -403,6 +403,11 @@ h3 {
 
 .setup-panel {
   padding: 18px;
+  /* The form is a long single column; keep the controls in view while scrolling
+     instead of leaving the left column empty below the (shorter) sidebar. */
+  position: sticky;
+  top: 16px;
+  align-self: start;
 }
 
 /* Radio groups (product category / origin / upload mode) shown as clickable
@@ -722,7 +727,7 @@ textarea[name="importer_name_address"] {
 
 /* One field per row; each row is its own card with the label above the input. */
 #expectedFields.field-grid {
-  grid-template-columns: repeat(auto-fit, minmax(230px, 1fr));
+  grid-template-columns: 1fr;
   gap: 12px;
 }
 
