@@ -5,7 +5,8 @@
       "src": "app/main.py",
       "use": "@vercel/python",
       "config": {
-        "includeFiles": "app/static/**"
+        "includeFiles": "app/static/**",
+        "maxDuration": 60
       }
     }
   ],

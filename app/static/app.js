@@ -152,12 +152,6 @@ function setAutoOptionText(select, detectedLabel) {
 function updateDetectionUI() {
   setAutoOptionText(singleCategory, state.detectedCategory ? PRODUCT_CATEGORY_LABELS[state.detectedCategory] : "");
   setAutoOptionText(singleOrigin, state.detectedOrigin ? ORIGIN_LABELS[state.detectedOrigin] : "");
-  const hint = document.getElementById("productBarHint");
-  if (hint) {
-    hint.textContent = state.detectedCategory || state.detectedOrigin
-      ? "Detected from the label — change to override."
-      : "Auto — detected after you upload a label.";
-  }
 }
 
 // A new label means a new product: any earlier detection or pick no longer
@@ -187,7 +181,6 @@ const singleUploadPanel = document.getElementById("singleUploadPanel");
 const batchPanel = document.getElementById("batchPanel");
 const batchFiles = document.getElementById("batchFiles");
 const batchBrowse = document.getElementById("batchBrowse");
-const batchGroupToggle = document.getElementById("batchGroupToggle");
 const batchDropZone = document.getElementById("batchDropZone");
 const batchBody = document.getElementById("batchBody");
 const processBatchButton = document.getElementById("processBatchButton");
@@ -309,7 +302,11 @@ function renderLabelPreview() {
   container.innerHTML = "";
 
   const present = [["front", state.files.front], ["back", state.files.back]].filter(function(entry) { return entry[1]; });
-  if (!present.length) {
+  // The preview belongs to the single-label flow — batch rows have their own
+  // thumbnails, and a leftover single-label preview under the batch table reads
+  // as part of the batch. setUploadMode re-renders on every mode switch, so the
+  // preview comes back when the reviewer returns to single mode.
+  if (!present.length || radioValue("uploadMode") === "batch") {
     if (panel) panel.hidden = true;
     return;
   }
@@ -470,6 +467,15 @@ const STEP_CALLOUTS = {
   done: { num: 3, text: "Here are your verification results." },
 };
 
+// The batch flow gets the same numbered guidance: add files -> Process all ->
+// read the results.
+const BATCH_STEP_CALLOUTS = {
+  upload: { num: 1, text: "Add your label files to begin." },
+  process: { num: 2, text: "Click Process all to check every label." },
+  processing: { num: 2, text: "Checking your labels…" },
+  done: { num: 3, text: "Here are your results." },
+};
+
 function getStepCallout() {
   let el = document.getElementById("stepCallout");
   if (!el) {
@@ -483,12 +489,33 @@ function getStepCallout() {
   return el;
 }
 
+function updateBatchStepCallout() {
+  if (!batchPanel) return;
+  // Drop the single-flow spotlight — batch is one panel, so only the callout
+  // moves; a permanent glow would just be noise.
+  for (const selector of [".setup-panel", ".fields-panel", ".results-panel"]) {
+    const panel = document.querySelector(selector);
+    if (panel) panel.classList.remove("step-active");
+  }
+  const items = state.batch.items;
+  const step = !items.length
+    ? "upload"
+    : state.batch.processing
+      ? "processing"
+      : items.some(isBatchItemVerified)
+        ? "done"
+        : "process";
+  const info = BATCH_STEP_CALLOUTS[step];
+  const callout = getStepCallout();
+  callout.querySelector(".step-num").textContent = info.num;
+  callout.querySelector(".step-text").textContent = info.text;
+  if (callout.parentElement !== batchPanel) batchPanel.prepend(callout);
+}
+
 function updateStepHighlight() {
-  // The step highlight + callout belong to the single-label flow; batch has its
-  // own output, so skip them there.
+  // Batch mode shows its own three steps inside the batch panel.
   if (radioValue("uploadMode") === "batch") {
-    const existing = document.getElementById("stepCallout");
-    if (existing) existing.remove();
+    updateBatchStepCallout();
     return;
   }
   const setup = document.querySelector(".setup-panel");
@@ -514,7 +541,43 @@ function updateStepHighlight() {
   }
 }
 
-function setSelectedFile(slot, file) {
+// Big phone photos are the main cause of slow reads (a 40-megapixel label
+// takes Gemini far longer than the same label at 2000px — observed in
+// production as a deadline timeout). Downscale large images in the browser
+// before upload: smaller, much faster, and label text at 2000px is still
+// perfectly legible. PDFs, small images, and anything that fails to decode
+// pass through unchanged.
+const DOWNSCALE_THRESHOLD_BYTES = 2.5 * 1024 * 1024;
+const DOWNSCALE_MAX_DIMENSION = 2000;
+const DOWNSCALE_JPEG_QUALITY = 0.85;
+
+async function prepareUploadFile(file) {
+  if (!file || !file.type || file.type.indexOf("image/") !== 0) return file;
+  try {
+    const bitmap = await createImageBitmap(file);
+    const longest = Math.max(bitmap.width, bitmap.height);
+    if (longest <= DOWNSCALE_MAX_DIMENSION && file.size <= DOWNSCALE_THRESHOLD_BYTES) {
+      bitmap.close();
+      return file;
+    }
+    const scale = Math.min(1, DOWNSCALE_MAX_DIMENSION / longest);
+    const canvas = document.createElement("canvas");
+    canvas.width = Math.max(1, Math.round(bitmap.width * scale));
+    canvas.height = Math.max(1, Math.round(bitmap.height * scale));
+    canvas.getContext("2d").drawImage(bitmap, 0, 0, canvas.width, canvas.height);
+    bitmap.close();
+    const blob = await new Promise((resolve) => canvas.toBlob(resolve, "image/jpeg", DOWNSCALE_JPEG_QUALITY));
+    if (!blob || blob.size >= file.size) return file;
+    // Keep the base name (the batch _front/_back pairing keys off it) but the
+    // re-encode is a JPEG now.
+    return new File([blob], file.name.replace(/\.\w+$/, "") + ".jpg", { type: "image/jpeg" });
+  } catch {
+    return file;
+  }
+}
+
+async function setSelectedFile(slot, file) {
+  file = await prepareUploadFile(file);
   const error = validateClientFile(file);
   if (error) {
     showError(error);
@@ -951,12 +1014,18 @@ function renderComplianceChecks(checks) {
   heading.textContent = "Label compliance checks";
   container.appendChild(heading);
 
+  const intro = document.createElement("p");
+  intro.className = "compliance-intro";
+  intro.textContent =
+    "These check the label itself — container size, units, and origin — not the application fields.";
+  container.appendChild(intro);
+
   const list = document.createElement("ul");
   for (const check of checks) {
     const item = document.createElement("li");
     const badge = document.createElement("span");
     badge.className = "status-badge " + complianceStatusClass(check.status);
-    badge.textContent = check.status;
+    badge.textContent = statusLabel(check.status);
     item.appendChild(badge);
     item.appendChild(document.createTextNode(" " + check.label + " — " + check.detail));
     list.appendChild(item);
@@ -1122,16 +1191,10 @@ async function extractFields() {
       state.expectedValuesReseeded = true;
     }
     // The detected category/origin decide which fields apply, so re-render the
-    // field list (refreshRequirements re-applies state.expectedValues).
+    // field list (refreshRequirements re-applies state.expectedValues). The step
+    // callout already tells the reviewer what to do next — no status line needed.
     await refreshRequirements();
-    const detected = [
-      state.detectedCategory ? PRODUCT_CATEGORY_LABELS[state.detectedCategory] : "",
-      state.detectedOrigin ? ORIGIN_LABELS[state.detectedOrigin] : "",
-    ].filter(Boolean).join(", ");
-    setStatus(
-      (detected ? "Detected " + detected + ". " : "") +
-      "Fields extracted from the label — edit each field to match the approved application, then Verify"
-    );
+    setStatus("");
   } catch (error) {
     showError(friendlyExtractionError(error));
     setStatus("Extraction failed");
@@ -1143,11 +1206,17 @@ async function extractFields() {
   }
 }
 
-// Gemini failures are almost always a temporary busy spike — say so instead of
-// surfacing a bare error.
+// Tell apart the two AI-reader failure modes: GEMINI_CLIENT_ERROR means the
+// reader rejected THIS file (too large, unreadable format) — retrying the same
+// file cannot help, so say that. Anything else Gemini-shaped is a temporary
+// busy spike worth retrying. Neither message names the vendor — reviewers
+// don't care which model is behind the reader.
 function friendlyExtractionError(error) {
+  if (error.code === "GEMINI_CLIENT_ERROR") {
+    return "This file couldn't be read — it may be too large or in an unsupported format. Try a smaller image or a different file.";
+  }
   return /gemini/i.test(error.message || "")
-    ? "Gemini was briefly unavailable — try again in a moment."
+    ? "The label reader was busy for a moment — please try again."
     : error.message;
 }
 
@@ -1316,7 +1385,9 @@ function buildBatchDetail(item) {
   const tableWrap = document.createElement("div");
   tableWrap.className = "table-wrap";
   const table = document.createElement("table");
-  table.className = "batch-detail-table";
+  // results-table: the shared skin used by the single-label results table, so
+  // the two outputs stay visually identical (see styles.css).
+  table.className = "batch-detail-table results-table";
   const thead = document.createElement("thead");
   thead.innerHTML = "<tr><th>Field</th><th>Status</th><th>Label</th></tr>";
   table.appendChild(thead);
@@ -1355,12 +1426,17 @@ function buildBatchDetail(item) {
     h.className = "batch-detail-checks-title";
     h.textContent = "Label compliance checks";
     cwrap.appendChild(h);
+    const intro = document.createElement("p");
+    intro.className = "compliance-intro";
+    intro.textContent =
+      "These check the label itself — container size, units, and origin — not the application fields.";
+    cwrap.appendChild(intro);
     for (const c of checks) {
       const line = document.createElement("div");
       line.className = "batch-detail-check";
       const cb = document.createElement("span");
       cb.className = "status-badge " + complianceStatusClass(c.status);
-      cb.textContent = c.status;
+      cb.textContent = statusLabel(c.status);
       line.appendChild(cb);
       line.appendChild(document.createTextNode(" " + c.label + " — " + c.detail));
       cwrap.appendChild(line);
@@ -1372,10 +1448,33 @@ function buildBatchDetail(item) {
   editLink.type = "button";
   editLink.className = "link-button batch-detail-edit";
   editLink.dataset.reviewBatch = String(item.id);
-  editLink.textContent = "Open in the editor to correct fields →";
+  editLink.textContent = "Edit";
+  editLink.setAttribute("aria-label", "Open in the editor to correct fields");
   wrap.appendChild(editLink);
 
   return wrap;
+}
+
+// Small clickable thumbnail of the row's label photo (images only — PDFs have
+// no inline thumbnail here). The object URL lives on the item so row rebuilds
+// don't leak URLs; removeBatchItem revokes it.
+function buildBatchThumb(item) {
+  if (!(item.file && item.file.type && item.file.type.indexOf("image/") === 0)) return null;
+  if (!item.thumbUrl) item.thumbUrl = URL.createObjectURL(item.file);
+  const button = document.createElement("button");
+  button.type = "button";
+  button.className = "batch-thumb";
+  button.title = "Click to preview the label";
+  button.setAttribute("aria-label", "Preview " + item.file.name);
+  const img = document.createElement("img");
+  img.src = item.thumbUrl;
+  img.alt = "";
+  img.loading = "lazy";
+  button.appendChild(img);
+  button.addEventListener("click", function() {
+    openLightbox(item.thumbUrl, (item.productName || item.file.name) + " label artwork");
+  });
+  return button;
 }
 
 function buildBatchRow(item) {
@@ -1383,6 +1482,8 @@ function buildBatchRow(item) {
   row.dataset.itemId = String(item.id);
 
   const caseCell = document.createElement("td");
+  const thumb = buildBatchThumb(item);
+  if (thumb) caseCell.appendChild(thumb);
   const productName = document.createElement("span");
   productName.className = "batch-product-name";
   productName.textContent = item.productName || ("#" + item.id);
@@ -1391,12 +1492,9 @@ function buildBatchRow(item) {
 
   const fileCell = document.createElement("td");
   const fileName = document.createElement("span");
-  const fileMeta = document.createElement("span");
   fileName.className = "batch-file-name";
   fileName.textContent = item.file.name;
   fileName.title = item.file.name;
-  fileMeta.className = "batch-file-meta";
-  fileMeta.textContent = formatBytes(item.file.size) + (item.backFile ? " · 2 images" : "");
   fileCell.appendChild(fileName);
   if (item.backFile) {
     const backName = document.createElement("span");
@@ -1404,8 +1502,11 @@ function buildBatchRow(item) {
     backName.textContent = "+ " + item.backFile.name;
     backName.title = item.backFile.name;
     fileCell.appendChild(backName);
+    const fileMeta = document.createElement("span");
+    fileMeta.className = "batch-file-meta";
+    fileMeta.textContent = "2 images";
+    fileCell.appendChild(fileMeta);
   }
-  fileCell.appendChild(fileMeta);
   if (item.message) {
     const message = document.createElement("span");
     message.className = "batch-row-message" + (item.status === "Error" ? " error" : "");
@@ -1424,6 +1525,13 @@ function buildBatchRow(item) {
   badge.className = "status-badge " + batchStatusClass(item.status);
   badge.textContent = batchStatusText(item);
   statusCell.appendChild(badge);
+  if (item.status === "Processing") {
+    const bar = document.createElement("div");
+    bar.className = "batch-progress";
+    bar.setAttribute("aria-hidden", "true");
+    bar.innerHTML = '<div class="batch-progress-fill"></div>';
+    statusCell.appendChild(bar);
+  }
 
   const actionCell = document.createElement("td");
   const actions = document.createElement("div");
@@ -1438,7 +1546,7 @@ function buildBatchRow(item) {
     toggle.dataset.toggleBatch = String(item.id);
     toggle.disabled = state.batch.processing;
     toggle.type = "button";
-    toggle.textContent = item.expanded ? "Hide details" : "Details";
+    toggle.textContent = item.expanded ? "Hide" : "Details";
     toggle.setAttribute("aria-label", (item.expanded ? "Hide details for " : "Show details for ") + item.file.name);
     actions.appendChild(toggle);
   }
@@ -1488,17 +1596,10 @@ function buildBatchDetailRow(item) {
 function renderBatchQueue() {
   batchBody.innerHTML = "";
 
-  if (!state.batch.items.length) {
-    const row = document.createElement("tr");
-    const cell = document.createElement("td");
-    cell.colSpan = 6;
-    cell.className = "empty-row";
-    cell.textContent = "No batch files added.";
-    row.appendChild(cell);
-    batchBody.appendChild(row);
-    updateBatchControls();
-    return;
-  }
+  // The whole table stays hidden until there is something to list — the step
+  // callout above it already tells the reviewer to add files.
+  const tableWrap = batchPanel ? batchPanel.querySelector(".batch-table-wrap") : null;
+  if (tableWrap) tableWrap.hidden = !state.batch.items.length;
 
   for (const item of state.batch.items) {
     batchBody.appendChild(buildBatchRow(item));
@@ -1508,6 +1609,7 @@ function renderBatchQueue() {
   }
 
   updateBatchControls();
+  updateStepHighlight();
 }
 
 // Patch one row in place. A full renderBatchQueue per status change is O(n^2)
@@ -1541,15 +1643,38 @@ function updateBatchRow(item) {
     if (control && !control.disabled) control.focus();
   }
   updateBatchControls();
+  updateStepHighlight();
 }
 
 function updateBatchControls() {
   const hasProcessableItems = state.batch.items.some(canProcessBatchItem);
   processBatchButton.disabled = state.batch.processing || !hasProcessableItems;
+  renderBatchVerdict();
 }
 
-function batchGroupingEnabled() {
-  return !batchGroupToggle || batchGroupToggle.checked;
+// One prominent overall banner for a finished batch, mirroring the single-label
+// verdict: solid green PASS when every label cleared, amber when any row needs
+// review (or errored). Hidden while the batch is running or any row is still
+// waiting — adding a new file to a finished batch hides it again.
+function renderBatchVerdict() {
+  const banner = document.getElementById("batchVerdict");
+  if (!banner) return;
+  const items = state.batch.items;
+  const settled = items.length > 0 && !state.batch.processing &&
+    items.every((item) => isBatchItemVerified(item) || item.status === "Error");
+  if (!settled || !items.some(isBatchItemVerified)) {
+    banner.hidden = true;
+    return;
+  }
+  const flagged = items.filter((item) => item.status !== "Pass").length;
+  const pass = flagged === 0;
+  const noun = items.length === 1 ? "label" : "labels";
+  banner.hidden = false;
+  banner.className = "results-verdict batch-verdict " + (pass ? "verdict-pass" : "verdict-attention");
+  banner.querySelector(".results-verdict-icon").textContent = pass ? "✓" : "!";
+  banner.querySelector(".results-verdict-text").textContent = pass
+    ? (items.length === 1 ? "PASS — label cleared" : "PASS — all " + items.length + " labels cleared")
+    : "Needs attention — " + flagged + " of " + items.length + " " + noun + " to review";
 }
 
 // Split a trailing front/back marker off a filename: "airlie_front.jpg" ->
@@ -1598,7 +1723,9 @@ function makeBatchItem(frontFile, backFile, productName) {
     productCategory: "auto",
     originType: "auto",
     status: clientError ? "Error" : "Ready",
-    message: clientError || "Ready to process",
+    // The Status column already says "Ready" — no per-row message until
+    // something needs saying (an error, a retry, a verdict summary).
+    message: clientError || "",
     clientError,
     extracted: null,
     verification: null,
@@ -1608,14 +1735,14 @@ function makeBatchItem(frontFile, backFile, productName) {
   return item;
 }
 
-function addBatchFiles(files) {
+async function addBatchFiles(files) {
   const incomingFiles = Array.from(files || []);
   if (!incomingFiles.length) return;
 
   clearError();
-  const groups = batchGroupingEnabled()
-    ? groupBatchFiles(incomingFiles)
-    : incomingFiles.map((file) => ({ front: file, back: null, name: file.name }));
+  setStatus("Preparing files…");
+  const prepared = await Promise.all(incomingFiles.map(prepareUploadFile));
+  const groups = groupBatchFiles(prepared);
 
   let invalidCount = 0;
   for (const group of groups) {
@@ -1699,11 +1826,15 @@ async function processBatchItem(item) {
       updateBatchRow(item);
       return { rateLimited: true, retryAfterSeconds: error.retryAfterSeconds || 0 };
     }
+    if (isTransientBatchError(error)) {
+      // A Gemini busy spike or timeout — hand it back to the runner, which
+      // retries the row automatically before bothering the reviewer.
+      item.verification = null;
+      return { transient: true };
+    }
     item.status = "Error";
-    // Gemini failures are almost always a temporary busy spike — say so, and
-    // point at the Retry button instead of leaving a bare error.
-    item.message = /gemini/i.test(error.message || "")
-      ? "Gemini was briefly unavailable — click Retry."
+    item.message = error.code === "GEMINI_CLIENT_ERROR"
+      ? "This file couldn't be read — try a smaller image or a different format."
       : error.message;
     item.verification = null;
   }
@@ -1712,10 +1843,27 @@ async function processBatchItem(item) {
   return null;
 }
 
+// A failure worth retrying automatically: Gemini busy spikes (surfaced as 5xx
+// or a "Gemini …" message) and request timeouts. GEMINI_CLIENT_ERROR means
+// Gemini rejected this specific file — deterministic, so retrying is pointless;
+// validation problems and other 4xx responses are likewise not retried.
+function isTransientBatchError(error) {
+  if (error.code === "GEMINI_CLIENT_ERROR") return false;
+  if (error.status >= 500) return true;
+  return /gemini|timed out/i.test(error.message || "");
+}
+
 // A rate-limited row goes back in the queue this many times before it lands on
-// Error; genuine (non-429) failures still get the one-shot second pass in
-// processBatchQueue.
+// Error.
 const RATE_LIMIT_MAX_ATTEMPTS = 5;
+
+// A row that hits a transient Gemini failure (busy spike, timeout) is retried
+// automatically this many times — with an escalating shared pause, since a
+// slow spell is usually global and can outlast a quick retry (a real one
+// observed in production lasted ~2 minutes) — before it lands on Error with a
+// Retry button.
+const TRANSIENT_MAX_ATTEMPTS = 3;
+const TRANSIENT_RETRY_DELAYS_MS = [2000, 8000];
 
 // Run the batch items through a small pool of parallel workers so a full batch
 // of 10 finishes in ~10s instead of ~20s sequentially. When the server answers
@@ -1727,7 +1875,10 @@ async function runBatchConcurrently(items, limit) {
   const total = items.length;
   let done = 0;
   let pauseUntil = 0;
-  for (const item of items) item.rateLimitAttempts = 0;
+  for (const item of items) {
+    item.rateLimitAttempts = 0;
+    item.transientAttempts = 0;
+  }
 
   async function waitForGate() {
     if (Date.now() >= pauseUntil) return;
@@ -1756,6 +1907,22 @@ async function runBatchConcurrently(items, limit) {
         item.status = "Error";
         item.message = "The server stayed busy — wait a minute, then click Retry.";
         updateBatchRow(item);
+      } else if (outcome && outcome.transient) {
+        item.transientAttempts += 1;
+        if (item.transientAttempts < TRANSIENT_MAX_ATTEMPTS) {
+          item.status = "Processing";
+          item.message = "Busy moment — retrying automatically";
+          updateBatchRow(item);
+          pending.push(item);
+          const delay = TRANSIENT_RETRY_DELAYS_MS[
+            Math.min(item.transientAttempts - 1, TRANSIENT_RETRY_DELAYS_MS.length - 1)
+          ];
+          pauseUntil = Math.max(pauseUntil, Date.now() + delay);
+          continue;
+        }
+        item.status = "Error";
+        item.message = "This label couldn't be checked just now — click Retry.";
+        updateBatchRow(item);
       }
       done += 1;
     }
@@ -1782,17 +1949,9 @@ async function processBatchQueue() {
   renderBatchQueue();
   setStatus("Processing " + queue.length + " file" + (queue.length === 1 ? "" : "s") + "…");
 
+  // Transient Gemini failures are retried per-row inside the runner (up to
+  // TRANSIENT_MAX_ATTEMPTS), so no separate second pass is needed here.
   await runBatchConcurrently(queue, BATCH_CONCURRENCY);
-
-  // Gemini occasionally rejects a call in a busy burst (503) even after the
-  // server's own retries. One automatic second pass after a short pause clears
-  // most of these without the reviewer having to click Retry per row.
-  const failed = queue.filter((item) => item.status === "Error" && !item.clientError);
-  if (failed.length) {
-    setStatus("Retrying " + failed.length + " failed item" + (failed.length === 1 ? "" : "s") + "…");
-    await new Promise((resolve) => setTimeout(resolve, 2000));
-    await runBatchConcurrently(failed, BATCH_CONCURRENCY);
-  }
 
   state.batch.processing = false;
   renderBatchQueue();
@@ -1890,6 +2049,8 @@ async function reviewBatchItem(id) {
 
 function removeBatchItem(id) {
   if (state.batch.processing) return;
+  const removed = state.batch.items.find((item) => item.id === id);
+  if (removed && removed.thumbUrl) URL.revokeObjectURL(removed.thumbUrl);
   state.batch.items = state.batch.items.filter((item) => item.id !== id);
   renderBatchQueue();
   setStatus(state.batch.items.length ? "Batch item removed" : "Batch cleared");
@@ -1900,7 +2061,7 @@ function removeBatchItem(id) {
 function resetBatchItemVerdict(item) {
   if (isBatchItemVerified(item)) {
     item.status = "Ready";
-    item.message = "Ready to process";
+    item.message = "";
     item.extracted = null;
     item.verification = null;
   }
@@ -1947,6 +2108,8 @@ function setUploadMode(mode) {
   const resultsPanel = document.querySelector(".results-panel");
   if (fieldsPanel) fieldsPanel.hidden = batch;
   if (resultsPanel) resultsPanel.hidden = batch;
+  // Hide the single-label preview in batch mode (and bring it back in single).
+  renderLabelPreview();
   updateStepHighlight();
 }
 

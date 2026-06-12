@@ -796,14 +796,25 @@ textarea[name="importer_name_address"] {
   border-bottom: 1px solid var(--line);
 }
 
+/* Title on top, status line under it — reads top-down instead of spreading the
+   heading and status to opposite edges. */
 .results-head .section-heading {
   margin-bottom: 0;
+  flex: 1 1 auto;
+  min-width: 0;
+  flex-direction: column;
+  align-items: flex-start;
+  gap: 4px;
 }
 
+/* The label thumbnail sits at the right edge of the head, out of the way of
+   the title. */
 .results-thumb {
   flex: none;
-  width: 84px;
-  height: 84px;
+  order: 2;
+  margin-left: auto;
+  width: 64px;
+  height: 64px;
   padding: 0;
   border: 1px solid var(--line);
   border-radius: var(--radius);
@@ -1013,7 +1024,7 @@ body.lightbox-open {
 
 #expectedFields .field-name {
   font-size: 19.2px;
-  font-weight: 600;
+  font-weight: 400;
 }
 
 /* Roomier controls inside the cards — the global 19px height is too thin here. */
@@ -1067,7 +1078,7 @@ button:disabled {
   margin: 0;
   color: var(--muted);
   font-size: 18px;
-  font-weight: 700;
+  font-weight: 400;
 }
 
 .status-line {
@@ -1105,7 +1116,7 @@ button:disabled {
   margin: 0;
   color: var(--muted);
   font-size: 18px;
-  font-weight: 650;
+  font-weight: 400;
 }
 
 .error-box {
@@ -1181,7 +1192,6 @@ td {
 th {
   color: var(--muted);
   font-size: 16.8px;
-  text-transform: uppercase;
 }
 
 .empty-row {
@@ -1193,7 +1203,7 @@ th {
   display: inline-flex;
   align-items: center;
   font-size: 16.8px;
-  font-weight: 800;
+  font-weight: 400;
   white-space: nowrap;
 }
 
@@ -1226,23 +1236,15 @@ th {
   white-space: pre-wrap;
 }
 
-/* Results rows are one line each — field, status, and values truncate with an
-   ellipsis. The government warning is the exception: its value cell uses
-   .cell-value (pre-wrap), so it still wraps to multiple lines. */
-.results-panel table {
-  table-layout: fixed;
-}
-
+/* Single-label results columns (the shared text skin lives on .results-table,
+   defined after the batch styles so it wins shared-specificity ties). */
 .results-panel th:nth-child(1), .results-panel td:nth-child(1) { width: 23%; }
 .results-panel th:nth-child(2), .results-panel td:nth-child(2) { width: 18%; }
 .results-panel th:nth-child(3), .results-panel td:nth-child(3) { width: 29.5%; }
 .results-panel th:nth-child(4), .results-panel td:nth-child(4) { width: 29.5%; }
 
-.results-panel td,
-.results-panel th {
-  white-space: nowrap;
-  overflow: hidden;
-  text-overflow: ellipsis;
+.compliance-checks .status-badge {
+  font-weight: 600;
 }
 
 tr.is-flagged td {
@@ -1257,11 +1259,11 @@ tr.is-flagged td:first-child {
 .results-verdict {
   display: flex;
   align-items: center;
-  gap: 18px;
-  margin-bottom: 18px;
-  padding: 22px 26px;
+  gap: 14px;
+  margin-bottom: 16px;
+  padding: 18px 21px;
   border-radius: var(--radius-lg);
-  font-size: 30px;
+  font-size: 24px;
   font-weight: 800;
   letter-spacing: 0.2px;
   border: 1.5px solid transparent;
@@ -1276,10 +1278,10 @@ tr.is-flagged td:first-child {
   display: inline-flex;
   align-items: center;
   justify-content: center;
-  width: 52px;
-  height: 52px;
+  width: 42px;
+  height: 42px;
   border-radius: 50%;
-  font-size: 34px;
+  font-size: 27px;
   font-weight: 900;
 }
 
@@ -1313,7 +1315,14 @@ tr.is-flagged td:first-child {
 }
 
 .compliance-checks h3 {
-  margin-bottom: 10px;
+  margin-bottom: 6px;
+}
+
+/* One-line plain-language explainer under the compliance-checks heading. */
+.compliance-intro {
+  margin: 0 0 10px;
+  color: var(--muted);
+  font-size: 16.8px;
 }
 
 .compliance-checks ul {
@@ -1559,6 +1568,7 @@ tr.is-flagged td:first-child {
 
 .file-name {
   color: var(--text);
+  font-weight: 400;
   overflow: hidden;
   text-overflow: ellipsis;
   white-space: nowrap;
@@ -1634,6 +1644,10 @@ tr.is-flagged td:first-child {
   font-weight: 650;
 }
 
+.drop-label-optional {
+  font-weight: 400;
+}
+
 .drop-hint {
   color: var(--muted);
   font-size: 16.8px;
@@ -1697,6 +1711,17 @@ tr.is-flagged td:first-child {
   justify-content: flex-end;
   gap: 8px;
   flex-wrap: wrap;
+}
+
+/* "Process all" must never wrap onto two lines. */
+.batch-actions button {
+  white-space: nowrap;
+}
+
+/* The finished-batch banner sits between the controls and the table. */
+.batch-verdict {
+  margin-top: 14px;
+  margin-bottom: 0;
 }
 
 .batch-drop-zone {
@@ -1765,17 +1790,18 @@ tr.is-flagged td:first-child {
 }
 
 .batch-detail-summary {
-  font-size: 16.8px;
-  font-weight: 750;
+  font-size: 18px;
+  font-weight: 400;
 }
 
 .batch-detail-summary.is-pass { color: var(--green); }
 .batch-detail-summary.is-attention { color: var(--amber); }
 
-/* Field table — same look as the single-label results, one line per field. */
+/* Field table — carries the shared .results-table skin (same text, weights,
+   badges, and flagged-row treatment as the single-label results); only the
+   column widths and card background are its own. Flagged rows come from the
+   global tr.is-flagged rules. */
 .batch-detail-table {
-  table-layout: fixed;
-  width: 100%;
   background: var(--surface);
   border-radius: var(--radius);
 }
@@ -1784,20 +1810,9 @@ tr.is-flagged td:first-child {
 .batch-detail-table th:nth-child(2), .batch-detail-table td:nth-child(2) { width: 18%; }
 .batch-detail-table th:nth-child(3), .batch-detail-table td:nth-child(3) { width: 50%; }
 
-.batch-detail-table td,
-.batch-detail-table th {
-  padding: 8px 10px;
-  white-space: nowrap;
-  overflow: hidden;
-  text-overflow: ellipsis;
-}
-
-.batch-detail-table tr.is-flagged td {
-  background: var(--red-soft);
-}
-
-.batch-detail-table tr.is-flagged td:first-child {
-  box-shadow: inset 3px 0 0 var(--red);
+.batch-detail-check .status-badge {
+  font-weight: 600;
+  font-size: 16.8px;
 }
 
 .batch-detail-checks {
@@ -1805,42 +1820,34 @@ tr.is-flagged td:first-child {
   gap: 6px;
 }
 
+/* Mirror the single-label "Label compliance checks" heading and list. */
 .batch-detail-checks-title {
+  font-family: var(--font-heading);
   font-weight: 700;
-  font-size: 15.6px;
+  font-size: 20.4px;
 }
 
 .batch-detail-check {
-  font-size: 15.6px;
-  color: var(--muted);
+  font-size: 18px;
+  color: var(--text);
 }
 
 .batch-detail-check .status-badge {
   margin-right: 6px;
-  font-size: 13px;
 }
 
 .batch-detail-edit {
   justify-self: start;
   font-size: 15.6px;
+  font-weight: 400;
 }
 
 .batch-grouping {
   margin-top: 14px;
 }
 
-.batch-group-toggle {
-  display: flex;
-  align-items: center;
-  gap: 9px;
-  font-size: 16.8px;
-  font-weight: 650;
-  color: var(--text);
-  cursor: pointer;
-}
-
 .batch-group-hint {
-  margin: 6px 0 0 26px;
+  margin: 0;
   max-width: 760px;
   color: var(--muted);
   font-size: 15.6px;
@@ -1859,35 +1866,26 @@ tr.is-flagged td:first-child {
   white-space: nowrap;
 }
 
-.batch-group-toggle input {
-  width: 17px;
-  height: 17px;
-  min-height: 0;
-  flex: none;
-  accent-color: var(--primary);
-}
-
 .batch-product-name {
   display: block;
   overflow: hidden;
-  font-weight: 700;
+  font-weight: 400;
   text-overflow: ellipsis;
   white-space: nowrap;
 }
 
 .batch-file-back {
   color: var(--muted);
-  font-weight: 600;
+  font-weight: 400;
 }
 
+/* The full file name must stay readable — wrap instead of truncating. */
 .batch-file-name {
   display: block;
-  max-width: 280px;
-  overflow: hidden;
   color: var(--text);
-  font-weight: 700;
-  text-overflow: ellipsis;
-  white-space: nowrap;
+  font-weight: 400;
+  white-space: normal;
+  overflow-wrap: anywhere;
 }
 
 .batch-file-meta,
@@ -1896,7 +1894,7 @@ tr.is-flagged td:first-child {
   margin-top: 4px;
   color: var(--muted);
   font-size: 16.8px;
-  font-weight: 650;
+  font-weight: 400;
 }
 
 .batch-row-message.error {
@@ -1966,6 +1964,52 @@ tr.is-flagged td:first-child {
   flex-wrap: wrap;
 }
 
+/* Clickable thumbnail of the row's label photo, above the product name. */
+.batch-thumb {
+  display: block;
+  width: 65px;
+  height: 65px;
+  margin-bottom: 6px;
+  padding: 0;
+  border: 1px solid var(--line);
+  border-radius: var(--radius);
+  background: var(--subtle-bg);
+  overflow: hidden;
+  min-height: 0;
+  cursor: zoom-in;
+}
+
+.batch-thumb img {
+  width: 100%;
+  height: 100%;
+  object-fit: cover;
+  display: block;
+}
+
+.batch-thumb:hover,
+.batch-thumb:focus-visible {
+  border-color: var(--primary);
+}
+
+/* Small indeterminate bar under the Status badge while a row is processing. */
+.batch-progress {
+  margin-top: 6px;
+  height: 5px;
+  max-width: 110px;
+  border-radius: 999px;
+  border: 1px solid var(--line);
+  background: var(--subtle-bg);
+  overflow: hidden;
+}
+
+.batch-progress-fill {
+  height: 100%;
+  width: 40%;
+  border-radius: 999px;
+  background: var(--primary);
+  animation: upload-indeterminate 1.1s ease-in-out infinite;
+}
+
 .small-button {
   min-height: 32px;
   border-color: var(--line);
@@ -1973,7 +2017,7 @@ tr.is-flagged td:first-child {
   background: var(--surface);
   color: var(--text);
   font-size: 16.8px;
-  font-weight: 750;
+  font-weight: 400;
 }
 
 .small-button.danger {
@@ -1990,6 +2034,37 @@ tr.is-flagged td:first-child {
   .batch-actions button {
     width: 100%;
   }
+}
+
+/* ----- Shared results-table skin --------------------------------------------
+   Worn by BOTH the single-label results table and the batch per-row detail
+   table (buildBatchDetail), so the two outputs cannot drift apart: same text
+   size, cell padding, bold field column, slightly-bold badges, one-line rows
+   that truncate with an ellipsis. Column widths stay per-table (4 columns vs
+   3). Defined after the batch styles so it wins specificity ties against
+   .batch-table's tighter cell padding and smaller badges. */
+.results-table {
+  table-layout: fixed;
+  width: 100%;
+}
+
+/* Text sizes come from the global th (16.8px) / td (18px) rules — both tables
+   inherit them identically, so none are repeated here. */
+.results-table td,
+.results-table th {
+  padding: 11px 10px;
+  white-space: nowrap;
+  overflow: hidden;
+  text-overflow: ellipsis;
+}
+
+.results-table tbody td:first-child {
+  font-weight: 700;
+}
+
+.results-table .status-badge {
+  font-weight: 600;
+  font-size: 16.8px;
 }
 
 @media print {

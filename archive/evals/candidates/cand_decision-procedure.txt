@@ -1,0 +1,268 @@
+
+Analyze the uploaded alcohol image or images.
+If two images are provided, the first is the front label and the second is the back label.
+If only one image is provided, extract as much as possible from that image.
+
+Extract:
+- brand_name
+- class_type
+- alcohol_content
+- net_contents
+- government_warning
+- domestic_name_address
+- importer_name_address
+- country_of_origin
+- sulfite_declaration
+- appellation_of_origin
+- fanciful_name
+
+==================================================================
+STEP-BY-STEP DECISION PROCEDURE FOR brand_name, class_type, fanciful_name
+Work through these three steps IN ORDER. Do Step 1 fully before Step 2, and Step 2 fully before Step 3.
+==================================================================
+
+----------------------------------------------------------------
+STEP 1 — brand_name
+----------------------------------------------------------------
+Find the single largest / most prominent text block on the label. This is the brand block.
+Read the brand block TOP-TO-BOTTOM, LEFT-TO-RIGHT, and combine EVERY word in that block into brand_name, in order.
+
+CRITICAL RULE — DO NOT DROP THE LAST TOKEN.
+A brand block often ends with a trailing word or number that is PART OF THE BRAND IDENTITY. You MUST keep it. These trailing tokens stay IN brand_name:
+- A series/edition word: "Series", "Edition", "Collection"
+- A tier/quality word that is set in the SAME large brand styling: "Reserve", "Select", "Special"
+- A descriptor that is part of the name: "Highland"
+- A name-number that reads as part of the brand: "13", "1842", "#1"
+If the brand block has multiple words, output ALL of them. Never return only the first word or first two words of a multi-word brand block.
+
+Combine stacked lines of the brand block into one brand_name.
+Example:
+  12345
+  IMPORTS
+  brand_name: 12345 IMPORTS
+
+If the front label shows a shortened or stacked brand name and the back label identifies the same entity more completely, use the complete entity name.
+Example:
+  Front: 12345
+  Back: Imported by 12345 Imports
+  brand_name: 12345 IMPORTS
+
+CORRECTED brand_name EXAMPLES (these were previously truncated — keep the FULL name):
+- Brand block "Wandering Roots Series"      -> brand_name: Wandering Roots Series      (NOT "Wandering Roots")
+- Brand block "EDELWEISS RESERVE"           -> brand_name: EDELWEISS RESERVE           (NOT "EDELWEISS")
+- Brand block "Stillhouse 13"               -> brand_name: Stillhouse 13               (NOT "Stillhouse")
+- Brand block "Glenmorrow Highland Reserve" -> brand_name: Glenmorrow Highland Reserve (NOT "Glenmorrow")
+- Brand block "Chateau Margaux Reserve"     -> brand_name: Chateau Margaux Reserve     (NOT "Chateau Margaux")
+- Brand block "EASTLINE BREWING 1842"       -> brand_name: EASTLINE BREWING 1842       (1842 is part of the brand, NOT a vintage; NOT "EASTLINE BREWING")
+
+THE ONE EXCEPTION — a true separate wine vintage YEAR is NOT part of brand_name.
+A 4-digit year that is printed SEPARATELY from the brand block (its own line/area, typically smaller, as a vintage) is NOT part of the brand and must be left out of brand_name.
+Example:
+  Brand block: "Cedar Hollow"
+  Separately printed lower on the label: "2020"
+  brand_name: Cedar Hollow   (the vintage "2020" is NOT part of brand_name, and it is NOT a fanciful_name either — see Step 3)
+How to tell the difference: if the number is inside/attached to the large brand block and reads as part of the name (Stillhouse 13, Eastline Brewing 1842), it STAYS in brand_name. If it is a standalone vintage year set apart from the brand, it is excluded everywhere.
+
+Do NOT use a class/type, product style, or abbreviation as brand_name.
+Do NOT use IPA, Ale, Beer, Lager, Wine, Rum, Vodka, Whiskey, Tequila, or other class/type words as brand_name.
+For beer, do NOT assume the brewery name is the brand name — the brand may be a series or product-line name.
+Example:
+  Brewery/producer name: Malt & Hop Brewery
+  Brand block: Farm To Table Series #1
+  brand_name: Farm To Table Series #1   (NOT "Malt & Hop")
+Do NOT use a distinctive/fanciful name as brand_name.
+For an imported product, do NOT use the "Imported by" company as brand_name unless that company is clearly also the brand shown in the brand block.
+
+----------------------------------------------------------------
+STEP 2 — class_type
+----------------------------------------------------------------
+class_type = the FULL official Class / Type / Other Designation, exactly as printed on the label, word-for-word.
+
+INCLUDE every part of the printed designation:
+- Leading style modifiers: "Hazy", "Reposado", "Anejo", "Blanco", "Double", "Imperial", "Dry"
+- Semi-generic geographic qualifiers that are part of the designation: "California", "American"
+- Full composition / "brewed with" / "with" statements: "Brewed with Cherries", "with Natural Flavors Added", "with Elderberries"
+Keep ALL of these — do not shorten the designation to just the base style.
+
+STRIP ONLY the origin words "Imported" or "Domestic" — these describe origin, not class/type.
+  Imported Beer -> Beer
+  Imported Ale  -> Ale
+
+CORRECTED class_type EXAMPLES (these were previously shortened — keep the FULL designation):
+- Printed "Hazy India Pale Ale"     -> class_type: Hazy India Pale Ale     (NOT "India Pale Ale" — keep "Hazy")
+- Printed "Ale Brewed with Cherries"-> class_type: Ale Brewed with Cherries(NOT "Ale" — keep the composition statement)
+- Printed "Reposado Tequila"        -> class_type: Reposado Tequila        (NOT "Tequila" — keep "Reposado")
+- Printed "California Chablis"       -> class_type: California Chablis      (NOT "Chablis" — keep the semi-generic qualifier)
+
+Extract only text that visibly appears on the label. Do not infer or invent a class/type from nearby words.
+Do not turn a fanciful name like "Stormchaser White" into "White Wine."
+
+----------------------------------------------------------------
+STEP 3 — fanciful_name
+----------------------------------------------------------------
+DEFAULT: fanciful_name = "" (empty string).
+Only fill fanciful_name if, AFTER Steps 1 and 2, there is STILL a genuinely creative, distinctive product name left over — a pun, an evocative phrase, a coined name (e.g. "Happy Elder After", "Honey Huckleberry Pie").
+
+fanciful_name must NEVER be any of the following. If the leftover text is one of these, fanciful_name = "":
+- A class/type or beer/spirit STYLE: IPA, Ale, Lager, Pilsner, Stout, Porter, Hefeweizen, Wheat Beer, India Pale Ale, Pale Ale, Amber Ale, Reposado, Blanco, Anejo
+- A quality/tier word: Reserve, Select, Special, Premium
+- A number, a name-number, or a vintage year (e.g. 13, 1842, 2020, "Vintage 2020", any 4-digit year)
+- A geographic/semi-generic qualifier: Highland, California, American
+- A fragment that was split off the brand block — if a word belongs to the brand block, it stays in brand_name (Step 1) and does NOT appear in fanciful_name
+
+CRITICAL — do NOT "rescue" a brand or class token into fanciful_name. If you correctly kept the full brand_name and full class_type, there is usually NOTHING left, so fanciful_name = "".
+
+CORRECTED fanciful_name EXAMPLES (all of these were previously WRONG — the correct answer is empty):
+- Leftover "RESERVE"          -> fanciful_name: ""   (it is a tier word and belongs in brand_name, e.g. EDELWEISS RESERVE)
+- Leftover "13"               -> fanciful_name: ""   (name-number, belongs in brand_name, e.g. Stillhouse 13)
+- Leftover "Reposado"         -> fanciful_name: ""   (it is a style; belongs in class_type, e.g. Reposado Tequila)
+- Leftover "Highland Reserve" -> fanciful_name: ""   (belongs in brand_name, e.g. Glenmorrow Highland Reserve)
+- Leftover "Vintage 2020"     -> fanciful_name: ""   (a vintage is never fanciful_name)
+- Leftover "HefeWeizen"       -> fanciful_name: ""   (it is a style; it is the class_type)
+GOOD fanciful_name example (a real one to keep):
+  Brand Name: EXAMPLE BREWING CO.
+  Class/Type: ALE WITH ELDERBERRIES
+  Distinctive/Fanciful Name: HAPPY ELDER AFTER
+  fanciful_name: HAPPY ELDER AFTER
+If the label only shows a brand name and a class/type (no creative product name), fanciful_name = "".
+If the fanciful name contains a color word (White, Red, RosE), keep the full name together — e.g. fanciful_name "Stormchaser White", NOT "Stormchaser".
+
+==================================================================
+END OF brand_name / class_type / fanciful_name PROCEDURE
+==================================================================
+
+For alcohol_content, extract ONLY the alcohol by volume percentage.
+Examples:
+20%
+13.5%
+5%
+Do not include:
+Alcohol By Volume
+Proof
+ABV
+
+For domestic_name_address, extract the company name together with the city and state that satisfy the Name and Address requirement.
+It is possible for the company (Name) to be the same as the brand name in some cases.
+Examples:
+EXAMPLE BREWING CO.
+ARLINGTON VIRGINIA
+domestic_name_address:
+EXAMPLE BREWING CO., ARLINGTON VIRGINIA
+Brewed and Bottled by Example Brewing Co.
+Arlington, Virginia
+domestic_name_address:
+Example Brewing Co., Arlington Virginia
+Examples:
+"Brewed and Bottled by Example Brewing Company, Chicago, Illinois"
+"Bottled by Captain John's Distilling Co., Louisville, Kentucky"
+"Imported by Example Imports LLC, Miami, Florida"
+Return the complete statement exactly as it appears.
+
+For domestic_name_address, extract only:
+Company Name, City, State
+Do not include explanatory phrases such as:
+Brewed By
+Bottled By
+Brewed and Bottled By
+Produced By
+Produced and Bottled By
+Packed By
+
+For domestic_name_address, extract the bottler's name and address (city and state) that satisfy the TTB Name and Address requirement.
+The bottler's name may be:
+- the same as the brand name
+- different from the brand name
+- a brewer, bottler, packer, or producer depending on the label
+If the label shows only one company name `together` with a city and state, and no other responsible party is identified, treat that company as the bottler for purposes of domestic_name_address extraction.
+The domestic_name_address field must contain BOTH:
+1. the bottler name
+2. the city and state
+Incorrect:
+ARLINGTON VIRGINIA
+Correct:
+EXAMPLE BREWING CO., ARLINGTON VIRGINIA
+Example:
+Brand Name:
+EXAMPLE BREWING CO.
+Location:
+ARLINGTON VIRGINIA
+Output:
+domestic_name_address:
+EXAMPLE BREWING CO., ARLINGTON VIRGINIA
+Do not return only the city and state.
+
+IMPORTANT — domestic_name_address applies to DOMESTIC products only.
+If the product is IMPORTED, domestic_name_address MUST be "" (empty string).
+A foreign distillery, brewery, winery, or producer shown on an imported label (e.g. a Scottish distillery, a Mexican brewery) does NOT go into domestic_name_address. For an imported product the responsible party is the importer and goes in importer_name_address; domestic_name_address stays "".
+Example:
+  Imported single malt; label shows "Glen Distillery, Speyside, Scotland" and "Imported by Acme Spirits, Miami, Florida"
+  domestic_name_address: ""        (foreign producer is NOT domestic)
+  importer_name_address: Acme Spirits, Miami, Florida
+
+For country_of_origin, return only the COUNTRY name.
+Examples:
+Product of Australia -> AUSTRALIA
+Imported from Mexico -> MEXICO
+Brewed in Belgium -> BELGIUM
+Country of Origin: Ireland -> IRELAND
+Do not include phrases such as:
+Product of
+Imported from
+Brewed in
+Country of Origin
+country_of_origin is a COUNTRY only. A U.S. STATE (e.g. California, Kentucky, Oregon) is NOT a country_of_origin.
+For a domestic (U.S.) product, country_of_origin = "" (empty string). Do not put a U.S. state there.
+Example:
+  Label shows "California"  -> country_of_origin: ""   (California is a state, not a country)
+
+For importer_name_address, extract the importer's company name and city/state only if the malt beverage is imported.
+Examples:
+Imported by Example Imports LLC, Miami, Florida
+Importer: ABC Beverage Imports, Chicago, Illinois
+If the label is domestic or does not show importer information, return an empty string.
+
+For importer_name_address, extract only:
+Importer Company Name, City, State
+Do not include:
+Imported By
+Sole Agent
+Sole U.S. Agent
+
+For imported malt beverages, do not use importer_name_address as brand_name unless the importer is clearly also the brand name.
+If the label has a beer style or product name shown prominently, and a separate "Imported by" company appears elsewhere, the "Imported by" company should go in importer_name_address, not brand_name.
+Example:
+Front label: HEFEWEIZEN
+Imported by: Malt & Hop Brewery, Hyattsville, Maryland
+brand_name: Hefeweizen
+class_type: Imported Beer
+importer_name_address: Malt & Hop Brewery, Hyattsville, Maryland
+
+For sulfite_declaration, extract the sulfite statement only if it appears on the label.
+Examples:
+Contains Sulfites
+Contains Sulphites
+Contains sulfur dioxide
+If no sulfite statement appears, return an empty string.
+
+For appellation_of_origin, extract the geographic origin statement for WINE if it appears on the label.
+Examples:
+American
+California
+Napa Valley
+Hudson River Region
+Sonoma County
+Victoria
+France
+Bordeaux
+appellation_of_origin is a WINE field ONLY.
+Do NOT put a spirits or beer region here. A spirits region such as "Speyside", "Highlands", "Islay", "Cognac", "Jalisco", "Kentucky" is NOT an appellation_of_origin — for spirits and beer, appellation_of_origin = "".
+Do not use the bottler/importer city and state as appellation_of_origin.
+If no wine appellation of origin appears, return an empty string.
+
+For government_warning, include the heading "GOVERNMENT WARNING:" if it appears on the label.
+Do not omit the heading.
+Extract the full warning statement, including the heading and both numbered sentences.
+
+Return valid JSON only.
+Do not use markdown.
+Do not wrap the response in triple backticks.

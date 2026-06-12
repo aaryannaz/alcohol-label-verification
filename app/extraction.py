@@ -37,9 +37,12 @@ RETRY_BACKOFF_SECONDS = float(os.getenv("GEMINI_RETRY_BACKOFF_SECONDS", "0.4"))
 # Wall-clock budget for the retries: attempt 1 always runs (bounded only by the
 # per-call timeout — see clients.py), then retries start only while budget
 # remains and each is cut off when the budget expires mid-call. A typical call
-# returns in ~2s, so this caps the retry pile-up at ~12s total instead of
-# stacking full per-call timeouts into ~36s against the ~5s product bar.
-GEMINI_DEADLINE_SECONDS = float(os.getenv("GEMINI_DEADLINE_SECONDS", "12.0"))
+# returns in ~2s, so this caps the retry pile-up at one slow call (~25s) plus a
+# fast retry, instead of stacking full per-call timeouts. Sized just above the
+# per-call timeout: a heavy file that needs the whole 25s must not be cut off
+# by its own budget (a slow success beats a hard failure), while fast failures
+# (503 busy) still get their retries inside the budget.
+GEMINI_DEADLINE_SECONDS = float(os.getenv("GEMINI_DEADLINE_SECONDS", "26.0"))
 
 @lru_cache
 def _generation_config(product_category=None):

@@ -1,0 +1,87 @@
+Running 29 case(s)...
+
+[1/29] domestic-malt-series-brand-fanciful-pun: 11/11 fields correct
+[2/29] domestic-malt-color-pun-fanciful-stacked-brand: 11/11 fields correct
+[3/29] domestic-malt-plain-brand-style-no-fanciful: 11/11 fields correct
+[4/29] imported-beer-style-front-importer-not-brand: 11/11 fields correct
+[5/29] imported-ale-fanciful-name-product-of-belgium: 11/11 fields correct
+[6/29] imported-lager-brewed-in-mexico-no-warning: 11/11 fields correct
+[7/29] captain-johns-spiced-rum-brand-vs-fanciful-vs-classtype: 11/11 fields correct
+[8/29] stillhouse-13-bourbon-brand-equals-bottler-no-fanciful: 11/11 fields correct
+[9/29] midnight-harbor-gin-fanciful-name-no-warning: 11/11 fields correct
+[10/29] imported-tequila-importer-distinct-proof: 11/11 fields correct
+[11/29] imported-scotch-series-brand-distinct-distillery: 10/11 fields correct
+[12/29] imported-vodka-fanciful-name-distinct-from-class: 11/11 fields correct
+[13/29] napa-cabernet-vintage-sulfites: 11/11 fields correct
+[14/29] stormchaser-white-fanciful-color: 10/11 fields correct
+[15/29] california-red-blend-no-sulfite: 11/11 fields correct
+[16/29] imported-wine-bordeaux-chateau-importedby: 11/11 fields correct
+[17/29] imported-wine-australia-victoria-shiraz: 11/11 fields correct
+[18/29] imported-wine-france-semigeneric-chablis-fanciful: 10/11 fields correct
+[19/29] domestic-spirits-full-warning-multiline-bottler: 10/11 fields correct
+[20/29] imported-wine-no-warning-importer-appellation: 10/11 fields correct
+[21/29] domestic-malt-bottler-equals-brand-stacked-address: 11/11 fields correct
+[22/29] series-brand-with-fanciful-and-class-all-present: 11/11 fields correct
+[23/29] brand-plus-class-only-vintage-number-is-not-fanciful: 11/11 fields correct
+[24/29] stacked-numeric-brand-resolved-from-back-label-imported: 11/11 fields correct
+[25/29] ttb-malt-aspartame-yellow5: 22/22 fields correct
+[26/29] ttb-spirits-age-coloring-state: 21/22 fields correct
+[27/29] ttb-spirits-commodity-blended: 22/22 fields correct
+[28/29] ttb-wine-vintage-varietal-appellation: 22/22 fields correct
+[29/29] ttb-wine-table-wine-no-abv: 22/22 fields correct
+
+============================================================
+PER-FIELD ACCURACY
+============================================================
+  brand_name                    96.6%  (28/29)
+  class_type                    96.6%  (28/29)
+  alcohol_content              100.0%  (29/29)
+  net_contents                 100.0%  (29/29)
+  government_warning           100.0%  (29/29)
+  domestic_name_address        100.0%  (29/29)
+  importer_name_address        100.0%  (29/29)
+  country_of_origin            100.0%  (29/29)
+  sulfite_declaration          100.0%  (29/29)
+  fanciful_name                 89.7%  (26/29)
+  fdc_yellow_5_declaration     100.0%  (5/5)
+  cochineal_carmine_declaration 100.0%  (5/5)
+  aspartame_declaration        100.0%  (5/5)
+  statement_of_age             100.0%  (5/5)
+  commodity_statement           80.0%  (4/5)
+  coloring_materials           100.0%  (5/5)
+  wood_treatment               100.0%  (5/5)
+  state_of_distillation        100.0%  (5/5)
+  appellation_of_origin        100.0%  (29/29)
+  vintage_date                 100.0%  (5/5)
+  grape_varietal               100.0%  (5/5)
+  percentage_of_foreign_wine   100.0%  (5/5)
+
+============================================================
+OVERALL
+============================================================
+  Field accuracy:    98.4%  (368/374)
+  Cases all-correct: 23/29
+
+============================================================
+FIELD MISSES (6)
+============================================================
+  imported-scotch-series-brand-distinct-distillery / brand_name
+      expected: 'Glenmorrow Highland Reserve'
+      got:      'GLENMORROW'
+  stormchaser-white-fanciful-color / fanciful_name
+      expected: 'Stormchaser White'
+      got:      ''
+  imported-wine-france-semigeneric-chablis-fanciful / fanciful_name
+      expected: 'Sunlit Hollow'
+      got:      ''
+  domestic-spirits-full-warning-multiline-bottler / class_type
+      expected: 'Spiced Rum with Natural Flavors Added'
+      got:      'Rum with Natural Flavors Added'
+  imported-wine-no-warning-importer-appellation / fanciful_name
+      expected: 'Stormchaser White'
+      got:      ''
+  ttb-spirits-age-coloring-state / commodity_statement
+      expected: ''
+      got:      'Distilled in Indiana'
+
+Full results written to /Users/aaryannaz/Desktop/TREASURY_DOGE/alcohol-label-verification/backend/evals/last_results.json

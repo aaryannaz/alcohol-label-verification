@@ -1,0 +1,139 @@
+Gemini extraction attempt 1/3 failed: The read operation timed out
+Running 29 case(s)...
+
+[1/29] domestic-malt-series-brand-fanciful-pun: 10/11 fields correct
+[2/29] domestic-malt-color-pun-fanciful-stacked-brand: 11/11 fields correct
+[3/29] domestic-malt-plain-brand-style-no-fanciful: 11/11 fields correct
+[4/29] imported-beer-style-front-importer-not-brand: 10/11 fields correct
+[5/29] imported-ale-fanciful-name-product-of-belgium: 9/11 fields correct
+[6/29] imported-lager-brewed-in-mexico-no-warning: 11/11 fields correct
+[7/29] captain-johns-spiced-rum-brand-vs-fanciful-vs-classtype: 10/11 fields correct
+[8/29] stillhouse-13-bourbon-brand-equals-bottler-no-fanciful: 11/11 fields correct
+[9/29] midnight-harbor-gin-fanciful-name-no-warning: 10/11 fields correct
+[10/29] imported-tequila-importer-distinct-proof: 10/11 fields correct
+[11/29] imported-scotch-series-brand-distinct-distillery: 9/11 fields correct
+[12/29] imported-vodka-fanciful-name-distinct-from-class: 10/11 fields correct
+[13/29] napa-cabernet-vintage-sulfites: 10/11 fields correct
+[14/29] stormchaser-white-fanciful-color: 10/11 fields correct
+[15/29] california-red-blend-no-sulfite: 11/11 fields correct
+[16/29] imported-wine-bordeaux-chateau-importedby: 11/11 fields correct
+[17/29] imported-wine-australia-victoria-shiraz: 11/11 fields correct
+[18/29] imported-wine-france-semigeneric-chablis-fanciful: 11/11 fields correct
+[19/29] domestic-spirits-full-warning-multiline-bottler: 9/11 fields correct
+[20/29] imported-wine-no-warning-importer-appellation: 11/11 fields correct
+[21/29] domestic-malt-bottler-equals-brand-stacked-address: 11/11 fields correct
+[22/29] series-brand-with-fanciful-and-class-all-present: 9/11 fields correct
+[23/29] brand-plus-class-only-vintage-number-is-not-fanciful: 10/11 fields correct
+[24/29] stacked-numeric-brand-resolved-from-back-label-imported: 11/11 fields correct
+[25/29] ttb-malt-aspartame-yellow5: 20/22 fields correct
+[26/29] ttb-spirits-age-coloring-state: 19/22 fields correct
+[27/29] ttb-spirits-commodity-blended: 21/22 fields correct
+[28/29] ttb-wine-vintage-varietal-appellation: 22/22 fields correct
+[29/29] ttb-wine-table-wine-no-abv: 22/22 fields correct
+
+============================================================
+PER-FIELD ACCURACY
+============================================================
+  brand_name                    89.7%  (26/29)
+  class_type                    79.3%  (23/29)
+  alcohol_content              100.0%  (29/29)
+  net_contents                 100.0%  (29/29)
+  government_warning           100.0%  (29/29)
+  domestic_name_address        100.0%  (29/29)
+  importer_name_address        100.0%  (29/29)
+  country_of_origin            100.0%  (29/29)
+  sulfite_declaration          100.0%  (29/29)
+  fanciful_name                 75.9%  (22/29)
+  fdc_yellow_5_declaration      80.0%  (4/5)
+  cochineal_carmine_declaration 100.0%  (5/5)
+  aspartame_declaration         80.0%  (4/5)
+  statement_of_age              80.0%  (4/5)
+  commodity_statement           80.0%  (4/5)
+  coloring_materials            80.0%  (4/5)
+  wood_treatment               100.0%  (5/5)
+  state_of_distillation         80.0%  (4/5)
+  appellation_of_origin         96.6%  (28/29)
+  vintage_date                 100.0%  (5/5)
+  grape_varietal               100.0%  (5/5)
+  percentage_of_foreign_wine   100.0%  (5/5)
+
+============================================================
+OVERALL
+============================================================
+  Field accuracy:    93.9%  (351/374)
+  Cases all-correct: 13/29
+
+============================================================
+FIELD MISSES (23)
+============================================================
+  domestic-malt-series-brand-fanciful-pun / fanciful_name
+      expected: 'Hazy Days Ahead'
+      got:      ''
+  imported-beer-style-front-importer-not-brand / class_type
+      expected: 'Beer'
+      got:      'Hefeweizen'
+  imported-ale-fanciful-name-product-of-belgium / class_type
+      expected: 'Ale Brewed with Cherries'
+      got:      'Ale'
+  imported-ale-fanciful-name-product-of-belgium / fanciful_name
+      expected: 'Midnight Abbey'
+      got:      ''
+  captain-johns-spiced-rum-brand-vs-fanciful-vs-classtype / fanciful_name
+      expected: 'Spiced Rum'
+      got:      ''
+  midnight-harbor-gin-fanciful-name-no-warning / fanciful_name
+      expected: 'Midnight Harbor'
+      got:      ''
+  imported-tequila-importer-distinct-proof / class_type
+      expected: 'Reposado Tequila'
+      got:      'Tequila'
+  imported-scotch-series-brand-distinct-distillery / brand_name
+      expected: 'Glenmorrow Highland Reserve'
+      got:      'GLENMORROW'
+  imported-scotch-series-brand-distinct-distillery / appellation_of_origin
+      expected: ''
+      got:      'Speyside'
+  imported-vodka-fanciful-name-distinct-from-class / fanciful_name
+      expected: 'Midnight Frost'
+      got:      ''
+  napa-cabernet-vintage-sulfites / class_type
+      expected: 'Cabernet Sauvignon'
+      got:      ''
+  stormchaser-white-fanciful-color / class_type
+      expected: 'Chardonnay'
+      got:      ''
+  domestic-spirits-full-warning-multiline-bottler / class_type
+      expected: 'Spiced Rum with Natural Flavors Added'
+      got:      'Rum with Natural Flavors Added'
+  domestic-spirits-full-warning-multiline-bottler / fanciful_name
+      expected: 'Midnight Kraken'
+      got:      ''
+  series-brand-with-fanciful-and-class-all-present / brand_name
+      expected: 'FARM TO TABLE SERIES #1'
+      got:      'MALT & HOP BREWING CO.'
+  series-brand-with-fanciful-and-class-all-present / fanciful_name
+      expected: 'Honey Huckleberry Pie'
+      got:      ''
+  brand-plus-class-only-vintage-number-is-not-fanciful / brand_name
+      expected: 'EASTLINE BREWING 1842'
+      got:      'EASTLINE BREWING'
+  ttb-malt-aspartame-yellow5 / fdc_yellow_5_declaration
+      expected: 'Contains FD&C Yellow #5'
+      got:      ''
+  ttb-malt-aspartame-yellow5 / aspartame_declaration
+      expected: 'PHENYLKETONURICS: CONTAINS PHENYLALANINE.'
+      got:      ''
+  ttb-spirits-age-coloring-state / statement_of_age
+      expected: 'Aged 3 Years'
+      got:      ''
+  ttb-spirits-age-coloring-state / coloring_materials
+      expected: 'Colored With Caramel'
+      got:      ''
+  ttb-spirits-age-coloring-state / state_of_distillation
+      expected: 'Indiana'
+      got:      ''
+  ttb-spirits-commodity-blended / commodity_statement
+      expected: '65% Neutral Spirits Distilled From Corn'
+      got:      ''
+
+Full results written to /Users/aaryannaz/Desktop/TREASURY_DOGE/alcohol-label-verification/backend/evals/last_results.json

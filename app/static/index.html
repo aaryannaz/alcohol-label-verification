@@ -17,8 +17,8 @@
           <label class="theme-select">
             <span>Layout</span>
             <select id="layoutSelect" aria-label="Site layout">
-              <option value="standard">Standard</option>
-              <option value="government">Government</option>
+              <option value="standard">Basic</option>
+              <option value="government">Business</option>
             </select>
           </label>
           <label class="theme-toggle" for="themeToggle">
@@ -41,7 +41,7 @@
         <section class="panel setup-panel" aria-label="Application">
           <div class="control-grid">
             <fieldset id="uploadModeGroup" class="choice-group">
-              <legend class="section-label">Labels</legend>
+              <legend class="section-label">Upload mode</legend>
               <label class="choice"><input type="radio" name="uploadMode" value="single" checked /><span>Single label</span></label>
               <label class="choice"><input type="radio" name="uploadMode" value="batch" /><span>Multiple labels</span></label>
             </fieldset>
@@ -73,7 +73,6 @@
                 <option value="imported">Imported</option>
               </select>
             </label>
-            <span class="product-bar-hint" id="productBarHint">Auto — detected after you upload a label.</span>
           </div>
           <div id="dropZoneInputs" class="upload-pane">
             <input id="frontImage" data-file-slot="front" type="file" hidden accept=".pdf,.png,.jpg,.jpeg,.webp,application/pdf,image/png,image/jpeg,image/webp" />
@@ -89,7 +88,7 @@
               </div>
             </div>
             <div class="drop-zone" id="backDropZone" data-drop-slot="back" tabindex="0" role="button" aria-label="Second label file (optional) — browse" aria-describedby="backDropSummary">
-              <span class="drop-label">Second file (optional)</span>
+              <span class="drop-label">Second file <span class="drop-label-optional">(optional)</span></span>
               <div class="file-summary" id="backDropSummary" data-file-summary="back" aria-live="polite">
                 <span class="file-empty">Drop a label here or <span class="link-text">browse</span></span>
                 <span class="file-name" data-file-name="back"></span>
@@ -104,7 +103,7 @@
           <div class="section-heading batch-heading">
             <div>
               <h2 id="batch-title">Multiple labels</h2>
-              <p class="batch-note">Drop several labels at once — each file is one product, and they're all checked together.</p>
+              <p class="batch-note">Check many labels in one go.</p>
             </div>
             <div class="batch-actions">
               <input id="batchFiles" type="file" multiple hidden accept=".pdf,.png,.jpg,.jpeg,.webp,application/pdf,image/png,image/jpeg,image/webp" />
@@ -117,11 +116,12 @@
           </div>
 
           <div class="batch-grouping">
-            <label class="batch-group-toggle">
-              <input type="checkbox" id="batchGroupToggle" checked />
-              <span>Pair a front &amp; back photo by filename</span>
-            </label>
-            <p class="batch-group-hint">Have separate front and back images? Name them alike, ending in <code>_front</code> and <code>_back</code> — e.g. <code>airlie_front.jpg</code> and <code>airlie_back.jpg</code> — and they'll be checked as one product. Any other file is its own.</p>
+            <p class="batch-group-hint">Have a front and a back photo of the same label? Give both the same name, ending in <code>_front</code> and <code>_back</code> (for example <code>example_brewing_front.jpg</code> and <code>example_brewing_back.jpg</code>) — they'll be checked together as one product. Files named any other way are each checked on their own.</p>
+          </div>
+
+          <div id="batchVerdict" class="results-verdict batch-verdict" role="status" aria-live="polite" hidden>
+            <span class="results-verdict-icon" aria-hidden="true"></span>
+            <span class="results-verdict-text"></span>
           </div>
 
           <div class="table-wrap batch-table-wrap">
@@ -136,11 +136,7 @@
                   <th>Action</th>
                 </tr>
               </thead>
-              <tbody id="batchBody">
-                <tr>
-                  <td colspan="6" class="empty-row">No batch files added.</td>
-                </tr>
-              </tbody>
+              <tbody id="batchBody"></tbody>
             </table>
           </div>
         </section>
@@ -194,7 +190,7 @@
           <div id="errorBox" class="error-box" role="alert" hidden></div>
 
           <div class="table-wrap">
-            <table>
+            <table class="results-table">
               <thead>
                 <tr>
                   <th>Field</th>

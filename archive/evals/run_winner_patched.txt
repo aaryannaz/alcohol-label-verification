@@ -1,0 +1,65 @@
+Running 24 case(s)...
+
+[1/24] domestic-malt-series-brand-fanciful-pun: 11/11 fields correct
+[2/24] domestic-malt-color-pun-fanciful-stacked-brand: 11/11 fields correct
+[3/24] domestic-malt-plain-brand-style-no-fanciful: 11/11 fields correct
+[4/24] imported-beer-style-front-importer-not-brand: 10/11 fields correct
+[5/24] imported-ale-fanciful-name-product-of-belgium: 11/11 fields correct
+[6/24] imported-lager-brewed-in-mexico-no-warning: 11/11 fields correct
+[7/24] captain-johns-spiced-rum-brand-vs-fanciful-vs-classtype: 11/11 fields correct
+[8/24] stillhouse-13-bourbon-brand-equals-bottler-no-fanciful: 11/11 fields correct
+[9/24] midnight-harbor-gin-fanciful-name-no-warning: 11/11 fields correct
+[10/24] imported-tequila-importer-distinct-proof: 10/11 fields correct
+[11/24] imported-scotch-series-brand-distinct-distillery: 10/11 fields correct
+[12/24] imported-vodka-fanciful-name-distinct-from-class: 11/11 fields correct
+[13/24] napa-cabernet-vintage-sulfites: 11/11 fields correct
+[14/24] stormchaser-white-fanciful-color: 11/11 fields correct
+[15/24] california-red-blend-no-sulfite: 11/11 fields correct
+[16/24] imported-wine-bordeaux-chateau-importedby: 11/11 fields correct
+[17/24] imported-wine-australia-victoria-shiraz: 11/11 fields correct
+[18/24] imported-wine-france-semigeneric-chablis-fanciful: 11/11 fields correct
+[19/24] domestic-spirits-full-warning-multiline-bottler: 10/11 fields correct
+[20/24] imported-wine-no-warning-importer-appellation: 11/11 fields correct
+[21/24] domestic-malt-bottler-equals-brand-stacked-address: 11/11 fields correct
+[22/24] series-brand-with-fanciful-and-class-all-present: 11/11 fields correct
+[23/24] brand-plus-class-only-vintage-number-is-not-fanciful: 11/11 fields correct
+[24/24] stacked-numeric-brand-resolved-from-back-label-imported: 11/11 fields correct
+
+============================================================
+PER-FIELD ACCURACY
+============================================================
+  brand_name               100.0%  (24/24)
+  class_type                87.5%  (21/24)
+  alcohol_content          100.0%  (24/24)
+  net_contents             100.0%  (24/24)
+  government_warning       100.0%  (24/24)
+  domestic_name_address    100.0%  (24/24)
+  importer_name_address    100.0%  (24/24)
+  country_of_origin        100.0%  (24/24)
+  sulfite_declaration      100.0%  (24/24)
+  appellation_of_origin     95.8%  (23/24)
+  fanciful_name            100.0%  (24/24)
+
+============================================================
+OVERALL
+============================================================
+  Field accuracy:    98.5%  (260/264)
+  Cases all-correct: 20/24
+
+============================================================
+FIELD MISSES (4)
+============================================================
+  imported-beer-style-front-importer-not-brand / class_type
+      expected: 'Beer'
+      got:      'Hefeweizen'
+  imported-tequila-importer-distinct-proof / class_type
+      expected: 'Reposado Tequila'
+      got:      'Tequila'
+  imported-scotch-series-brand-distinct-distillery / appellation_of_origin
+      expected: ''
+      got:      'Speyside'
+  domestic-spirits-full-warning-multiline-bottler / class_type
+      expected: 'Spiced Rum with Natural Flavors Added'
+      got:      'Rum with Natural Flavors Added'
+
+Full results written to /Users/aaryannaz/Desktop/TREASURY_DOGE/alcohol-label-verification/backend/evals/last_results.json
