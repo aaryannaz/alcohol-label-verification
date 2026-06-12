@@ -961,7 +961,7 @@ async function extractFields() {
     await runLabelExtraction();
     state.expectedValues = state.extracted;
     setExpectedValues(state.expectedValues);
-    setStatus("Fields extracted from the label — edit each field to match the COLA application, then Verify");
+    setStatus("Fields extracted from the label — edit each field to match the approved application, then Verify");
   } catch (error) {
     showError(error.message);
     setStatus("Extraction failed");
@@ -1536,7 +1536,7 @@ async function reviewBatchItem(id) {
   } else {
     renderEmptyResults("No verification results for this batch item yet.");
   }
-  setStatus("Loaded batch item #" + item.id + " — edit fields to match the COLA application, then Verify");
+  setStatus("Loaded batch item #" + item.id + " — edit fields to match the approved application, then Verify");
   document.querySelector("#fields-title").scrollIntoView({ block: "start" });
 }
 
@@ -1599,6 +1599,10 @@ function setUploadMode(mode) {
   const resultsPanel = document.querySelector(".results-panel");
   if (fieldsPanel) fieldsPanel.hidden = batch;
   if (resultsPanel) resultsPanel.hidden = batch;
+  // Category/origin are picked per-row (and auto-detected) in batch, so the
+  // sidebar's global Product category / Origin only apply to single uploads.
+  if (categoryGroup) categoryGroup.hidden = batch;
+  if (originGroup) originGroup.hidden = batch;
   updateStepHighlight();
 }
 
