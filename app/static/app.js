@@ -727,7 +727,7 @@ function renderVerdict(checked, flagged) {
   banner.className = "results-verdict " + (pass ? "verdict-pass" : "verdict-attention");
   banner.querySelector(".results-verdict-icon").textContent = pass ? "✓" : "!";
   banner.querySelector(".results-verdict-text").textContent = pass
-    ? "Passed — all checks cleared"
+    ? "PASS — all checks cleared"
     : `Needs attention — ${flagged} ${flagged === 1 ? "item" : "items"} to review`;
 }
 

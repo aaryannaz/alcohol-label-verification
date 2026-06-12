@@ -1107,12 +1107,13 @@ tr.is-flagged td:first-child {
 .results-verdict {
   display: flex;
   align-items: center;
-  gap: 14px;
-  margin-bottom: 16px;
-  padding: 16px 20px;
+  gap: 18px;
+  margin-bottom: 18px;
+  padding: 22px 26px;
   border-radius: var(--radius-lg);
-  font-size: 22px;
+  font-size: 30px;
   font-weight: 800;
+  letter-spacing: 0.2px;
   border: 1.5px solid transparent;
 }
 
@@ -1125,21 +1126,23 @@ tr.is-flagged td:first-child {
   display: inline-flex;
   align-items: center;
   justify-content: center;
-  width: 38px;
-  height: 38px;
+  width: 52px;
+  height: 52px;
   border-radius: 50%;
-  font-size: 24px;
-  color: #ffffff;
+  font-size: 34px;
+  font-weight: 900;
 }
 
+/* PASS: a big, solid green banner with a white check — the clear success signal. */
 .results-verdict.verdict-pass {
-  background: var(--green-soft);
-  color: var(--green);
-  border-color: color-mix(in srgb, var(--green) 40%, transparent);
+  background: var(--green);
+  color: #ffffff;
+  box-shadow: 0 10px 28px color-mix(in srgb, var(--green) 30%, transparent);
 }
 
 .results-verdict.verdict-pass .results-verdict-icon {
-  background: var(--green);
+  background: #ffffff;
+  color: var(--green);
 }
 
 .results-verdict.verdict-attention {
@@ -1150,6 +1153,7 @@ tr.is-flagged td:first-child {
 
 .results-verdict.verdict-attention .results-verdict-icon {
   background: var(--amber);
+  color: #ffffff;
 }
 
 .compliance-checks {
