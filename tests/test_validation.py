@@ -1,5 +1,6 @@
 import unittest
 
+from app.classify import classify_category, classify_origin
 from app.validation import (
     check_government_warning,
     compute_label_checks,
@@ -496,6 +497,29 @@ class BrandNameDeemedBrandTests(unittest.TestCase):
         reviewed = self._fields(brand_name="Silver Oak", domestic_name_address="X, Y")
         result = validate_wine(expected, reviewed, "domestic")
         self.assertEqual(result["brand_name"], "PASS")
+
+
+class ClassifyTests(unittest.TestCase):
+    def test_category_from_class_type(self):
+        self.assertEqual(classify_category({"class_type": "Hazy India Pale Ale"}), "malt_beverage")
+        self.assertEqual(classify_category({"class_type": "Amber Lager"}), "malt_beverage")
+        self.assertEqual(classify_category({"class_type": "Tart Ale with Boysenberry"}), "malt_beverage")
+        self.assertEqual(classify_category({"class_type": "Cabernet Sauvignon"}), "wine")
+        self.assertEqual(classify_category({"class_type": "California Chablis"}), "wine")
+        self.assertEqual(classify_category({"class_type": "Red Table Wine"}), "wine")
+        self.assertEqual(classify_category({"class_type": "Kentucky Straight Bourbon Whiskey"}), "distilled_spirits")
+        self.assertEqual(classify_category({"class_type": "Reposado Tequila"}), "distilled_spirits")
+        self.assertEqual(classify_category({"class_type": "London Dry Gin"}), "distilled_spirits")
+
+    def test_category_defaults_to_malt_when_unknown(self):
+        self.assertEqual(classify_category({"class_type": ""}), "malt_beverage")
+
+    def test_origin_imported_when_importer_or_country(self):
+        self.assertEqual(classify_origin({"importer_name_address": "Acme Imports, NY"}), "imported")
+        self.assertEqual(classify_origin({"country_of_origin": "Germany"}), "imported")
+
+    def test_origin_domestic_when_only_bottler(self):
+        self.assertEqual(classify_origin({"domestic_name_address": "Bluebird, PA"}), "domestic")
 
 
 if __name__ == "__main__":

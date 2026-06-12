@@ -10,6 +10,7 @@ from fastapi.responses import FileResponse, JSONResponse
 from fastapi.staticfiles import StaticFiles
 from starlette.exceptions import HTTPException as StarletteHTTPException
 
+from .classify import classify_category, classify_origin
 from .clients import GEMINI_MODEL
 from .errors import (
     AppError,
@@ -140,10 +141,14 @@ async def extract(
     }
 
 
+_CATEGORY_VALUES = {c.value for c in ProductCategory}
+_ORIGIN_VALUES = {o.value for o in OriginType}
+
+
 @app.post("/verify", dependencies=COST_GUARDS)
 async def verify(
-    product_category: ProductCategory = Form(...),
-    origin_type: OriginType = Form(...),
+    product_category: str = Form("auto"),
+    origin_type: str = Form("auto"),
     front_image: UploadFile = File(...),
     back_image: UploadFile | None = File(default=None),
 ):
@@ -151,15 +156,31 @@ async def verify(
     seeded from the same extraction, so this is a completeness + statutory-warning +
     label-compliance check. Used by batch mode to give each row a real verdict in
     a single Gemini call, keeping the per-file request count (and rate-limit
-    footprint) the same as a bare /extract."""
-    extracted = await extract_label_fields(front_image, back_image, product_category.value)
+    footprint) the same as a bare /extract.
 
-    return build_verification_response(
-        product_category=product_category.value,
-        origin_type=origin_type.value,
+    Auto-detect: when product_category / origin_type are "auto" (anything not a
+    known value), the label is read with the all-fields schema and its category
+    and origin are inferred from the result, so batch rows need no manual picks.
+    """
+    auto_category = product_category not in _CATEGORY_VALUES
+    auto_origin = origin_type not in _ORIGIN_VALUES
+
+    # A known category scopes the extraction to its fields; "auto" reads them all.
+    extracted = await extract_label_fields(
+        front_image, back_image, None if auto_category else product_category
+    )
+    category = classify_category(extracted) if auto_category else product_category
+    origin = classify_origin(extracted) if auto_origin else origin_type
+
+    response = build_verification_response(
+        product_category=category,
+        origin_type=origin,
         expected=extracted,
         reviewed=extracted,
     )
+    response["detected_category"] = category
+    response["detected_origin"] = origin
+    return response
 
 
 @app.post("/verify-reviewed", dependencies=COST_GUARDS)

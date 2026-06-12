@@ -1349,6 +1349,8 @@ function makeBatchItem(frontFile, backFile, productName) {
     extracted: null,
     verification: null,
     expanded: true,  // show the per-product detail automatically once verified
+    autoCategory: true,  // auto-detect category/origin until the reviewer overrides
+    autoOrigin: true,
   };
   state.batch.nextId += 1;
   return item;
@@ -1409,8 +1411,10 @@ async function processBatchItem(item) {
   renderBatchQueue();
 
   const formData = new FormData();
-  formData.append("product_category", item.productCategory);
-  formData.append("origin_type", item.originType);
+  // "auto" tells the server to read the label and infer the category/origin
+  // itself; a manual override sends the chosen value instead.
+  formData.append("product_category", item.autoCategory ? "auto" : item.productCategory);
+  formData.append("origin_type", item.autoOrigin ? "auto" : item.originType);
   formData.append("front_image", item.file);
   if (item.backFile) formData.append("back_image", item.backFile);
 
@@ -1421,6 +1425,9 @@ async function processBatchItem(item) {
     const body = await parseApiResponse(response);
     item.extracted = body.reviewed || body.extracted || {};
     item.verification = body;
+    // Reflect the detected category/origin back into the row's dropdowns.
+    if (item.autoCategory && body.detected_category) item.productCategory = body.detected_category;
+    if (item.autoOrigin && body.detected_origin) item.originType = body.detected_origin;
     const { verdict, flagged, checked } = computeBatchVerdict(body);
     item.status = verdict;
     item.message = verdict === "Pass"
@@ -1717,12 +1724,12 @@ batchBody.addEventListener("change", function(event) {
 
   if (categoryControl) {
     const item = state.batch.items.find((candidate) => candidate.id === Number(categoryControl.dataset.batchCategory));
-    if (item) item.productCategory = categoryControl.value;
+    if (item) { item.productCategory = categoryControl.value; item.autoCategory = false; }  // manual override
   }
 
   if (originControl) {
     const item = state.batch.items.find((candidate) => candidate.id === Number(originControl.dataset.batchOrigin));
-    if (item) item.originType = originControl.value;
+    if (item) { item.originType = originControl.value; item.autoOrigin = false; }
   }
 });
 
