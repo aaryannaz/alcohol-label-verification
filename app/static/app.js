@@ -45,8 +45,8 @@ const BATCH_CONCURRENCY = 10;
 const ACCEPTED_EXTENSIONS = new Set(["pdf", "png", "jpg", "jpeg", "webp"]);
 const ACCEPTED_MIME_TYPES = new Set(["application/pdf", "image/png", "image/jpeg", "image/webp"]);
 const FILE_LABELS = {
-  front: "First label",
-  back: "Second label",
+  front: "First file",
+  back: "Second file",
 };
 const PRODUCT_CATEGORY_OPTIONS = [
   { value: "malt_beverage", label: "Malt beverage" },
