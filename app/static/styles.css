@@ -209,6 +209,21 @@
   border-bottom-color: #2563eb;
 }
 
+/* Dark mode: the light-blue header bands dim a notch so they don't glare
+   against the dark page; the navy ink on them stays readable. */
+:root[data-layout="government"][data-theme="dark"] .topbar {
+  background: #c2d3eb;
+}
+
+:root[data-layout="government"][data-theme="dark"] .gov-nav {
+  background: #afc4e0;
+}
+
+:root[data-layout="government"][data-theme="dark"] .gov-nav-link:hover,
+:root[data-layout="government"][data-theme="dark"] .gov-nav-link.active {
+  background: #9fb7d8;
+}
+
 * {
   box-sizing: border-box;
 }
@@ -397,7 +412,7 @@ h3 {
 .info-page {
   display: grid;
   gap: 16px;
-  max-width: 920px;
+  max-width: min(96vw, 1700px);
   margin: 0 auto;
   padding: 16px;
 }
@@ -444,20 +459,20 @@ h3 {
   display: flex;
   align-items: center;
   gap: 10px;
-  padding: 9px 12px;
+  padding: 20px 16px;
   border: 1px solid var(--line);
   border-radius: var(--radius);
   background: var(--surface);
   color: var(--text);
-  font-size: 19.2px;
+  font-size: 24px;
   font-weight: 400;
   cursor: pointer;
 }
 
 .choice input[type="radio"] {
   appearance: auto;
-  width: 17px;
-  height: 17px;
+  width: 22px;
+  height: 22px;
   min-height: 0;
   margin: 0;
   padding: 0;
@@ -1399,7 +1414,7 @@ tr.is-flagged td:first-child {
    content. */
 .section-label {
   color: var(--text);
-  font-size: 21.6px;
+  font-size: 26px;
   font-weight: 700;
 }
 
@@ -1727,7 +1742,7 @@ tr.is-flagged td:first-child {
   display: grid;
   gap: 8px;
   align-content: center;
-  min-height: 184px;
+  min-height: 368px;
   border: 2px dashed var(--line);
   border-radius: var(--radius);
   padding: 14px;
