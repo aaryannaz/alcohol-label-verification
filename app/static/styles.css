@@ -721,13 +721,14 @@ textarea[name="importer_name_address"] {
 }
 
 .lightbox-img {
-  max-width: 92vw;
-  max-height: 88vh;
+  /* Explicit viewport-sized box + contain scales the image UP to fill the
+     screen (preserving aspect ratio), not just down — max-* alone never
+     enlarges a small label. */
+  width: 92vw;
+  height: 88vh;
   object-fit: contain;
-  border-radius: var(--radius);
-  box-shadow: 0 24px 70px rgba(0, 0, 0, 0.55);
-  background: #ffffff;
   cursor: default;
+  filter: drop-shadow(0 24px 70px rgba(0, 0, 0, 0.55));
 }
 
 .lightbox-close {
